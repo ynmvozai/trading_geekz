@@ -65,7 +65,7 @@ details.card[open]>summary{margin-bottom:4px}
 <div class="wrap">
   <div class="top">
     <div>
-      <h1>Hot Zone</h1>
+      <h1>Hot Zone <span class="muted" style="font-size:13px;font-weight:400">v2.0</span></h1>
       <div class="status"><span class="dot" id="dot"></span><span id="conn">Conectando a Binance…</span></div>
       <p class="lead">Estas son tus zonas a vigilar. Cuando el precio entra en una y pasa una orden grande, la tarjeta se enciende y te llega la alerta a Discord.</p>
     </div>
@@ -156,6 +156,7 @@ details.card[open]>summary{margin-bottom:4px}
     </div>
     <div class="muted" id="aiLog">Agente con Ai apagado: falta la clave.</div>
     <div class="muted" id="botLog">Agente apagado.</div>
+    <div class="muted" id="leadLog"></div>
     <span class="muted">En el canal agent escribe: zonas, precio, ordenes, flujo, link o ayuda. Puedes añadir el mercado: "zonas btc", "ordenes oro".</span>
   </details>
 
@@ -267,7 +268,7 @@ function buildMessage(o){
     footer:{text:"Binance futuros "+SYMS[y].label+" · "+new Date(o.t).toLocaleString("es-PR",{timeZone:"America/Puerto_Rico"})+" · validar en tu gráfico"}}]};
 }
 function storeSim(){try{if(sim.closed.length>500)sim.closed.length=500;localStorage.setItem(SIM_KEY,JSON.stringify(sim))}catch(e){}}
-function simPost(txt){if(cfg.hook4)post({content:txt},cfg.hook4).catch(function(){})}
+function simPost(txt){if(cfg.hook4&&isLeader())post({content:txt},cfg.hook4).catch(function(){})}
 function simOpen(o,zi){
   var z=zones[zi];if(!z||z.grade!=="A++"||o.side!==z.side)return;
   if(sim.open.some(function(t){return t.sym===o.sym&&t.zname===z.name&&t.lo===z.lo}))return;
@@ -314,7 +315,7 @@ function macEnable(){
   var done=function(p){macLog(p==="granted"?"Avisos en la Mac activos: notificación de macOS + sonido.":"Avisos en la Mac activos solo con sonido y la pestaña parpadeando (Chrome no dio permiso de notificaciones para esta página).")};
   try{if(window.Notification&&Notification.permission!=="granted"){var r=Notification.requestPermission(done);if(r&&r.then)r.then(done)}else done(window.Notification?Notification.permission:"no")}catch(e){done("no")}
 }
-function queueAlert(o){macAlert(o);sendQueue.push(o);pump()}
+function queueAlert(o){macAlert(o);if(!isLeader()){setAlert(o,"otra pestaña");return}sendQueue.push(o);pump()}
 function pump(){
   if(sending||!sendQueue.length)return;
   var o=sendQueue.shift();
@@ -362,7 +363,7 @@ function renderZones(){
 }
 function mk(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
 function renderWatch(){
-  var w=$("watch");w.textContent="";$("zstamp").textContent="· del Mapa de Zonas, "+ZSTAMP.replace(" · v2","");
+  var w=$("watch");w.textContent="";$("zstamp").textContent=zDate()?"· actualizadas por Ai, "+zDate():"· del Mapa de Zonas, "+ZSTAMP.replace(" · v2","");
   zones.forEach(function(z,i){
     var y=z.sym,c=mk("div","z "+z.side);c.id="zc"+i;
     var h=mk("div","h");h.appendChild(mk("span",null,(NAMES[y]||y)+" · "+(z.side==="buy"?"COMPRA":"VENTA")));
@@ -428,6 +429,34 @@ function connect(){
 function watchdog(now){if(curWs&&now-lastMsg>20000){var w=curWs;setConn("off","Conectado pero sin datos. Reconectando…");try{w.close()}catch(e){}}}
 function setConn(cls,t){$("dot").className="dot "+cls;$("conn").textContent=t}
 
+// ---------- v2: una sola copia activa, zonas automáticas, "sigo vivo" ----------
+var HZ_VERSION="v2.0 · 8 oct 2026", MY_ID=Math.random().toString(36).slice(2,8), LEAD_KEY="hotzone.leader", ZDATE_KEY="hotzone.zdate";
+function isLeader(){try{var l=JSON.parse(localStorage.getItem(LEAD_KEY)||"null");return !!l&&l.id===MY_ID}catch(e){return true}}
+function leaderTick(){try{var now=Date.now(),l=JSON.parse(localStorage.getItem(LEAD_KEY)||"null");
+  if(!l||l.id===MY_ID||now-l.t>15000)localStorage.setItem(LEAD_KEY,JSON.stringify({id:MY_ID,t:now}))}catch(e){}
+  var lead=isLeader(),el=$("leadLog");if(el)el.textContent=lead?"Esta pestaña es la copia activa ("+HZ_VERSION+"): envía alertas y contesta en Discord.":"Hay otra pestaña del panel activa en este navegador: esta solo muestra datos.";
+  if(lead&&!bot.ws&&cfg.botToken&&cfg.hook3&&!bot.stop)botConnect();
+  if(!lead&&bot.ws){bot.stop=true;try{bot.ws.close()}catch(e){}bot.ws=null}}
+var ZONES_Q="Al final de tu respuesta añade un bloque ```json``` con TODAS las zonas vigentes de BTC, SOL y XAU (máximo 3 por mercado), calculadas con [VELAS] (XAU = XAUUSDT), en este formato exacto: [{\"sym\":\"BTC\",\"name\":\"Order block 1H\",\"grade\":\"A++\",\"side\":\"sell\",\"lo\":0,\"hi\":0,\"sl\":0,\"tp1\":0,\"tp2\":0,\"nota\":\"una frase\"}]. side es sell (se espera que baje) o buy (se espera que suba). Ese bloque lo usa el panel para sus alertas: precios exactos de las velas, sin inventar.";
+function applyAiZones(txt){
+  var m=/```json\s*([\s\S]*?)```/i.exec(txt||"");if(!m)return {txt:txt,n:0};
+  var arr;try{arr=JSON.parse(m[1])}catch(e){return {txt:txt.replace(m[0],"").trim(),n:0,err:"JSON inválido"}}
+  var out=[];(Array.isArray(arr)?arr:[]).forEach(function(z){
+    if(!z||!SYMS[z.sym])return;var lo=+z.lo,hi=+z.hi;if(!(lo>0&&hi>0))return;if(lo>hi){var t=lo;lo=hi;hi=t}
+    var p=S[z.sym].price;if(p&&(hi<p*0.7||lo>p*1.3))return;
+    if(out.filter(function(x){return x.sym===z.sym}).length>=3)return;
+    out.push({sym:z.sym,name:String(z.name||"Zona").slice(0,40),grade:String(z.grade||"").slice(0,4),estado:"NUEVA",side:z.side==="buy"?"buy":"sell",lo:lo,hi:hi,sl:+z.sl||0,tp1:+z.tp1||0,tp2:+z.tp2||0,nota:String(z.nota||"").slice(0,200)})});
+  var clean=txt.replace(m[0],"").trim();
+  if(out.length){zones=out;zstate=[];store();var d=new Date().toLocaleString("es-PR",{timeZone:"America/Puerto_Rico",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"});
+    try{localStorage.setItem(ZDATE_KEY,d)}catch(e){}renderZones()}
+  return {txt:clean,n:out.length}}
+function zDate(){try{return localStorage.getItem(ZDATE_KEY)}catch(e){return null}}
+function heartbeat(tag){if(!cfg.hook3||!isLeader())return;var ps=ORDER.map(function(k){return (NAMES[k]||k)+" "+px(S[k].price,k)}).join(" · ");
+  post({content:(tag||"🟢 Hot Zone sigue vivo")+" · "+HZ_VERSION+"\n"+ps+"\nZonas del panel: "+(zDate()||"del Mapa, "+ZSTAMP.replace(" · v2",""))+" · "+zones.length+" zonas · Ai "+(cfg.aiKey?"activa":"sin clave")},cfg.hook3).catch(function(){})}
+var lastBeat="";
+function beatTick(){var d=new Date(new Date().toLocaleString("en-US",{timeZone:"America/Puerto_Rico"})),key=d.toDateString();
+  if(d.getHours()===8&&d.getMinutes()<5&&lastBeat!==key&&isLeader()){lastBeat=key;try{localStorage.setItem("hotzone.beat",key)}catch(e){}heartbeat()}}
+
 // ---------- Agente con Ai (Claude) ----------
 var AI_PROMPT="# IDENTIDAD Y ROL\nEres el asesor de trading, macroeconomía y gestión de riesgo de Yasser en el servidor Discord Trading_GeeKz (Visionary_GeeKz).\nHablas siempre en español, directo, con frases cortas y tono profesional pero cercano, como un colega experimentado con mentalidad fría e institucional.\nREGLA ORTOGRÁFICA: Siempre escribes \"Ai\", nunca \"AI\" ni \"IA\".\n\n# ESTRUCTURA DE ENTRADA DE DATOS\nEn cada interacción recibirás un payload en tiempo real con las etiquetas [PANEL_HOT_ZONE] y/o [CALENDARIO_USD]:\n- Zonas de BTC, SOL y Oro (tipo, temporalidad 1H/4H, grado A++/A/B, dirección, SL, TP1, TP2, estado, precio actual y distancia).\n- Flujo de compras/ventas (5 min) + órdenes grandes de la última hora.\n- Resultados de Ai Crypto en modo simulado.\n- Eventos macro de USD de alto impacto (ForexFactory: CPI, NFP, FOMC, PPI, PMI, Claims).\n\nREGLA DE ORO: Solo usas la información explícita del payload. Si un dato no aparece, di: \"No tengo ese dato en el panel ahora\" y jamás inventes cifras, noticias ni precios.\n\n# MÉTODO TÉCNICO DE YASSER\n\n### Contexto Overnight (16:00 - 09:00 EST)\n- Movimiento largo (>300 puntos) → Esperas movimiento opuesto (reversión).\n- Consolidación (<300 puntos sin FVG ni BOS) → Esperas manipulación / barrido de liquidez.\nNota: La regla de 300 puntos aplica principalmente a US30. En BTC, SOL y Oro se evalúa el movimiento relativo al ATR diario o a la volatilidad típica de la sesión.\n\n### Definiciones Objetivas\n- **BOS**: Se rompe el penúltimo high/low en dirección opuesta a la estructura dominante.\n- **FVG**: Imbalance de 3 velas tras un BOS donde la mecha de la 1ª vela no se solapa con la 3ª.\n- **Order Block válido**: Captura liquidez previa y la vela posterior (o expansión en 2 velas) genera BOS.\n- **Oferta/Demanda**: Solo confluencia (línea). OB o FVG sobre esa línea = Grado A++.\n- **Liquidez prioritaria**: 1º Sesión → 2º Día anterior → 3º Swings internos.\n\n### Variables Núcleo (prioridad en este orden)\n1. Tendencia HTF (Diario / Semanal / 4H)\n2. Liquidez objetivo\n3. BOS\n4. FVG\n5. Horario / Sesión (énfasis NY Killzone)\n\n### Preferencias Operativas\n- Priorizas OB de 30m-4H alineados con tendencia diaria/semanal.\n- Si el precio está muy extendido en Premium, buscas retrocesos hacia el 50% del rango.\n\n### Tu alcance: solo lo macro\n- Tu trabajo es el contexto macro: zonas 1H/4H, sesgo, liquidez objetivo, invalidación y riesgo.\n- Las entradas en 1m-15m las busca Yasser con sus propias estrategias. Nunca das gatillos, confirmaciones ni timing de entrada en temporalidades menores.\n- Si te pide una entrada concreta, responde con la zona, el escenario, el SL y el 1R, y recuérdale que la entrada la valida él en su gráfico.\n\n# COMPONENTE MACRO (CALENDARIO USD)\n- < 30 min para noticia de alto impacto USD → Advierte y sugiere pausa.\n- Durante/Post-noticia → Analiza solo la reacción técnica y absorción de liquidez. No adivines el dato.\n- Si no hay eventos en el payload: \"Sin catalizadores macro de USD programados en el calendario inmediato.\"\n\n# MARCO MENTAL (FILOSOFÍA MARK DOUGLAS)\n- Todo es probabilístico. Un SL respetado es una ejecución correcta.\n- Si detectas FOMO, impulsividad, revenge trading o intención de aumentar el riesgo por encima de lo normal → DETÉN el análisis técnico y señala la conducta con calma antes de continuar.\n- Ningún escenario es válido sin SL claro e impacto de 1R definido.\n\n# REGLAS ESTRICTAS\n1. Solo analizas y educas. Jamás ejecutas operaciones ni gestionas capital.\n2. Prohibido dar órdenes directas (\"compra/vende\"). Presenta escenarios condicionales + punto de invalidación.\n3. En todo escenario menciona el SL y qué implica perder 1R.\n4. No eres asesor financiero licenciado. Haz el descargo cuando se hable de su dinero o cuenta.\n5. Cierra evaluaciones complejas con: \"La decisión final siempre es tuya.\"\n\n# ESTILO DE RESPUESTA (DISCORD)\n- Prioridad a respuestas cortas y directas (ideal 4-8 líneas). Si el análisis es complejo, máximo 10-12 líneas.\n- Usa negritas para niveles clave.\n- Si la pregunta es clara → responde corto y ofrece profundizar.\n- Si es ambigua → haz UNA sola pregunta de aclaración.\n- Cierra con UNA pregunta útil solo si agrega valor real.\n- Mantén continuidad del contexto del canal.\n\n# COMANDOS RÁPIDOS\n- `zonas` → Lista de zonas A++/A/B de BTC, SOL y Oro con SL/TP.\n- `precio` → Cotización actual + distancia a la zona más cercana.\n- `ordenes` → Resumen de órdenes grandes de la última hora.\n- `flujo` → Sesgo de flujo compra/venta últimos 5 minutos.\n- `link` → Enlace del panel Hot Zone con las zonas actuales.\n- `noticias` → Eventos de carpeta roja/naranja de USD del día (solo cuando el calendario esté conectado; si no, dilo).\n\n# CASOS ESPECIALES\n- Datos incompletos → Notifícalo y analiza solo con lo disponible.\n- Pregunta fuera de alcance → \"Eso no está en el panel ni en el calendario ahora. ¿Quieres que miremos las zonas de BTC o el impacto en el Oro?\"\n- Pide confirmación directa de entrada → Desvía a escenarios + invalidación (SL) + aceptación de 1R.\n\n# DATOS QUE RECIBES EN ESTE CANAL\n- [PANEL_HOT_ZONE]: zonas activas del panel (BTC, SOL, Oro), precios en vivo, flujo de 5 min, órdenes grandes de la última hora y Ai Crypto simulado.\n- [VELAS]: velas recientes de Binance futuros en 4H y 1H para BTCUSDT, SOLUSDT, XAUUSDT y QQQUSDT. Formato [hora UTC, apertura, máximo, mínimo, cierre]. QQQUSDT es solo referencia del Nasdaq (los niveles se pasan a NQ por porcentaje) y tiene poco volumen.\n- [MAPA_INDICES]: zonas del Dow Jones (gráfico diario) y Nasdaq (precios QQQ) del Mapa de Zonas, con su fecha. No tienes precio en vivo del Dow: dilo si te lo piden.\n- No tienes calendario económico conectado todavía: si preguntan por noticias, dilo.\nCon [VELAS] puedes marcar zonas nuevas (order blocks y fair value gaps 1H/4H, con SL, TP1, TP2) cuando te lo pidan. Cada zona: tipo, temporalidad, rango, grado, dirección esperada, SL, TP1, TP2. Discord corta los mensajes largos: máximo 1,800 caracteres.\n";
 var INDEX_MAP=[{"mercado": "DJI", "fecha": "7 oct 2026", "tipo": "Order block diario", "direccion": "Venta", "bajo": 51339.24, "alto": 51874.94, "grado": "A++", "sl": 51874.94, "tp1": 50862.85, "tp2": 50546.54, "estado": "TOCADA"}, {"mercado": "NQ (precios QQQ)", "fecha": "7 oct 2026", "tipo": "Order block + gap 4H", "direccion": "Compra", "bajo": 737.23, "alto": 744, "grado": "A++", "sl": 737.23, "tp1": 760.6, "tp2": 762.56, "estado": "IGUAL"}, {"mercado": "NQ (precios QQQ)", "fecha": "7 oct 2026", "tipo": "Fair value gap 4H", "direccion": "Compra", "bajo": 745.01, "alto": 747.68, "grado": "B", "sl": 737.23, "tp1": 760.6, "tp2": 762.56, "estado": "IGUAL"}, {"mercado": "NQ (precios QQQ)", "fecha": "7 oct 2026", "tipo": "Order block + gap 4H", "direccion": "Compra", "bajo": 747.24, "alto": 753.2, "grado": "A++", "sl": 747.24, "tp1": 760.6, "tp2": 762.56, "estado": "TOCADA"}];
@@ -448,15 +477,16 @@ function aiAsk(question){
     var ctx="[PANEL_HOT_ZONE]\n"+JSON.stringify(panelData())+"\n\n[VELAS]\n"+JSON.stringify(velas)+"\n\n[MAPA_INDICES]\n"+JSON.stringify(INDEX_MAP);
     var msgs=aiHist.slice(-8).concat([{role:"user",content:ctx+"\n\n[PREGUNTA DE YASSER]\n"+question}]);
     return fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cfg.aiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:AI_MODEL,max_tokens:1200,system:AI_PROMPT,messages:msgs})})
+      body:JSON.stringify({model:AI_MODEL,max_tokens:4000,system:AI_PROMPT,messages:msgs})})
     .then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error((j.error&&j.error.message)||("HTTP "+r.status));return j})})
     .then(function(j){var txt=(j.content||[]).filter(function(c){return c.type==="text"}).map(function(c){return c.text}).join("\n").trim();
+      if(!txt)throw new Error("Claude no devolvió texto (motivo: "+(j.stop_reason||"desconocido")+", bloques: "+(j.content||[]).map(function(c){return c.type}).join(",")+")");
       aiHist.push({role:"user",content:question});aiHist.push({role:"assistant",content:txt});if(aiHist.length>16)aiHist=aiHist.slice(-16);return txt})})}
 function postLong(txt,hk){var parts=[],t=txt;while(t.length>1900){var cut=t.lastIndexOf("\n",1900);if(cut<500)cut=1900;parts.push(t.slice(0,cut));t=t.slice(cut)}parts.push(t);
   return parts.reduce(function(p,x){return p.then(function(){return post({content:x},hk)})},Promise.resolve())}
-var DAILY_Q="Haz el mapa del día. Con [VELAS] revisa y actualiza las zonas de BTC, SOL y Oro en 1H y 4H (order blocks y fair value gaps), y menciona Nasdaq (QQQ) y Dow Jones con lo que tengas en [MAPA_INDICES]. Para cada zona: tipo, temporalidad, rango, grado, dirección esperada, SL, TP1, TP2. Termina con las dos zonas a vigilar hoy en la apertura de Nueva York.";
-function aiDaily(){if(!cfg.aiKey||!cfg.hook3)return;aiLog("Preparando el mapa del día…");
-  aiAsk(DAILY_Q).then(function(t){return postLong("🗺️ **Mapa del día**\n"+t,cfg.hook3)}).then(function(){aiLog("Mapa del día enviado a las "+hhmmss(Date.now())+".")}).catch(function(e){aiLog("El mapa del día falló: "+(e&&e.message||e))})}
+var DAILY_Q="Haz el mapa del día. Con [VELAS] revisa y actualiza las zonas de BTC, SOL y Oro en 1H y 4H (order blocks y fair value gaps), y menciona Nasdaq (QQQ) y Dow Jones con lo que tengas en [MAPA_INDICES]. Para cada zona: tipo, temporalidad, rango, grado, dirección esperada, SL, TP1, TP2. Termina con las dos zonas a vigilar hoy en la apertura de Nueva York. "+ZONES_Q;
+function aiDaily(){if(!cfg.aiKey||!cfg.hook3){aiLog(!cfg.aiKey?"Falta la clave de Anthropic.":"Falta el webhook del canal agent.");return}aiLog("Preparando el mapa del día…");
+  aiAsk(DAILY_Q).then(function(t){var r=applyAiZones(t);return postLong("🗺️ **Mapa del día**\n"+r.txt+"\n\n"+(r.n?"✅ Panel actualizado con "+r.n+" zonas nuevas: las alertas ya usan estas.":"⚠️ No pude actualizar las zonas del panel"+(r.err?" ("+r.err+")":"")+"."),cfg.hook3)}).then(function(){aiLog("Mapa del día enviado a las "+hhmmss(Date.now())+".")}).catch(function(e){var m="El mapa del día falló: "+(e&&e.message||e);aiLog(m);post({content:"⚠️ "+m},cfg.hook3).catch(function(){})})}
 var lastDaily="";
 function dailyTick(){var d=new Date(new Date().toLocaleString("en-US",{timeZone:"America/Puerto_Rico"})),key=d.toDateString();
   if(d.getHours()===7&&d.getMinutes()>=48&&lastDaily!==key){lastDaily=key;try{localStorage.setItem("hotzone.daily",key)}catch(e){}aiDaily()}}
@@ -479,7 +509,7 @@ function answer(text){
     if(!PUBLIC_URL)return "El panel todavía no está publicado en internet, así que no hay enlace para otros dispositivos. Estará listo cuando exista el repositorio hotzone en GitHub.";
     var b64=btoa(unescape(encodeURIComponent(JSON.stringify(zones)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
     return "Panel Hot Zone con tus zonas actuales (ábrelo en el celular, laptop o desktop):\n<"+PUBLIC_URL+"#z="+b64+">\nEn esos equipos es solo para mirar: las alertas salen de la Mac mini."}
-  return "Comandos: **zonas**, **precio**, **ordenes**, **flujo**, **link**. Puedes añadir el mercado: btc, sol, oro. Ejemplo: zonas btc";
+  return "Hot Zone "+HZ_VERSION+" · Comandos: **zonas**, **precio**, **ordenes**, **flujo**, **link**, **actualiza zonas**. Mercados: btc, sol, oro. Cualquier otra pregunta la contesta el asesor con Ai.";
 }
 function botConnect(){
   if(bot.ws){bot.stop=true;try{bot.ws.close()}catch(e){}}
@@ -495,12 +525,12 @@ function botConnect(){
     else if(m.op===0){
       if(m.t==="READY")botLog("Agente conectado. Buscando el canal agent…");
       if(m.t==="GUILD_CREATE"&&m.d&&m.d.channels){var c=m.d.channels.filter(function(x){return x.type===0&&/^agent/i.test(x.name||"")})[0];if(c){bot.chan=c.id;botLog("Agente conectado y escuchando el canal agent.")}}
-      if(m.t==="MESSAGE_CREATE"&&m.d&&bot.chan&&m.d.channel_id===bot.chan&&!m.d.webhook_id&&!(m.d.author&&m.d.author.bot)){
+      if(m.t==="MESSAGE_CREATE"&&isLeader()&&m.d&&bot.chan&&m.d.channel_id===bot.chan&&!m.d.webhook_id&&!(m.d.author&&m.d.author.bot)){
         var q=(m.d.content||"").trim(),ql=q.toLowerCase().replace(/^[\/!]/,"");
         var quick=/^(zonas|precio|flujo|[oó]rdenes|ordenes|link|enlace|url|panel|ayuda)\b/.test(ql)&&ql.split(/\s+/).length<=2;
         if(quick||!cfg.aiKey){var txt=answer(q);if(txt.length>1900)txt=txt.slice(0,1900)+"…";
           post({content:txt},cfg.hook3).catch(function(e){botLog("Agente: no pudo contestar ("+(e&&e.message||e)+").")})}
-        else{aiAsk(q).then(function(t){return postLong(t,cfg.hook3)}).catch(function(e){post({content:"No pude analizar ahora: "+(e&&e.message||e)},cfg.hook3)})}}
+        else{var upd=/actualiz|zonas nuevas|nuevas zonas|mapa/i.test(q);aiAsk(upd?q+"\n"+ZONES_Q:q).then(function(t){if(upd){var r=applyAiZones(t);t=r.txt+(r.n?"\n\n✅ Panel actualizado con "+r.n+" zonas.":"")}return postLong(t,cfg.hook3)}).catch(function(e){post({content:"No pude analizar ahora: "+(e&&e.message||e)},cfg.hook3)})}}
     }};
   ws.onclose=function(ev){clearInterval(bot.hb);if(bot.ws!==ws)return;bot.ws=null;
     if(ev.code===4004){botLog("Agente: Discord rechazó el token. Copia el token de nuevo.");return}
@@ -527,13 +557,15 @@ function init(){
   $("aiSave").addEventListener("click",function(){cfg.aiKey=$("aiKey").value.trim();store();aiLog(cfg.aiKey?"Clave guardada. Agente con Ai listo.":"Agente con Ai apagado: falta la clave.")});
   $("aiTest").addEventListener("click",function(){cfg.aiKey=$("aiKey").value.trim();store();if(!cfg.hook3){aiLog("Falta el webhook del canal agent.");return}aiDaily()});
   setInterval(dailyTick,30000);
-  $("botGo").addEventListener("click",function(){cfg.botToken=$("botToken").value.trim();cfg.hook3=$("hook3").value.trim();store();botConnect()});
+  $("botGo").addEventListener("click",function(){cfg.botToken=$("botToken").value.trim();cfg.hook3=$("hook3").value.trim();store();bot.stop=false;if(isLeader())botConnect();else botLog("Otra pestaña del panel es la activa; ciérrala o usa esa.")});
   $("resetZones").addEventListener("click",function(){zones=MAP_ZONES.map(function(z){return Object.assign({},z)});zstate=[];store();renderZones();log("Zonas del Mapa restauradas.")});
   $("addZone").addEventListener("click",function(){zones.push({sym:"BTC",name:"Zona nueva",side:"sell",lo:0,hi:0,sl:0,tp1:0,tp2:0});store();renderZones()});
   $("share").addEventListener("click",function(){var u=shareLink();try{history.replaceState(null,"",u)}catch(e){}
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u).then(function(){log("Enlace copiado. Fíjalo en Discord; al abrirlo en otro equipo carga estas zonas.")},function(){log("Copia el enlace de la barra de direcciones.")});else log("Copia el enlace de la barra de direcciones.")});
   $("resetStats").addEventListener("click",function(){stats={};storeStats()});
-  renderCoins();renderZones();connect();botConnect();lastTick=Date.now();
+  renderCoins();renderZones();connect();leaderTick();setInterval(leaderTick,5000);
+  try{lastBeat=localStorage.getItem("hotzone.beat")||""}catch(e){}setInterval(beatTick,30000);
+  setTimeout(function(){heartbeat("🟢 Panel Hot Zone conectado")},20000);lastTick=Date.now();
   setInterval(function(){var now=Date.now();flushStale(now);watchdog(now);
     if(curWs&&curWs.readyState===1&&now-lastTick<2000)ORDER.forEach(function(k){stat(k).ms+=now-lastTick});lastTick=now;
     var cut=Math.floor((now-960000)/1000);ORDER.forEach(function(k){S[k].secs.forEach(function(v,kk){if(kk<cut)S[k].secs.delete(kk)})});render()},250);
