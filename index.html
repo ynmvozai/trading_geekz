@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hot Zone</title>
+<style>
+:root{--bg:#12151a;--surface:#1a1e25;--line:#2b313b;--ink:#e8ebef;--muted:#96a0ad;--buy:#3ecf8e;--sell:#f26d6d;--warn:#e6b450;--accent:#6aa9ff;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45;padding:20px 16px 48px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-.01em}
+h2{font-size:17px;margin:0;font-weight:700}
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px}
+.status{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--warn)}
+.dot.on{background:var(--buy)} .dot.off{background:var(--sell)}
+.price{font-family:var(--mono);font-size:30px;font-weight:600;font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+.tile span{display:block;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tile b{font-family:var(--mono);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.buy{color:var(--buy)} .sell{color:var(--sell)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+input,select,button{font:inherit;color:var(--ink);background:#10131a;border:1px solid var(--line);border-radius:4px;padding:6px 8px}
+input[type=number]{width:104px;font-family:var(--mono)}
+input.name{width:150px}
+input:focus,select:focus,button:focus{outline:2px solid var(--accent);outline-offset:1px}
+button{cursor:pointer;background:#222834}
+button.primary{background:var(--accent);color:#08101c;border-color:var(--accent);font-weight:600}
+.row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:end}
+label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)}
+.pill{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:3px;background:#262c37;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.pill.hot{background:#4a2a12;color:#ffb469}
+.pill.in{background:#12382b;color:var(--buy)}
+.muted{color:var(--muted);font-size:13px}
+
+.lead{color:var(--muted);font-size:14px;max-width:70ch;margin:6px 0 0}
+.watch{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.z{background:var(--surface);border:2px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.z.sell{border-color:var(--sell)} .z.buy{border-color:var(--buy)}
+.z.sell,.z.buy{color:var(--ink)}
+.z.sell .h>span:first-child{color:var(--sell)} .z.buy .h>span:first-child{color:var(--buy)}
+.z.live{border:3px solid transparent;padding:13px 15px;background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(90deg,#3b82f6 0 50%,#ef4444 50% 100%) border-box}
+.z.live .st{font-weight:700;color:var(--ink)}
+.z .h{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-weight:700}
+.z .rng{font-family:var(--mono);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.z .lv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-family:var(--mono);font-size:13px}
+.z .lv span{display:block;font-size:10.5px;letter-spacing:.06em;color:var(--muted)}
+.z .st{font-size:13.5px} .z .st b{color:var(--warn)}
+.z .nt{font-size:12.5px;color:var(--muted)}
+.pill.g{background:#2a2440;color:#c4b0ff}
+details.card>summary{cursor:pointer;font-weight:700;font-size:17px}
+details.card[open]>summary{margin-bottom:4px}
+#log{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>Hot Zone</h1>
+      <div class="status"><span class="dot" id="dot"></span><span id="conn">Conectando a Binance…</span></div>
+      <p class="lead">Estas son tus zonas a vigilar. Cuando el precio entra en una y pasa una orden grande, la tarjeta se enciende y te llega la alerta a Discord.</p>
+    </div>
+  </div>
+
+  <div>
+    <h2 style="margin-bottom:10px">Zonas a vigilar <span class="muted" id="zstamp"></span></h2>
+    <div class="watch" id="watch"></div>
+  </div>
+
+  <div class="card">
+    <h2>Órdenes entrando</h2>
+    <div class="row">
+      <label>Ventana<select id="fWin"><option value="300000">5 min</option><option value="900000">15 min</option><option value="3600000" selected>1 hora</option><option value="14400000">4 horas</option><option value="86400000">24 horas</option></select></label>
+      <label>Mercado<select id="fSym"><option value="">Todos</option></select></label>
+      <label>Lado<select id="fSide"><option value="">Compras y ventas</option><option value="buy">Solo compras</option><option value="sell">Solo ventas</option></select></label>
+      <label>Monto mínimo<select id="fMin"><option value="250000">$250K</option><option value="500000">$500K</option><option value="1000000" selected>$1M</option><option value="3000000">$3M</option><option value="6000000">$6M</option></select></label>
+      <label>Dónde<select id="fZone"><option value="">Cualquier precio</option><option value="1">Solo dentro de una zona</option></select></label>
+    </div>
+    <div class="muted" id="fSum">—</div>
+    <div class="scroll" style="max-height:420px;overflow-y:auto"><table>
+      <thead><tr><th>Hora</th><th>Mercado</th><th>Lado</th><th>Monto</th><th>Precio</th><th>Zona</th><th>Alerta</th></tr></thead>
+      <tbody id="orders"></tbody>
+    </table></div>
+    <span class="muted">Se guardan las órdenes de $250K o más de las últimas 24 horas, mientras el panel está abierto.</span>
+  </div>
+
+  <div class="card">
+    <h2>Ai Crypto · modo simulado</h2>
+    <span class="muted">Entra solo, sin dinero real, cuando se cumple el gatillo: precio dentro de una zona A++ y una orden grande del mismo lado que la zona. SL y TP1 de la zona. Sirve para medir si el gatillo gana antes de pensar en dinero real.</span>
+    <div class="muted" id="simSum">—</div>
+    <div class="scroll"><table>
+      <thead><tr><th>Entrada</th><th>Mercado</th><th>Lado</th><th>Precio entrada</th><th>SL</th><th>TP</th><th>Estado</th><th>Resultado</th></tr></thead>
+      <tbody id="sim"></tbody>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h2>Mercados</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Mercado</th><th>Precio</th><th>Compras 5 min</th><th>Ventas 5 min</th><th>Neto 5 min</th><th>Mayor orden 15 min</th><th>Racha</th><th>Mínimo (USD)</th><th>Máximo (USD)</th></tr></thead>
+      <tbody id="coins"></tbody>
+    </table></div>
+    <span class="muted">Mínimo y máximo de una orden grande, por mercado. Regla: órdenes de $3M a $6M en todos los mercados.</span>
+  </div>
+
+  <details class="card">
+    <summary>Editar zonas</summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Mercado</th><th>Zona</th><th>Lado</th><th>Bajo</th><th>Alto</th><th>SL</th><th>TP1</th><th>TP2</th><th></th></tr></thead>
+      <tbody id="zones"></tbody>
+    </table></div>
+    <div class="row"><button id="addZone">Añadir zona</button><button id="share">Copiar enlace con mis zonas</button><button id="resetZones">Volver a las zonas del Mapa</button></div>
+  </details>
+
+  <details class="card">
+    <summary>Ajustes y Discord</summary>
+    <div class="row">
+      <label>Webhook canal crypto (BTC, SOL)<input id="hook" type="password" placeholder="https://discord.com/api/webhooks/…" style="width:320px;max-width:100%"></label>
+      <button id="test">Enviar prueba</button>
+    </div>
+    <div class="row">
+      <label>Webhook canal oro<input id="hook2" type="password" placeholder="https://discord.com/api/webhooks/…" style="width:320px;max-width:100%"></label>
+      <button id="test2">Enviar prueba</button>
+    </div>
+    <div class="row">
+      <label>Una orden = ventana (ms)<input id="win" type="number" step="50"></label>
+      <label>Racha: minutos<input id="streakMin" type="number" step="1"></label>
+      <label>Alertar<select id="scope"><option value="zone">solo dentro de zona</option><option value="all">siempre</option></select></label>
+      <button class="primary" id="save">Guardar ajustes</button>
+    </div>
+    <div class="row"><button class="primary" id="macOn">Activar avisos en esta Mac</button><button id="macTest">Probar aviso</button><span class="muted" id="macLog">Avisos en la Mac apagados.</span></div>
+    <div id="log">Sin alertas enviadas.</div>
+    <div class="row">
+      <label>Webhook canal ai-crypto<input id="hook4" type="password" placeholder="https://discord.com/api/webhooks/…" style="width:320px;max-width:100%"></label>
+      <button id="test4">Enviar prueba</button>
+    </div>
+    <h2 style="margin-top:8px">Agente (te contesta en el canal agent)</h2>
+    <div class="row">
+      <label>Token del bot<input id="botToken" type="password" placeholder="token del bot de Discord" style="width:320px;max-width:100%"></label>
+      <label>Webhook canal agent<input id="hook3" type="password" placeholder="https://discord.com/api/webhooks/…" style="width:320px;max-width:100%"></label>
+      <button id="botGo">Conectar agente</button>
+    </div>
+    <div class="muted" id="botLog">Agente apagado.</div>
+    <span class="muted">En el canal agent escribe: zonas, precio, ordenes, flujo, link o ayuda. Puedes añadir el mercado: "zonas btc", "ordenes oro".</span>
+  </details>
+
+  <details class="card">
+    <summary>Medición de órdenes</summary>
+    <div class="scroll"><table>
+      <thead><tr><th>Mercado</th><th>Horas medidas</th><th>≥ $250K</th><th>≥ $500K</th><th>≥ $1M</th><th>≥ $3M</th><th>≥ $6M</th><th>Mayor vista</th></tr></thead>
+      <tbody id="stats"></tbody>
+    </table></div>
+    <div class="row"><button id="resetStats">Reiniciar medición</button><span class="muted">Cuenta las órdenes de cada tamaño mientras el panel está abierto, para fijar los mínimos reales.</span></div>
+  </details>
+</div>
+
+<script>
+var CFG_KEY="hotzone.cfg.v1", ZONE_KEY="hotzone.zones.v1", STAT_KEY="hotzone.stats.v1", FEED_KEY="hotzone.feed.v1", SIM_KEY="hotzone.sim.v1";
+var SYMS={
+ BTC:{stream:"btcusdt",label:"BTCUSDT",mult:1,dec:1,min:3000000,max:6000000},
+ SOL:{stream:"solusdt",label:"SOLUSDT",mult:1,dec:2,min:3000000,max:6000000},
+ XAU:{stream:"xauusdt",label:"XAUUSDT",mult:1,dec:2,min:3000000,max:6000000,ch:2}
+};
+var NAMES={BTC:"Bitcoin",SOL:"Solana",XAU:"Oro"};
+var PUBLIC_URL="https://ynmvozai.github.io/trading_geekz/"; // se llena cuando el panel esté publicado en GitHub Pages
+var ZSTAMP="7 oct 2026, 6:50 PM · v2";
+var MAP_ZONES=[
+ {sym:"BTC",name:"Order block 1H",grade:"A++",estado:"NUEVA",side:"sell",lo:85332,hi:85617.9,sl:85845.9,tp1:84008.7,tp2:82724.2,nota:"Última vela alcista antes de la caída que rompió 84,949 y 83,855. La línea de oferta 4H (85,589) pasa por dentro."},
+ {sym:"BTC",name:"Fair value gap 4H",grade:"B",estado:"NUEVA",side:"sell",lo:84368,hi:85332,sl:85845.9,tp1:83012.5,tp2:82724.2,nota:"Gap de la caída del 7 oct, sin llenar. Relación pobre desde el borde bajo; mejora mientras más arriba entre el precio."},
+ {sym:"XAU",name:"Fair value gap 4H",grade:"B",estado:"NUEVA",side:"sell",lo:4133.24,hi:4139.88,sl:4169.4,tp1:4102.34,tp2:4069.81,nota:"Gap de la caída del 7 oct, sin tocar. La zona de venta más cercana. Relación a TP1 pobre (0.9)."},
+ {sym:"XAU",name:"Order block + gap 4H",grade:"A++",estado:"NUEVA",side:"sell",lo:4155.2,hi:4179.15,sl:4179.15,tp1:4102.34,tp2:4069.81,nota:"Última vela alcista antes de la caída que rompió 4,108.83. El SL es el borde alto: queda justo."},
+ {sym:"XAU",name:"Order block 4H",grade:"A++",estado:"TOCADA",side:"sell",lo:4177.84,hi:4194.64,sl:4225.7,tp1:4102.34,tp2:4069.81,nota:"Tocada el 6 oct y aguantó. Una zona tocada pierde fuerza."}
+];
+var ORDER=["BTC","SOL","XAU"], BUCKETS=[250000,500000,1000000,3000000,6000000];
+var cfg={hook:"",hook2:"",hook3:"",hook4:"",botToken:"",win:250,streakMin:15,scope:"zone",lim:{}};
+var zones=MAP_ZONES.map(function(z){return Object.assign({},z)}), STAMP_KEY="hotzone.stamp.v1";
+var S={}, big=[], sendQueue=[], sending=false, zstate=[], stats={}, feed=[], feedDirty=true, sim={open:[],closed:[]}, simDirty=true;
+ORDER.forEach(function(k){S[k]={price:null,secs:new Map(),bursts:{buy:null,sell:null},streak:null}});
+function lim(sym){var l=cfg.lim[sym]||{};return {min:l.min>0?l.min:SYMS[sym].min,max:l.max>0?l.max:SYMS[sym].max}}
+function stat(sym){return stats[sym]||(stats[sym]={ms:0,c:[0,0,0,0,0],top:0})}
+
+function load(){try{var c=JSON.parse(localStorage.getItem(CFG_KEY)||"null");if(c){Object.assign(cfg,c);if(!cfg.lim)cfg.lim={};
+    if(c.min>0||c.max>0){cfg.lim.BTC={min:c.min,max:c.max};delete cfg.min;delete cfg.max;delete cfg.symbol}}
+  if(!cfg.limV2){cfg.lim={};cfg.limV2=true;try{localStorage.setItem(CFG_KEY,JSON.stringify(cfg))}catch(e){}}
+  var z=JSON.parse(localStorage.getItem(ZONE_KEY)||"null");if(Array.isArray(z)&&localStorage.getItem(STAMP_KEY)===ZSTAMP)zones=z;
+  localStorage.setItem(STAMP_KEY,ZSTAMP);
+  zones.forEach(function(z){if(!SYMS[z.sym])z.sym="BTC"});
+  var st=JSON.parse(localStorage.getItem(STAT_KEY)||"null");if(st&&typeof st==="object")stats=st;
+  var sm=JSON.parse(localStorage.getItem(SIM_KEY)||"null");if(sm&&Array.isArray(sm.open)&&Array.isArray(sm.closed))sim=sm;
+  var fd=JSON.parse(localStorage.getItem(FEED_KEY)||"null");if(Array.isArray(fd))feed=fd.filter(function(o){return o&&SYMS[o.sym]&&Date.now()-o.t<86400000})}catch(e){}
+  try{var m=/[#&]z=([^&]+)/.exec(location.hash||"");if(m){var hz=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,"+").replace(/_/g,"/")))));
+    if(Array.isArray(hz)){zones=hz.filter(function(z){return z&&typeof z==="object"}).map(function(z){return {sym:SYMS[z.sym]?z.sym:"BTC",name:String(z.name||"Zona").slice(0,60),grade:String(z.grade||"").slice(0,4),estado:String(z.estado||"").slice(0,12),nota:String(z.nota||"").slice(0,240),side:z.side==="buy"?"buy":"sell",lo:+z.lo||0,hi:+z.hi||0,sl:+z.sl||0,tp1:+z.tp1||0,tp2:+z.tp2||0}});store()}}}catch(e){}}
+function shareLink(){var b=btoa(unescape(encodeURIComponent(JSON.stringify(zones)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");return location.href.split("#")[0]+"#z="+b}
+function store(){try{localStorage.setItem(CFG_KEY,JSON.stringify(cfg));localStorage.setItem(ZONE_KEY,JSON.stringify(zones))}catch(e){}}
+function storeStats(){try{localStorage.setItem(STAT_KEY,JSON.stringify(stats))}catch(e){}}
+function $(id){return document.getElementById(id)}
+function usd(v){if(v==null||!isFinite(v))return "—";var a=Math.abs(v),s=v<0?"-":"";if(a>=1e6)return s+"$"+(a/1e6).toFixed(2)+"M";if(a>=1e3)return s+"$"+(a/1e3).toFixed(0)+"K";return s+"$"+a.toFixed(0)}
+function px(v,sym){if(v==null||!isFinite(v))return "—";var d=SYMS[sym||"BTC"].dec;return d>4?Number(v).toFixed(d):Number(v).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d})}
+function hhmmss(t){return new Date(t).toLocaleTimeString("es-PR",{hour12:false})}
+function sideEs(s){return s==="buy"?"COMPRA":"VENTA"}
+
+function zoneAt(sym,p){for(var i=0;i<zones.length;i++){var z=zones[i];if(z.sym===sym&&z.hi>0&&p>=Math.min(z.lo,z.hi)&&p<=Math.max(z.lo,z.hi))return i}return -1}
+function flow(sym,msBack,now){var from=Math.floor((now-msBack)/1000),b=0,s=0;S[sym].secs.forEach(function(v,k){if(k>=from){b+=v.buy;s+=v.sell}});return {buy:b,sell:s,net:b-s}}
+
+function onTrade(sym,rawP,rawQ,T,sellAggressor){
+  var m=SYMS[sym].mult, p=rawP/m, q=rawQ*m, st8=S[sym];
+  var side=sellAggressor?"sell":"buy", n=p*q; st8.price=p;
+  var k=Math.floor(T/1000), e=st8.secs.get(k); if(!e){e={buy:0,sell:0};st8.secs.set(k,e)} e[side]+=n;
+  var zi=zoneAt(sym,p);
+  for(var i=0;i<zones.length;i++){if(zones[i].sym!==sym)continue;var st=zstate[i]||(zstate[i]={inside:false,buy:0,sell:0,since:0});
+    if(i===zi){if(!st.inside){st.inside=true;st.buy=0;st.sell=0;st.since=T}st[side]+=n}else if(st.inside){st.inside=false}}
+  if(sim.open.length)simCheck(sym,p,T);
+  var b=st8.bursts[side];
+  if(b&&T-b.first<=cfg.win){b.usd+=n;b.qty+=q;b.last=T;b.n++}
+  else{if(b)finalize(b);st8.bursts[side]={sym:sym,side:side,usd:n,qty:q,first:T,last:T,n:1}}
+}
+function flushStale(now){ORDER.forEach(function(sym){["buy","sell"].forEach(function(s){var b=S[sym].bursts[s];if(b&&now-b.first>cfg.win){S[sym].bursts[s]=null;finalize(b)}})})}
+function finalize(b){
+  var st8=S[b.sym], L=lim(b.sym);
+  if(st8.bursts[b.side]===b)st8.bursts[b.side]=null;
+  if(b.usd>=BUCKETS[0]){var sx=stat(b.sym);for(var i=0;i<BUCKETS.length;i++)if(b.usd>=BUCKETS[i])sx.c[i]++;if(b.usd>sx.top)sx.top=b.usd}
+  var vwap=b.usd/b.qty, zi=zoneAt(b.sym,vwap), fe=null;
+  if(b.usd>=BUCKETS[0]){fe={t:b.first,sym:b.sym,side:b.side,usd:b.usd,price:vwap,zn:zi>=0&&zones[zi]?zones[zi].name:"",alert:""};feed.unshift(fe);if(feed.length>6000)feed.pop();feedDirty=true}
+  if(b.usd<L.min)return null;
+  var win=cfg.streakMin*60000, sk=st8.streak, it={t:b.first,usd:b.usd,price:vwap};
+  if(sk&&sk.side===b.side&&b.first-sk.last<=win){sk.count++;sk.usd+=b.usd;sk.last=b.first;sk.list.push(it);if(sk.list.length>8)sk.list.shift()}
+  else sk=st8.streak={side:b.side,count:1,usd:b.usd,last:b.first,list:[it]};
+  var o={sym:b.sym,t:b.first,side:b.side,usd:b.usd,price:vwap,zone:zi,count:sk.count,total:sk.usd,over:b.usd>L.max,max:L.max,alert:"—",list:sk.list.slice(),fe:fe};
+  big.unshift(o); if(big.length>80)big.pop();
+  if(zi>=0)simOpen(o,zi);
+  if(zi>=0||cfg.scope==="all"){setAlert(o,"en cola");queueAlert(o)}
+  else setAlert(o,"fuera de zona");
+  return o;
+}
+
+function buildMessage(o){
+  var z=o.zone>=0?zones[o.zone]:null, st=o.zone>=0?zstate[o.zone]:null, f=flow(o.sym,300000,o.t), y=o.sym;
+  var hot=o.count>=2, title=(z?"HOT ZONE":"ORDEN GRANDE")+" · "+y+" · "+sideEs(o.side)+" "+usd(o.usd);
+  var fields=[
+    {name:"Dinero de esta orden",value:usd(o.usd)+(o.over?" (sobre el máximo de "+usd(o.max)+")":""),inline:true},
+    {name:"Precio",value:px(o.price,y),inline:true},
+    {name:"Racha del mismo lado",value:o.count+(o.count===1?" orden":" órdenes seguidas")+" · "+usd(o.total),inline:true},
+    {name:o.list.length>1?"Las "+o.list.length+" órdenes de la racha":"Orden",value:o.list.map(function(x,n){return (n+1)+". "+hhmmss(x.t)+" · "+usd(x.usd)+" · "+px(x.price,y)}).join("\n"),inline:false},
+    {name:"Flujo últimos 5 min",value:"Compras "+usd(f.buy)+" · Ventas "+usd(f.sell)+" · Neto "+usd(f.net),inline:false}
+  ];
+  if(z){
+    fields.push({name:"Zona",value:z.name+" · "+px(z.lo,y)+" – "+px(z.hi,y)+" · esperas "+(z.side==="buy"?"compra":"venta"),inline:false});
+    if(st)fields.push({name:"Dinero dentro de la zona",value:"Compras "+usd(st.buy)+" · Ventas "+usd(st.sell),inline:false});
+    fields.push({name:"SL / TP1 / TP2",value:px(z.sl,y)+" / "+px(z.tp1,y)+" / "+px(z.tp2,y),inline:false});
+  }
+  return {content:title+(hot?" · racha de "+o.count:""),embeds:[{title:title,color:o.side==="buy"?0x3ecf8e:0xf26d6d,fields:fields,
+    footer:{text:"Binance futuros "+SYMS[y].label+" · "+new Date(o.t).toLocaleString("es-PR",{timeZone:"America/Puerto_Rico"})+" · validar en tu gráfico"}}]};
+}
+function storeSim(){try{if(sim.closed.length>500)sim.closed.length=500;localStorage.setItem(SIM_KEY,JSON.stringify(sim))}catch(e){}}
+function simPost(txt){if(cfg.hook4)post({content:txt},cfg.hook4).catch(function(){})}
+function simOpen(o,zi){
+  var z=zones[zi];if(!z||z.grade!=="A++"||o.side!==z.side)return;
+  if(sim.open.some(function(t){return t.sym===o.sym&&t.zname===z.name&&t.lo===z.lo}))return;
+  var e=o.price,R=Math.abs(e-z.sl);if(!(R>0))return;
+  if(z.side==="sell"&&!(z.sl>e&&z.tp1<e))return;if(z.side==="buy"&&!(z.sl<e&&z.tp1>e))return;
+  var t={id:o.t+o.sym,sym:o.sym,side:z.side,zname:z.name,lo:z.lo,entry:e,sl:z.sl,tp:z.tp1,t:o.t,usd:o.usd,R:R};
+  sim.open.push(t);simDirty=true;storeSim();
+  simPost("🤖 **Ai Crypto · SIMULADO · ENTRADA**\n"+(NAMES[t.sym]||t.sym)+" · "+sideEs(t.side)+" en "+px(e,t.sym)+"\nZona "+t.zname+" (A++) · gatillo: orden de "+usd(o.usd)+"\nSL "+px(t.sl,t.sym)+" · TP "+px(t.tp,t.sym)+" · relación 1 : "+(Math.abs(t.tp-e)/R).toFixed(1)+"\nSin dinero real.");
+}
+function simCheck(sym,p,T){
+  for(var i=sim.open.length-1;i>=0;i--){var t=sim.open[i];if(t.sym!==sym)continue;
+    var hitSL=t.side==="sell"?p>=t.sl:p<=t.sl, hitTP=t.side==="sell"?p<=t.tp:p>=t.tp;
+    if(!hitSL&&!hitTP)continue;
+    t.out=hitSL?"SL":"TP";t.exit=hitSL?t.sl:t.tp;t.r=hitSL?-1:Math.abs(t.tp-t.entry)/t.R;t.end=T;
+    sim.open.splice(i,1);sim.closed.unshift(t);simDirty=true;storeSim();
+    simPost((hitSL?"🔴":"🟢")+" **Ai Crypto · SIMULADO · CIERRE "+t.out+"**\n"+(NAMES[t.sym]||t.sym)+" · "+sideEs(t.side)+" "+px(t.entry,t.sym)+" → "+px(t.exit,t.sym)+" · "+(t.r>=0?"+":"")+t.r.toFixed(1)+"R\n"+simStats());
+  }
+}
+function simStats(){var n=sim.closed.length,w=sim.closed.filter(function(t){return t.r>0}).length,r=sim.closed.reduce(function(a,t){return a+t.r},0);
+  return n?n+" operaciones cerradas · "+Math.round(w/n*100)+"% ganadoras · total "+(r>=0?"+":"")+r.toFixed(1)+"R"+(sim.open.length?" · "+sim.open.length+" abiertas":""):"Sin operaciones cerradas todavía"+(sim.open.length?" · "+sim.open.length+" abiertas":"")+"."}
+function renderSim(){
+  simDirty=false;$("simSum").textContent=simStats();var tb=$("sim");tb.textContent="";
+  var rows=sim.open.concat(sim.closed.slice(0,30));
+  if(!rows.length){var tr=mk("tr"),td=mk("td","muted","Todavía no se ha dado el gatillo.");td.colSpan=8;tr.appendChild(td);tb.appendChild(tr);return}
+  rows.forEach(function(t){var tr=mk("tr"),open=!t.out;
+    [[new Date(t.t).toLocaleString("es-PR",{hour12:false,month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}),"n"],[NAMES[t.sym]||t.sym,""],[sideEs(t.side),t.side],[px(t.entry,t.sym),"n"],[px(t.sl,t.sym),"n"],[px(t.tp,t.sym),"n"],[open?"abierta":"cerrada en "+t.out,""],[open?"—":(t.r>=0?"+":"")+t.r.toFixed(1)+"R","n "+(open?"":(t.r>=0?"buy":"sell"))]]
+    .forEach(function(c){tr.appendChild(mk("td",c[1],c[0]))});tb.appendChild(tr)});
+}
+function setAlert(o,t){o.alert=t;if(o.fe)o.fe.alert=t;feedDirty=true}
+var actx=null,flashT=null,baseTitle="Hot Zone";
+function macLog(t){var e=$("macLog");if(e)e.textContent=t}
+function beep(){try{if(!actx)return;if(actx.state==="suspended")actx.resume();var t0=actx.currentTime;[880,660,880].forEach(function(f,i){var o=actx.createOscillator(),g=actx.createGain();o.frequency.value=f;o.type="sine";g.gain.setValueAtTime(0.0001,t0+i*0.22);g.gain.exponentialRampToValueAtTime(0.35,t0+i*0.22+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t0+i*0.22+0.2);o.connect(g);g.connect(actx.destination);o.start(t0+i*0.22);o.stop(t0+i*0.22+0.21)})}catch(e){}}
+function flash(txt){clearInterval(flashT);var n=0;flashT=setInterval(function(){document.title=(n++%2)?baseTitle:txt;if(n>40){clearInterval(flashT);document.title=baseTitle}},700)}
+function macAlert(o){
+  if(!cfg.macOn)return;var z=o.zone>=0?zones[o.zone]:null,y=o.sym;
+  var title=(z?"HOT ZONE":"ORDEN GRANDE")+" · "+(NAMES[y]||y)+" · "+sideEs(o.side)+" "+usd(o.usd);
+  var body=(o.count>1?o.count+" órdenes seguidas · "+usd(o.total)+"\n":"")+"Precio "+px(o.price,y)+(z?"\nZona "+z.name+" · "+px(z.lo,y)+" – "+px(z.hi,y):"");
+  beep();flash("🔥 "+title);
+  try{if(window.Notification&&Notification.permission==="granted"){var n=new Notification(title,{body:body,requireInteraction:true,tag:"hz"+o.t});n.onclick=function(){window.focus();n.close()}}}catch(e){}
+}
+function macEnable(){
+  cfg.macOn=true;store();
+  try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume()}catch(e){}
+  var done=function(p){macLog(p==="granted"?"Avisos en la Mac activos: notificación de macOS + sonido.":"Avisos en la Mac activos solo con sonido y la pestaña parpadeando (Chrome no dio permiso de notificaciones para esta página).")};
+  try{if(window.Notification&&Notification.permission!=="granted"){var r=Notification.requestPermission(done);if(r&&r.then)r.then(done)}else done(window.Notification?Notification.permission:"no")}catch(e){done("no")}
+}
+function queueAlert(o){macAlert(o);sendQueue.push(o);pump()}
+function pump(){
+  if(sending||!sendQueue.length)return;
+  var o=sendQueue.shift();
+  var hk=SYMS[o.sym].ch===2?cfg.hook2:cfg.hook;
+  if(!hk){setAlert(o,"falta el webhook");return pump()}
+  sending=true;
+  post(buildMessage(o),hk).then(function(){setAlert(o,"enviada");log("Alerta enviada a Discord a las "+hhmmss(Date.now())+".")})
+    .catch(function(e){setAlert(o,"falló");log("Discord rechazó la alerta: "+(e&&e.message||e))})
+    .then(function(){setTimeout(function(){sending=false;pump()},1500)});
+}
+function post(body,hk){return fetch(hk,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status)})}
+function log(t){var l=$("log");if(l)l.textContent=t}
+
+function cell(tr,cls,id){var td=document.createElement("td");if(cls)td.className=cls;if(id)td.id=id;tr.appendChild(td);return td}
+function renderCoins(){
+  var tb=$("coins");tb.textContent="";var sb=$("stats");sb.textContent="";
+  ORDER.forEach(function(k){
+    var tr=document.createElement("tr");cell(tr,"").textContent=NAMES[k]||k;
+    ["px","b5","s5","n5","big","stk"].forEach(function(c){cell(tr,"n","c"+c+k)});
+    ["min","max"].forEach(function(f){var x=document.createElement("input");x.type="number";x.step="50000";x.id="l"+f+k;x.value=lim(k)[f];
+      x.addEventListener("change",function(){var v=parseFloat(x.value);if(!(v>0)){x.value=lim(k)[f];return}var l=cfg.lim[k]||(cfg.lim[k]={});l[f]=v;store();log("Límite de "+k+" guardado.")});cell(tr,"").appendChild(x)});
+    tb.appendChild(tr);
+    var sr=document.createElement("tr");cell(sr,"").textContent=NAMES[k]||k;for(var i=0;i<7;i++)cell(sr,"n","st"+i+k);sb.appendChild(sr);
+  });
+}
+function renderZones(){
+  var tb=$("zones");tb.textContent="";
+  zones.forEach(function(z,i){
+    var tr=document.createElement("tr");
+    var tdY=document.createElement("td"),sy=document.createElement("select");sy.id="z"+i+"sym";
+    ORDER.forEach(function(k){var op=document.createElement("option");op.value=k;op.textContent=k;sy.appendChild(op)});
+    sy.value=z.sym;sy.addEventListener("change",function(){z.sym=sy.value;zstate[i]=null;store();renderZones()});tdY.appendChild(sy);tr.appendChild(tdY);
+    function inp(key,cls,type){var td=document.createElement("td"),x=document.createElement("input");x.type=type||"number";if(cls)x.className=cls;x.value=z[key];x.id="z"+i+key;x.step="any";
+      x.addEventListener("change",function(){z[key]=type==="text"?x.value:(parseFloat(x.value)||0);store();renderWatch()});td.appendChild(x);return td}
+    tr.appendChild(inp("name","name","text"));
+    var tdS=document.createElement("td"),sel=document.createElement("select");sel.id="z"+i+"side";
+    [["sell","Venta"],["buy","Compra"]].forEach(function(o){var op=document.createElement("option");op.value=o[0];op.textContent=o[1];sel.appendChild(op)});
+    sel.value=z.side;sel.addEventListener("change",function(){z.side=sel.value;store();renderWatch()});tdS.appendChild(sel);tr.appendChild(tdS);
+    ["lo","hi","sl","tp1","tp2"].forEach(function(k){tr.appendChild(inp(k))});
+    var del=document.createElement("td"),b=document.createElement("button");b.textContent="Quitar";b.addEventListener("click",function(){zones.splice(i,1);zstate.splice(i,1);store();renderZones()});del.appendChild(b);tr.appendChild(del);
+    tb.appendChild(tr);
+  });
+  if(!zones.length){var tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=9;td.className="muted";td.textContent="Sin zonas.";tr.appendChild(td);tb.appendChild(tr)}
+  renderWatch();
+}
+function mk(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+function renderWatch(){
+  var w=$("watch");w.textContent="";$("zstamp").textContent="· del Mapa de Zonas, "+ZSTAMP.replace(" · v2","");
+  zones.forEach(function(z,i){
+    var y=z.sym,c=mk("div","z "+z.side);c.id="zc"+i;
+    var h=mk("div","h");h.appendChild(mk("span",null,(NAMES[y]||y)+" · "+(z.side==="buy"?"COMPRA":"VENTA")));
+    if(z.grade)h.appendChild(mk("span","pill g",z.grade));if(z.estado)h.appendChild(mk("span","pill",z.estado));c.appendChild(h);
+    c.appendChild(mk("div","muted","Tipo de zona: "+z.name));
+    var ex=mk("div","st");ex.appendChild(document.createTextNode("Se espera que el precio "));ex.appendChild(mk("strong",null,z.side==="buy"?"SUBA ↑":"BAJE ↓"));ex.appendChild(document.createTextNode(" desde aquí hacia "+px(z.tp1,y)));c.appendChild(ex);
+    c.appendChild(mk("div","rng",px(z.lo,y)+" – "+px(z.hi,y)));
+    var lv=mk("div","lv");[["SL",z.sl],["TP1",z.tp1],["TP2",z.tp2]].forEach(function(a){var d=mk("div");d.appendChild(mk("span",null,a[0]));d.appendChild(document.createTextNode(px(a[1],y)));lv.appendChild(d)});c.appendChild(lv);
+    var st=mk("div","st");st.id="zs"+i;c.appendChild(st);
+    if(z.nota)c.appendChild(mk("div","nt",z.nota));
+    w.appendChild(c);
+  });
+  ORDER.forEach(function(k){if(!zones.some(function(z){return z.sym===k})){var c=mk("div","z");c.appendChild(mk("div","h",NAMES[k]||k));
+    c.appendChild(mk("div","nt",k==="SOL"?"Sin zonas todavía. Llegan con el análisis diario de las 7:48 AM.":"Sin zonas válidas ahora mismo."));w.appendChild(c)}});
+}
+function zoneStatus(z,i){
+  var p=S[z.sym].price,st=zstate[i];if(p==null)return ["Esperando precio…",false];
+  var lo=Math.min(z.lo,z.hi),hi=Math.max(z.lo,z.hi);
+  if(p>=lo&&p<=hi)return ["PRECIO DENTRO · "+px(p,z.sym)+" · compras "+usd(st?st.buy:0)+" · ventas "+usd(st?st.sell:0),true];
+  var edge=p<lo?lo:hi,d=Math.abs(edge-p)/p*100;
+  return ["Precio "+px(p,z.sym)+" · a "+d.toFixed(d<1?2:1)+"% de la zona ("+(p<lo?"tiene que subir":"tiene que bajar")+")",false];
+}
+function set(id,t,cls){var e=$(id);if(!e)return;e.textContent=t;if(cls!=null)e.className="n "+cls}
+function render(){
+  var now=Date.now();
+  ORDER.forEach(function(k){
+    var f=flow(k,300000,now);set("cpx"+k,px(S[k].price,k));set("cb5"+k,usd(f.buy),"buy");set("cs5"+k,usd(f.sell),"sell");set("cn5"+k,usd(f.net),f.net>=0?"buy":"sell");
+    var top=null;big.forEach(function(o){if(o.sym===k&&now-o.t<=900000&&(!top||o.usd>top.usd))top=o});set("cbig"+k,top?usd(top.usd):"—",top?top.side:"");
+    var sk=S[k].streak,live=sk&&now-sk.last<=cfg.streakMin*60000;set("cstk"+k,live?sk.count+" × "+sideEs(sk.side)+" · "+usd(sk.usd):"—",live?sk.side:"");
+    var sx=stat(k);set("st0"+k,(sx.ms/3600000).toFixed(1));for(var i=0;i<5;i++)set("st"+(i+1)+k,String(sx.c[i]));set("st6"+k,sx.top?usd(sx.top):"—");
+  });
+  zones.forEach(function(z,i){var e=$("zs"+i),c=$("zc"+i);if(!e||!c)return;var r=zoneStatus(z,i);e.textContent=r[0];
+    var hot=r[1]&&big.some(function(o){return o.zone===i&&now-o.t<=900000});c.className="z "+z.side+(r[1]?" live":"");
+    if(hot){e.textContent="";e.appendChild(mk("b",null,"HOT ZONE · "));e.appendChild(document.createTextNode(r[0]))}});
+  if(feedDirty||now-lastFeed>1000)renderFeed(now);
+  if(simDirty)renderSim();
+}
+var lastFeed=0;
+function renderFeed(now){
+  feedDirty=false;lastFeed=now;
+  var w=+$("fWin").value,sy=$("fSym").value,sd=$("fSide").value,mn=+$("fMin").value,zo=$("fZone").value,rows=[],b=0,s=0;
+  for(var i=0;i<feed.length;i++){var o=feed[i];if(now-o.t>w)break;if(sy&&o.sym!==sy)continue;if(sd&&o.side!==sd)continue;if(o.usd<mn)continue;if(zo&&!o.zn)continue;rows.push(o);if(o.side==="buy")b+=o.usd;else s+=o.usd}
+  var net=b-s;$("fSum").textContent=rows.length+(rows.length===1?" orden":" órdenes")+" · compras "+usd(b)+" · ventas "+usd(s)+" · neto "+usd(net)+(rows.length?(net>=0?" a favor de compras":" a favor de ventas"):"");
+  var tb=$("orders");tb.textContent="";
+  if(!rows.length){var tr=mk("tr"),td=mk("td","muted","Ninguna orden con estos filtros todavía.");td.colSpan=7;tr.appendChild(td);tb.appendChild(tr);return}
+  rows.slice(0,300).forEach(function(o){var tr=mk("tr");
+    [[new Date(o.t).toLocaleTimeString("es-PR",{hour12:false}),"n"],[NAMES[o.sym]||o.sym,""],[sideEs(o.side),o.side],[usd(o.usd),"n "+o.side],[px(o.price,o.sym),"n"],[o.zn||"—",""],[o.alert||"—",""]]
+    .forEach(function(c){var td=mk("td",c[1],c[0]);tr.appendChild(td)});tb.appendChild(tr)});
+}
+function storeFeed(){try{var cut=Date.now()-86400000;while(feed.length&&feed[feed.length-1].t<cut)feed.pop();localStorage.setItem(FEED_KEY,JSON.stringify(feed.slice(0,3000)))}catch(e){}}
+
+var BY_STREAM={};ORDER.forEach(function(k){BY_STREAM[SYMS[k].stream+"@aggTrade"]=k});
+var curWs=null,lastMsg=0,lastTick=0;
+function connect(){
+  var url="wss://fstream.binance.com/market/stream?streams="+ORDER.map(function(k){return SYMS[k].stream+"@aggTrade"}).join("/"), ws;
+  try{ws=new WebSocket(url)}catch(e){setConn("off","No se pudo abrir la conexión.");return setTimeout(connect,5000)}
+  setConn("","Conectando a Binance…");curWs=ws;lastMsg=Date.now();
+  ws.onopen=function(){lastMsg=Date.now();setConn("on","Conectado · Binance futuros · BTC · SOL · Oro")};
+  ws.onmessage=function(ev){lastMsg=Date.now();try{var m=JSON.parse(ev.data),d=m&&m.data,k=m&&BY_STREAM[m.stream];if(k&&d&&d.p)onTrade(k,parseFloat(d.p),parseFloat(d.q),d.T,d.m)}catch(e){}};
+  ws.onclose=function(){if(curWs!==ws)return;curWs=null;setConn("off","Sin conexión. Reintentando en 5 s…");setTimeout(connect,5000)};
+  ws.onerror=function(){try{ws.close()}catch(e){}};
+}
+function watchdog(now){if(curWs&&now-lastMsg>20000){var w=curWs;setConn("off","Conectado pero sin datos. Reconectando…");try{w.close()}catch(e){}}}
+function setConn(cls,t){$("dot").className="dot "+cls;$("conn").textContent=t}
+
+// ---------- Agente: lee el canal "agent" por el gateway de Discord y contesta por webhook
+var bot={ws:null,hb:null,seq:null,chan:null,stop:false};
+function botLog(t){var e=$("botLog");if(e)e.textContent=t}
+function symOf(w){w=(w||"").toLowerCase();if(/btc|bitcoin/.test(w))return "BTC";if(/sol/.test(w))return "SOL";if(/oro|xau|gold/.test(w))return "XAU";return ""}
+function answer(text){
+  var t=(text||"").trim().toLowerCase().replace(/^[\/!]/,""),sy=symOf(t),now=Date.now(),L=[];
+  if(/^zona/.test(t)){
+    zones.forEach(function(z,i){if(sy&&z.sym!==sy)return;var y=z.sym,r=zoneStatus(z,i);
+      L.push("**"+(NAMES[y]||y)+" · "+(z.side==="buy"?"COMPRA":"VENTA")+"** · "+z.name+(z.grade?" · "+z.grade:"")+(z.estado?" · "+z.estado:"")+"\n"+px(z.lo,y)+" – "+px(z.hi,y)+" · se espera que "+(z.side==="buy"?"SUBA":"BAJE")+" hacia "+px(z.tp1,y)+"\nSL "+px(z.sl,y)+" · TP1 "+px(z.tp1,y)+" · TP2 "+px(z.tp2,y)+"\n"+r[0])});
+    return L.length?"Zonas a vigilar (Mapa de Zonas, "+ZSTAMP.replace(" · v2","")+")\n\n"+L.join("\n\n")+"\n\nSon una expectativa, no una certeza. La decisión final siempre es tuya.":"No hay zonas"+(sy?" para "+(NAMES[sy]||sy):"")+" ahora mismo."}
+  if(/^precio/.test(t)){ORDER.forEach(function(k){if(sy&&k!==sy)return;L.push((NAMES[k]||k)+": "+px(S[k].price,k))});return "Precios ahora (Binance futuros)\n"+L.join("\n")}
+  if(/^flujo/.test(t)){ORDER.forEach(function(k){if(sy&&k!==sy)return;var f=flow(k,300000,now);L.push((NAMES[k]||k)+": compras "+usd(f.buy)+" · ventas "+usd(f.sell)+" · neto "+usd(f.net))});return "Flujo de los últimos 5 min\n"+L.join("\n")}
+  if(/^[oó]rden/.test(t)){var b=0,s2=0;for(var i=0;i<feed.length;i++){var o=feed[i];if(now-o.t>3600000)break;if(sy&&o.sym!==sy)continue;if(o.usd<1000000)continue;if(o.side==="buy")b+=o.usd;else s2+=o.usd;if(L.length<12)L.push(hhmmss(o.t)+" · "+o.sym+" · "+sideEs(o.side)+" · "+usd(o.usd)+" · "+px(o.price,o.sym)+(o.zn?" · en zona "+o.zn:""))}
+    return L.length?"Órdenes de $1M o más, última hora"+(sy?" · "+(NAMES[sy]||sy):"")+"\nCompras "+usd(b)+" · Ventas "+usd(s2)+" · Neto "+usd(b-s2)+"\n\n"+L.join("\n"):"Ninguna orden de $1M o más en la última hora"+(sy?" en "+(NAMES[sy]||sy):"")+"."}
+  if(/^(link|enlace|url|panel|hot ?zone)/.test(t)){
+    if(!PUBLIC_URL)return "El panel todavía no está publicado en internet, así que no hay enlace para otros dispositivos. Estará listo cuando exista el repositorio hotzone en GitHub.";
+    var b64=btoa(unescape(encodeURIComponent(JSON.stringify(zones)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+    return "Panel Hot Zone con tus zonas actuales (ábrelo en el celular, laptop o desktop):\n<"+PUBLIC_URL+"#z="+b64+">\nEn esos equipos es solo para mirar: las alertas salen de la Mac mini."}
+  return "Comandos: **zonas**, **precio**, **ordenes**, **flujo**, **link**. Puedes añadir el mercado: btc, sol, oro. Ejemplo: zonas btc";
+}
+function botConnect(){
+  if(bot.ws){bot.stop=true;try{bot.ws.close()}catch(e){}}
+  if(!cfg.botToken||!cfg.hook3){botLog("Agente apagado: faltan el token del bot y el webhook del canal agent.");return}
+  bot.stop=false;bot.chan=null;botLog("Agente conectando…");
+  var ws;try{ws=new WebSocket("wss://gateway.discord.gg/?v=10&encoding=json")}catch(e){botLog("Agente: no se pudo abrir la conexión.");return}
+  bot.ws=ws;
+  ws.onmessage=function(ev){var m;try{m=JSON.parse(ev.data)}catch(e){return}
+    if(m.s!=null)bot.seq=m.s;
+    if(m.op===10){clearInterval(bot.hb);bot.hb=setInterval(function(){try{ws.send(JSON.stringify({op:1,d:bot.seq}))}catch(e){}},m.d.heartbeat_interval);
+      ws.send(JSON.stringify({op:2,d:{token:cfg.botToken,intents:1|512|32768,properties:{os:"mac",browser:"hotzone",device:"hotzone"}}}))}
+    else if(m.op===7||m.op===9){try{ws.close()}catch(e){}}
+    else if(m.op===0){
+      if(m.t==="READY")botLog("Agente conectado. Buscando el canal agent…");
+      if(m.t==="GUILD_CREATE"&&m.d&&m.d.channels){var c=m.d.channels.filter(function(x){return x.type===0&&/^agent/i.test(x.name||"")})[0];if(c){bot.chan=c.id;botLog("Agente conectado y escuchando el canal agent.")}}
+      if(m.t==="MESSAGE_CREATE"&&m.d&&bot.chan&&m.d.channel_id===bot.chan&&!m.d.webhook_id&&!(m.d.author&&m.d.author.bot)){
+        var txt=answer(m.d.content);if(txt.length>1900)txt=txt.slice(0,1900)+"…";
+        post({content:txt},cfg.hook3).catch(function(e){botLog("Agente: no pudo contestar ("+(e&&e.message||e)+").")})}
+    }};
+  ws.onclose=function(ev){clearInterval(bot.hb);if(bot.ws!==ws)return;bot.ws=null;
+    if(ev.code===4004){botLog("Agente: Discord rechazó el token. Copia el token de nuevo.");return}
+    if(ev.code===4014){botLog("Agente: falta activar \"Message Content Intent\" en el bot.");return}
+    if(bot.stop)return;botLog("Agente desconectado. Reintentando en 10 s…");setTimeout(botConnect,10000)};
+  ws.onerror=function(){try{ws.close()}catch(e){}};
+}
+
+function init(){
+  load();
+  $("hook").value=cfg.hook;$("hook2").value=cfg.hook2||"";$("hook3").value=cfg.hook3||"";$("hook4").value=cfg.hook4||"";$("botToken").value=cfg.botToken||"";$("win").value=cfg.win;$("streakMin").value=cfg.streakMin;$("scope").value=cfg.scope;
+  $("save").addEventListener("click",function(){cfg.hook=$("hook").value.trim();cfg.hook2=$("hook2").value.trim();cfg.hook4=$("hook4").value.trim();cfg.win=parseFloat($("win").value)||250;cfg.streakMin=parseFloat($("streakMin").value)||15;cfg.scope=$("scope").value;store();log("Ajustes guardados.")});
+  $("test").addEventListener("click",function(){cfg.hook=$("hook").value.trim();store();if(!cfg.hook){log("Pega primero el webhook de Discord.");return}
+    post({content:"Prueba de Hot Zone · BTC · SOL. Si lees esto, las alertas llegan a este canal."},cfg.hook).then(function(){log("Prueba enviada. Revisa Discord.")}).catch(function(e){log("La prueba falló: "+(e&&e.message||e))})});
+  $("test2").addEventListener("click",function(){cfg.hook2=$("hook2").value.trim();store();if(!cfg.hook2){log("Pega primero el webhook del canal de oro.");return}
+    post({content:"Prueba de Hot Zone · Oro. Si lees esto, las alertas llegan a este canal."},cfg.hook2).then(function(){log("Prueba enviada. Revisa Discord.")}).catch(function(e){log("La prueba falló: "+(e&&e.message||e))})});
+  $("test4").addEventListener("click",function(){cfg.hook4=$("hook4").value.trim();store();if(!cfg.hook4){log("Pega primero el webhook del canal ai-crypto.");return}
+    post({content:"Prueba de Ai Crypto · modo simulado. Si lees esto, las entradas simuladas llegan a este canal."},cfg.hook4).then(function(){log("Prueba enviada. Revisa Discord.")}).catch(function(e){log("La prueba falló: "+(e&&e.message||e))})});
+  $("macOn").addEventListener("click",macEnable);
+  $("macTest").addEventListener("click",function(){if(!cfg.macOn)macEnable();macAlert({sym:"BTC",side:"sell",usd:3500000,price:S.BTC.price||0,zone:-1,count:1,total:3500000,t:Date.now()})});
+  if(cfg.macOn)macLog("Pulsa \"Activar avisos en esta Mac\" una vez después de recargar para que suene (Chrome lo exige).");
+  $("botGo").addEventListener("click",function(){cfg.botToken=$("botToken").value.trim();cfg.hook3=$("hook3").value.trim();store();botConnect()});
+  $("resetZones").addEventListener("click",function(){zones=MAP_ZONES.map(function(z){return Object.assign({},z)});zstate=[];store();renderZones();log("Zonas del Mapa restauradas.")});
+  $("addZone").addEventListener("click",function(){zones.push({sym:"BTC",name:"Zona nueva",side:"sell",lo:0,hi:0,sl:0,tp1:0,tp2:0});store();renderZones()});
+  $("share").addEventListener("click",function(){var u=shareLink();try{history.replaceState(null,"",u)}catch(e){}
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u).then(function(){log("Enlace copiado. Fíjalo en Discord; al abrirlo en otro equipo carga estas zonas.")},function(){log("Copia el enlace de la barra de direcciones.")});else log("Copia el enlace de la barra de direcciones.")});
+  $("resetStats").addEventListener("click",function(){stats={};storeStats()});
+  renderCoins();renderZones();connect();botConnect();lastTick=Date.now();
+  setInterval(function(){var now=Date.now();flushStale(now);watchdog(now);
+    if(curWs&&curWs.readyState===1&&now-lastTick<2000)ORDER.forEach(function(k){stat(k).ms+=now-lastTick});lastTick=now;
+    var cut=Math.floor((now-960000)/1000);ORDER.forEach(function(k){S[k].secs.forEach(function(v,kk){if(kk<cut)S[k].secs.delete(kk)})});render()},250);
+  setInterval(function(){storeStats();storeFeed();storeSim()},30000);
+  ORDER.forEach(function(k){var op=mk("option",null,NAMES[k]||k);op.value=k;$("fSym").appendChild(op)});
+  ["fWin","fSym","fSide","fMin","fZone"].forEach(function(id){$(id).addEventListener("change",function(){feedDirty=true})});
+}
+if(typeof window!=="undefined"&&typeof document!=="undefined")window.addEventListener("DOMContentLoaded",init);
+
+</script>
+</body>
+</html>
