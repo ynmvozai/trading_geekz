@@ -36,7 +36,7 @@ _Última actualización: 9 oct 2026._ Lee esto primero si eres una sesión nueva
 ## Resuelto (9 oct 2026, noche)
 - Región cambiada a EU West (Amsterdam, `europe-west4-drams3a`). `estado`: "Velas de Binance: ok".
 - `actualiza zonas`: TITO cargó 8 zonas reales (BTC, SOL, XAU) con SL/TP. Las alertas ya las usan.
-- Monitor de caída: URL fija en el workflow; falta solo el secreto `WEBHOOK_AGENT` en GitHub.
+- Monitor de caída activo: secreto `WEBHOOK_AGENT` en GitHub y primera corrida manual en verde (6 s).
 
 ## Falta (necesita a Yasser o a la nube)
 - [ ] Probar con Binance y Discord reales: el contenedor de Claude Code no tiene salida a esos sitios. Se prueba en Railway.
