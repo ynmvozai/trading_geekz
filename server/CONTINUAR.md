@@ -33,6 +33,11 @@ _Última actualización: 9 oct 2026._ Lee esto primero si eres una sesión nueva
   Arreglo: Settings → Deploy → Regions → EU West (Amsterdam). `estado` ahora muestra la línea "Velas de Binance (REST)" con el error y la región.
 - Desde el contenedor de Claude Code no se puede abrir el dominio (red bloqueada), así que la verificación se hace por Discord (`estado`).
 
+## Resuelto (9 oct 2026, noche)
+- Región cambiada a EU West (Amsterdam, `europe-west4-drams3a`). `estado`: "Velas de Binance: ok".
+- `actualiza zonas`: TITO cargó 8 zonas reales (BTC, SOL, XAU) con SL/TP. Las alertas ya las usan.
+- Monitor de caída: URL fija en el workflow; falta solo el secreto `WEBHOOK_AGENT` en GitHub.
+
 ## Falta (necesita a Yasser o a la nube)
 - [ ] Probar con Binance y Discord reales: el contenedor de Claude Code no tiene salida a esos sitios. Se prueba en Railway.
 - [ ] Crear el servicio en Railway (región Ámsterdam, volumen `/data`, variables) y verificar: mensaje "Servidor Hot Zone encendido" en #agent, alerta real en #cryptoman/#oro.

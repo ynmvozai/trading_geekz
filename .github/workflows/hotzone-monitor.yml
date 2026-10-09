@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Revisar /health
         env:
-          URL: ${{ vars.HOTZONE_URL }}
+          URL: ${{ vars.HOTZONE_URL || 'https://tradinggeekz-production.up.railway.app' }}
           HOOK: ${{ secrets.WEBHOOK_AGENT }}
           GH: ${{ github.token }}
           REPO: ${{ github.repository }}
