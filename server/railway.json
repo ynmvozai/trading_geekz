@@ -1,0 +1,15 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "watchPatterns": ["server/**"]
+  },
+  "deploy": {
+    "startCommand": "npm start",
+    "healthcheckPath": "/alive",
+    "healthcheckTimeout": 60,
+    "restartPolicyType": "ALWAYS",
+    "multiRegionConfig": {
+      "europe-west4-drams3a": { "numReplicas": 1 }
+    }
+  }
+}

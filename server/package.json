@@ -1,0 +1,15 @@
+{
+  "name": "hotzone-server",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Hot Zone 24/7 · Trading_GeeKz · alertas de órdenes grandes y zonas (Binance futuros → Discord)",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/index.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js",
+    "prompts": "node scripts/extract-prompts.mjs"
+  },
+  "dependencies": { "ws": "^8.18.0" }
+}

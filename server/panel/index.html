@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hot Zone v3.0</title>
+<style>
+:root{--bg:#0D0D0D;--card:#1A1A1A;--line:#2a2a2a;--ink:#E6E6E6;--silver:#B8BCC2;--gold:#C9A24B;--buy:#3ecf8e;--sell:#f26d6d;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45;padding:20px 16px 48px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-size:26px;margin:0;font-weight:800;color:var(--gold)}
+h1 small{font-size:13px;color:var(--silver);font-weight:400}
+h2{font-size:17px;margin:0 0 10px;color:var(--silver)}
+.status{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13px;color:var(--silver)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--gold)} .dot.on{background:var(--buy)} .dot.off{background:var(--sell)}
+.muted{color:var(--silver);font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile,.card,.z{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.tile span{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--silver)}
+.tile b{font-family:var(--mono);font-size:21px;font-variant-numeric:tabular-nums}
+.watch{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.z{border-width:2px;display:flex;flex-direction:column;gap:6px}
+.z.sell{border-color:var(--sell)} .z.buy{border-color:var(--buy)} .z.in{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.z .h{font-weight:700;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:3px;background:#262626;color:var(--gold)}
+.rng{font-family:var(--mono);font-size:19px}
+.lv{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-family:var(--mono);font-size:13px}
+.lv span{display:block;font-size:10.5px;color:var(--silver)}
+.bar{height:6px;background:#262626;border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}
+.buy{color:var(--buy)} .sell{color:var(--sell)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-family:var(--mono);font-size:11px;text-transform:uppercase;color:var(--silver);font-weight:500}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h1>Hot Zone <small>v3.0 · solo lectura · Visionary_GeeKz</small></h1>
+    <div class="status"><span class="dot" id="dot"></span><span id="conn">Conectando al servidor…</span></div>
+    <p class="muted">Este panel solo muestra lo que ve el servidor 24/7. Las alertas a Discord las envía el servidor, no esta página.</p>
+  </div>
+  <div class="tiles" id="tiles"></div>
+  <div><h2>Zonas a vigilar <span class="muted" id="zstamp"></span></h2><div class="watch" id="watch"></div></div>
+  <div class="card"><h2>Órdenes de $250K o más (24 h)</h2><div class="scroll" style="max-height:420px;overflow-y:auto"><table>
+    <thead><tr><th>Hora</th><th>Mercado</th><th>Lado</th><th>Monto</th><th>Precio</th><th>Zona</th><th>Alerta</th></tr></thead><tbody id="orders"></tbody></table></div></div>
+  <div class="card"><h2>Ai Crypto · señales con precio real (tú ejecutas)</h2><div class="muted" id="simSum">—</div></div>
+  <p class="muted">La decisión final siempre es tuya.</p>
+</div>
+<script>
+var NAMES={BTC:"Bitcoin",SOL:"Solana",XAU:"Oro"},DEC={BTC:1,SOL:2,XAU:2};
+var q=new URLSearchParams(location.search),API=(q.get("api")||(/github\.io$/.test(location.hostname)?"":location.origin)).replace(/\/$/,"");
+function $(i){return document.getElementById(i)}
+function mk(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+function usd(v){if(v==null||!isFinite(v))return "—";var a=Math.abs(v),s=v<0?"-":"";return a>=1e6?s+"$"+(a/1e6).toFixed(2)+"M":a>=1e3?s+"$"+(a/1e3).toFixed(0)+"K":s+"$"+a.toFixed(0)}
+function px(v,s){if(v==null||!isFinite(v))return "—";var d=DEC[s]||2;return Number(v).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d})}
+function hh(t){return new Date(t).toLocaleTimeString("es-PR",{hour12:false,timeZone:"America/Puerto_Rico"})}
+function setConn(c,t){$("dot").className="dot "+c;$("conn").textContent=t}
+function render(s){
+  setConn(s.ok?"on":"off",(s.ok?"Servidor en vivo":"Servidor sin datos de Binance")+" · "+s.version+" · "+s.hora+(s.pausadas?" · ALERTAS PAUSADAS":""));
+  var tl=$("tiles");tl.textContent="";
+  Object.keys(s.mercados).forEach(function(k){var m=s.mercados[k],d=mk("div","tile");d.appendChild(mk("span",null,(NAMES[k]||k)+" · neto 5 min "+usd(m.compras_5m-m.ventas_5m)));d.appendChild(mk("b",null,px(m.precio,k)));
+    d.appendChild(mk("div","muted","retraso "+(m.retraso_ms==null?"—":(m.retraso_ms/1000).toFixed(2)+" s")));tl.appendChild(d)});
+  $("zstamp").textContent=s.zonas_fecha?"· "+s.zonas_fecha:"";
+  var w=$("watch");w.textContent="";
+  if(!s.zonas.length)w.appendChild(mk("div","z","Sin zonas cargadas. En #agent: actualiza zonas."));
+  s.zonas.forEach(function(z){var y=z.sym,c=mk("div","z "+z.side+(z.proximidad>=100?" in":""));
+    var h=mk("div","h");h.appendChild(mk("span",z.side,(NAMES[y]||y)+" · "+(z.side==="buy"?"COMPRA":"VENTA")));if(z.grade)h.appendChild(mk("span","pill",z.grade));c.appendChild(h);
+    c.appendChild(mk("div","muted",z.name));c.appendChild(mk("div","rng",px(Math.min(z.lo,z.hi),y)+" – "+px(Math.max(z.lo,z.hi),y)));
+    var lv=mk("div","lv");[["SL",z.sl],["TP1",z.tp1],["TP2",z.tp2]].forEach(function(a){var d=mk("div");d.appendChild(mk("span",null,a[0]));d.appendChild(document.createTextNode(px(a[1],y)));lv.appendChild(d)});c.appendChild(lv);
+    var b=mk("div","bar"),i=mk("i");i.style.width=(z.proximidad||0)+"%";b.appendChild(i);c.appendChild(b);
+    c.appendChild(mk("div","muted","Proximidad "+(z.proximidad==null?"—":z.proximidad.toFixed(2)+"%")+" · "+z.ahora));
+    if(z.nota)c.appendChild(mk("div","muted",z.nota));w.appendChild(c)});
+  var tb=$("orders");tb.textContent="";
+  if(!s.ordenes.length){var tr=mk("tr"),td=mk("td","muted","Ninguna orden todavía.");td.colSpan=7;tr.appendChild(td);tb.appendChild(tr)}
+  s.ordenes.forEach(function(o){var tr=mk("tr");[[hh(o.t),"n"],[NAMES[o.sym]||o.sym,""],[o.side==="buy"?"COMPRA":"VENTA",o.side],[usd(o.usd),"n "+o.side],[px(o.price,o.sym),"n"],[o.zn||"—",""],[o.alert||"—",""]].forEach(function(c){tr.appendChild(mk("td",c[1],c[0]))});tb.appendChild(tr)});
+  $("simSum").textContent=s.ai_crypto.resumen;
+}
+function tick(){
+  if(!API){setConn("off","Falta la dirección del servidor: abre esta página con ?api=https://tu-servidor");return}
+  fetch(API+"/state",{cache:"no-store"}).then(function(r){return r.json()}).then(render).catch(function(){setConn("off","No pude leer el servidor. Reintentando…")});
+}
+tick();setInterval(tick,3000);
+</script>
+</body>
+</html>
