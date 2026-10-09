@@ -54,10 +54,19 @@ export function binanceStart({ onTrade, onStatus, onReconnect }) {
   }, 5000);
 }
 
+export const rest = { ok: null, lastError: "", lastOk: 0 };
 export async function klinesRaw(symbol, interval, limit, startTime) {
   const u = ENV.binanceRest + "/fapi/v1/klines?symbol=" + symbol + "&interval=" + interval + "&limit=" + limit + (startTime ? "&startTime=" + startTime : "");
-  const r = await fetch(u, { signal: AbortSignal.timeout(15000) });
-  if (!r.ok) throw new Error("Binance HTTP " + r.status);
+  let r;
+  try { r = await fetch(u, { signal: AbortSignal.timeout(15000) }); }
+  catch (e) { rest.ok = false; rest.lastError = "red: " + e.message; throw new Error(rest.lastError); }
+  if (!r.ok) {
+    rest.ok = false;
+    rest.lastError = "HTTP " + r.status + (r.status === 451 || r.status === 403 ? " (Binance bloquea la región del servidor)" : "");
+    if (r.status === 451 || r.status === 403) bn.blocked = true;
+    throw new Error(rest.lastError);
+  }
+  rest.ok = true; rest.lastOk = Date.now();
   return r.json();
 }
 
@@ -66,15 +75,16 @@ export async function kl(symbol, interval, n) {
   try {
     const a = await klinesRaw(symbol, interval, n);
     return a.map((k) => [new Date(k[0]).toISOString().slice(5, 16).replace("T", " "), +k[1], +k[2], +k[3], +k[4]]);
-  } catch { return "sin datos"; }
+  } catch (e) { log("Velas", symbol, interval, "fallaron:", e.message); return "sin datos (" + e.message + ")"; }
 }
 
 // Prueba al arrancar: REST + respuesta clara si Binance bloquea la región.
 export async function probeBinance() {
   try {
     const r = await fetch(ENV.binanceRest + "/fapi/v1/ping", { signal: AbortSignal.timeout(15000) });
-    if (r.status === 451 || r.status === 403) return { ok: false, blocked: true, msg: "HTTP " + r.status };
-    if (!r.ok) return { ok: false, msg: "HTTP " + r.status };
+    if (r.status === 451 || r.status === 403) { rest.ok = false; rest.lastError = "HTTP " + r.status + " (región bloqueada)"; return { ok: false, blocked: true, msg: "HTTP " + r.status }; }
+    if (!r.ok) { rest.ok = false; rest.lastError = "HTTP " + r.status; return { ok: false, msg: "HTTP " + r.status }; }
+    rest.ok = true; rest.lastOk = Date.now();
     return { ok: true };
-  } catch (e) { return { ok: false, msg: e.message }; }
+  } catch (e) { rest.ok = false; rest.lastError = "red: " + e.message; return { ok: false, msg: e.message }; }
 }

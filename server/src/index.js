@@ -27,7 +27,7 @@ function warnBlocked(why) {
   if (blockedWarned) return;
   blockedWarned = true;
   log("BINANCE BLOQUEÓ LA CONEXIÓN:", why);
-  agent("🚫 **Binance bloqueó la conexión desde esta región** (" + why + "). Sin datos no hay alertas. Cambia la región del servicio en Railway a Europa (Ámsterdam) o Asia (Singapur): Settings → Deploy → Regions.");
+  agent("🚫 **Binance bloqueó la conexión desde esta región** (" + why + (process.env.RAILWAY_REPLICA_REGION ? ", región " + process.env.RAILWAY_REPLICA_REGION : "") + "). Sin velas TITO no puede calcular zonas. Cambia la región del servicio en Railway a Europa (Ámsterdam) o Asia (Singapur): Settings → Deploy → Regions.");
 }
 probeBinance().then((r) => {
   if (r.ok) log("Binance REST OK");

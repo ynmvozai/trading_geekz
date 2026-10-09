@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { ENV, ORDER, NAMES, VERSION, PUBLIC_URL } from "./config.js";
 import { S, flow, feed, big } from "./market.js";
 import { Z, prox, zoneStatus } from "./zones.js";
-import { bn } from "./binance.js";
+import { bn, rest } from "./binance.js";
 import { bot, hookStats } from "./discord.js";
 import { A, sim, simStats } from "./alerts.js";
 import { T } from "./tito.js";
@@ -24,7 +24,7 @@ export function healthData() {
   const stale = now - BOOT > 120000 && now - lastAny > STALE_MS;
   return {
     ok: !stale, version: VERSION, horas_encendido: +((now - BOOT) / 3600000).toFixed(2),
-    binance: { conectado: bn.connected, bloqueado: bn.blocked, ultimo_error: bn.lastError || null, reconexiones: Math.max(0, bn.connects - 1) },
+    binance: { conectado: bn.connected, bloqueado: bn.blocked, velas_rest: rest.ok == null ? "sin probar" : rest.ok ? "ok" : rest.lastError, region: process.env.RAILWAY_REPLICA_REGION || null, ultimo_error: bn.lastError || null, reconexiones: Math.max(0, bn.connects - 1) },
     mercados, discord_bot: bot.ready ? "conectado" : bot.lastError || "desconectado",
     alertas_pausadas: A.paused, zonas: Z.list.length, senales_en_seguimiento: openCount(),
   };
@@ -34,6 +34,7 @@ export function estadoText() {
   const h = healthData(), now = Date.now(), ck = (v) => (v ? "✅" : "❌");
   const L = ["📋 **Estado de Hot Zone** · " + VERSION + " · encendido " + (h.horas_encendido < 48 ? h.horas_encendido.toFixed(1) + " h" : (h.horas_encendido / 24).toFixed(1) + " días")];
   L.push(ck(h.binance.conectado && h.ok) + " Binance " + (h.binance.bloqueado ? "BLOQUEÓ la conexión desde esta región" : h.binance.conectado ? "conectado" : "desconectado (" + (h.binance.ultimo_error || "?") + ")") + (h.binance.reconexiones ? " · " + h.binance.reconexiones + " reconexiones" : ""));
+  L.push((rest.ok ? "✅" : "❌") + " Velas de Binance (REST, para TITO): " + h.binance.velas_rest + (h.binance.region ? " · región del servidor: " + h.binance.region : ""));
   ORDER.forEach((k) => { const m = h.mercados[k]; L.push("   " + (NAMES[k] || k) + " " + px(m.precio, k) + " · último dato hace " + (m.hace_s == null ? "—" : m.hace_s + " s") + " · retraso " + (m.retraso_ms == null ? "—" : (m.retraso_ms / 1000).toFixed(2) + " s")); });
   L.push(ck(bot.ready) + " Bot de Discord " + h.discord_bot);
   L.push("Canales: #cryptoman " + ck(ENV.hooks.crypto) + " · #oro-índice " + ck(ENV.hooks.oro) + " · #agent " + ck(ENV.hooks.agent) + " · #ai-crypto " + ck(ENV.hooks.aicrypto) + " · #resultados " + (ENV.hooks.resultados ? "✅" : "❌ (va a #agent)"));

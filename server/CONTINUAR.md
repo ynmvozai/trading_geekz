@@ -26,6 +26,13 @@ _Última actualización: 9 oct 2026._ Lee esto primero si eres una sesión nueva
 - Aviso de caída: `.github/workflows/hotzone-monitor.yml` (GitHub Actions cada 5 min → #agent). Necesita variable `HOTZONE_URL` y secreto `WEBHOOK_AGENT` en GitHub.
   Ojo: GitHub apaga los cron de repos sin actividad en 60 días.
 
+## En vivo (9 oct 2026, 7:27 PM PR)
+- Railway: proyecto/servicio `trading_geekz`, volumen /data, 6 variables + TZ, dominio `tradinggeekz-production.up.railway.app` (Yasser lo configuró con la extensión de Chrome).
+- Prueba real: resumen "Zonas en vigilancia" llegó a #cryptoman y #oro-índice; TITO (bot OracleGeekz) contestó en #agent con precios reales de Binance (BTC 82,579 · SOL 109.18 · XAU 4,196.49) y retraso 71/194/187 ms.
+- Problema: las velas REST (fapi.binance.com/klines) llegaron "sin datos" → TITO no pudo calcular zonas. Lo más probable: la región del servicio no quedó en Ámsterdam (Binance bloquea REST desde EE. UU. con 451; el WebSocket sí pasa).
+  Arreglo: Settings → Deploy → Regions → EU West (Amsterdam). `estado` ahora muestra la línea "Velas de Binance (REST)" con el error y la región.
+- Desde el contenedor de Claude Code no se puede abrir el dominio (red bloqueada), así que la verificación se hace por Discord (`estado`).
+
 ## Falta (necesita a Yasser o a la nube)
 - [ ] Probar con Binance y Discord reales: el contenedor de Claude Code no tiene salida a esos sitios. Se prueba en Railway.
 - [ ] Crear el servicio en Railway (región Ámsterdam, volumen `/data`, variables) y verificar: mensaje "Servidor Hot Zone encendido" en #agent, alerta real en #cryptoman/#oro.
