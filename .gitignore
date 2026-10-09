@@ -7,3 +7,4 @@ node_modules/
 *.db-shm
 server/data/
 .DS_Store
+server/scripts/.railway-ids.json

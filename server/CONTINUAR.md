@@ -16,6 +16,16 @@ _Última actualización: 9 oct 2026._ Lee esto primero si eres una sesión nueva
 - [x] Fase 4: historial de señales TP1/TP2/SL (48 h), `resultados`, resumen de los domingos.
 - [x] Pruebas: `npm test` (lógica) y `node test/e2e.mjs` (punta a punta con Binance/Discord falsos locales) pasan.
 
+## Despliegue (estado 9 oct 2026)
+- Código en `main` (index.html sin cambios). Yasser aprobó: pasar a main, plan Hobby de Railway ($5/mes), que Claude haga el despliegue.
+- **Bloqueo**: la red del entorno de Claude Code no deja salir a `backboard.railway.com`, `discord.com`, `*.up.railway.app` ni `api.uptimerobot.com`.
+  Yasser tiene que permitir esos dominios en el entorno (menú del entorno → Edit → Network access). Si no aplica en esta sesión, abrir una nueva en el mismo entorno.
+- Script listo: `RAILWAY_TOKEN=... node server/scripts/railway-deploy.mjs crear` (proyecto, servicio desde GitHub, root /server, config, Ámsterdam, volumen /data, dominio; imprime el enlace de Variables).
+  Luego `estado`, `desplegar`, `agent` (lee #agent con el token del bot guardado en Railway, sin imprimirlo), `region asia-southeast1-eqsg3a` si hay 451.
+  Los ids (no secretos) quedan en `server/scripts/.railway-ids.json` (ignorado por git).
+- Aviso de caída: `.github/workflows/hotzone-monitor.yml` (GitHub Actions cada 5 min → #agent). Necesita variable `HOTZONE_URL` y secreto `WEBHOOK_AGENT` en GitHub.
+  Ojo: GitHub apaga los cron de repos sin actividad en 60 días.
+
 ## Falta (necesita a Yasser o a la nube)
 - [ ] Probar con Binance y Discord reales: el contenedor de Claude Code no tiene salida a esos sitios. Se prueba en Railway.
 - [ ] Crear el servicio en Railway (región Ámsterdam, volumen `/data`, variables) y verificar: mensaje "Servidor Hot Zone encendido" en #agent, alerta real en #cryptoman/#oro.
