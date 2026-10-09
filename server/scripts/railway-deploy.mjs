@@ -21,7 +21,7 @@ const REPO = "ynmvozai/trading_geekz", REGION = process.env.REGION || "europe-we
 
 async function crear() {
   if (!ids.projectId) {
-    const d = await gql(`mutation($i: ProjectCreateInput!){ projectCreate(input:$i){ id environments{ edges{ node{ id name } } } } }`, { i: { name: "hotzone" } });
+    const d = await gql(`mutation($i: ProjectCreateInput!){ projectCreate(input:$i){ id environments{ edges{ node{ id name } } } } }`, { i: { name: process.env.PROJECT_NAME || "trading_geekz" } });
     ids.projectId = d.projectCreate.id;
     ids.environmentId = d.projectCreate.environments.edges[0].node.id;
     save(); console.log("Proyecto creado");
