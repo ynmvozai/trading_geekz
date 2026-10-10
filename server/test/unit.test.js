@@ -124,3 +124,20 @@ test("sentimiento Fear & Greed: niveles y lectura por zona", async () => {
   assert.match(S.sentimentText(), /20\/100 · Miedo extremo/);
   S.SENT.crypto = null;
 });
+
+test("v3.2: calendario, índices y plan de sesión", async () => {
+  const MA = await import("../src/macro.js");
+  const ev = MA.parseCal([{ title: "CPI m/m", country: "USD", date: "2026-10-14T08:30:00-04:00", impact: "High", forecast: "0.3%", previous: "0.4%" },
+    { title: "Algo EUR", country: "EUR", date: "2026-10-14T05:00:00-04:00", impact: "High" }, { title: "Low USD", country: "USD", date: "2026-10-14T09:00:00-04:00", impact: "Low" }]);
+  assert.equal(ev.length, 1); assert.equal(ev[0].title, "CPI m/m");
+  const y = MA.parseYahoo({ chart: { result: [{ meta: { regularMarketPrice: 51700 }, timestamp: [1791590400, 1791676800], indicators: { quote: [{ open: [51200, null], high: [51800, 1], low: [51100, 1], close: [51650, 1] }] } }] } });
+  assert.equal(y.bars.length, 1); assert.equal(y.price, 51700);
+  const st = MA.parseStooq("Date,Open,High,Low,Close,Volume\n2026-10-09,27300,27400,27200,27366,100\n");
+  assert.deepEqual(st[0], ["2026-10-09", 27300, 27400, 27200, 27366]);
+  const SE = await import("../src/sesion.js");
+  const s = SE.splitSections("[[RESUMEN]] r1\n[[CRYPTO]] c1\n[[ORO]] o1\n[[INDICES]] i1");
+  assert.equal(s.RESUMEN, "r1"); assert.equal(s.CRYPTO, "c1"); assert.equal(s.ORO, "o1"); assert.equal(s.INDICES, "i1");
+  assert.equal(SE.etParts(Date.parse("2026-10-12T12:20:00Z")).hour, 8);   // 8:20 AM ET en octubre (EDT)
+  assert.equal(SE.etParts(Date.parse("2026-11-16T13:20:00Z")).hour, 8);   // 8:20 AM ET en noviembre (EST)
+  assert.match(SE.SESSION_Q, /\[\[INDICES\]\]/);
+});
