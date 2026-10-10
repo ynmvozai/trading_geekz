@@ -105,3 +105,22 @@ test("utilidades", () => {
   const p = prParts(Date.UTC(2026, 9, 9, 11, 48)); // 7:48 AM en Puerto Rico (UTC-4)
   assert.equal(p.hour, 7); assert.equal(p.minute, 48);
 });
+
+test("sentimiento Fear & Greed: niveles y lectura por zona", async () => {
+  const S = await import("../src/sentiment.js");
+  assert.equal(S.labelEs(10), "Miedo extremo");
+  assert.equal(S.labelEs(50), "Neutral");
+  assert.equal(S.labelEs(90), "Codicia extrema");
+  assert.equal(S.sentRead("buy", { v: 15 }).tag, "a favor");
+  assert.equal(S.sentRead("sell", { v: 85 }).tag, "a favor");
+  assert.equal(S.sentRead("buy", { v: 85 }).tag, "contra");
+  assert.equal(S.sentRead("sell", { v: 15 }).tag, "contra");
+  assert.equal(S.sentRead("buy", { v: 50 }).tag, "neutral");
+  assert.equal(S.sentRead("buy", null).tag, "sin dato");
+  S.SENT.crypto = { v: 20, label: "Miedo extremo", prev: 25, week: 40, t: Date.now(), fuente: "test" };
+  const zb = { sym: "BTC", name: "Order block 4H", grade: "A", side: "buy", lo: 99000, hi: 99500, sl: 98500, tp1: 101000, tp2: 102000, nota: "" };
+  const r = R.recordAlert({ t: Date.now(), sym: "BTC", kind: "orden_cerca", z: zb, order_side: "sell", entry: 99600, prox: 90, usd: 3500000 });
+  assert.equal(r.fg, 20); assert.equal(r.fg_read, "a favor");
+  assert.match(S.sentimentText(), /20\/100 · Miedo extremo/);
+  S.SENT.crypto = null;
+});
