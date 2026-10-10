@@ -12,7 +12,7 @@ import { DAILY_Q, ZONES_Q } from "./prompts.js";
 import { kvGet, kvSet } from "./store.js";
 import { usd, px, hhmmss, sideEs, prParts, log } from "./util.js";
 import { sentimentText, refreshSentiment } from "./sentiment.js";
-import { calText, refreshCal } from "./macro.js";
+import { calText, refreshCal, tvSecret, TV } from "./macro.js";
 import { runSession } from "./sesion.js";
 import { boardText, radarText, sesPost } from "./sesionny.js";
 
@@ -63,7 +63,7 @@ function ayuda() {
     "Mercados: btc, sol, oro. Cualquier otra pregunta la contesta TITO con Ai.";
 }
 
-const ADMIN_RE = /^(pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|plan ny (apagar|encender|on|off))/;
+const ADMIN_RE = /^(pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|plan ny (apagar|encender|on|off)|tv url)/;
 
 export async function onAgentMessage(msg) {
   const q = (msg.content || "").trim();
@@ -90,6 +90,8 @@ export async function onAgentMessage(msg) {
   if (/^plan ny (encender|prender|on)$/.test(ql)) { kvSet("sessionOff", false); return agent("Plan de sesión NY automático encendido: lunes a viernes, 8:15 AM hora de Nueva York."); }
   if (/^(plan ny|plan de (la )?sesi[oó]n|sesi[oó]n ny|plan nueva york)$/.test(ql)) return runSession(true);
   if (/^(calendario|noticias)\b/.test(ql)) { await refreshCal(); return agent(calText(7)); }
+  if (/^tv url$/.test(ql)) return agent("📺 **Webhook de TradingView para índices** (no lo compartas)\n" + (ENV.serverUrl || "https://<tu-servidor>") + "/tv/" + tvSecret() +
+    "\nMensaje de la alerta (5 min, \"Once per bar close\"):\n`{\"s\":\"{{ticker}}\",\"o\":{{open}},\"h\":{{high}},\"l\":{{low}},\"c\":{{close}},\"t\":\"{{time}}\"}`\nRecibidos hasta ahora: " + TV.n);
   if (/^radar$/.test(ql)) return agent(radarText("📡 **Radar ahora** (última hora)", Date.now() - 3600000, null));
   if (/^probar sesi[oó]n$/.test(ql)) { await sesPost(boardText("🧪 **Prueba de #sesion-ny** · así se verá el canal", Date.now() - 3600000, null)); return agent("Envié una prueba a #sesion-ny. Si no llegó, escribe **estado** y mira la línea de #sesion-ny."); }
   if (/^vigilancia$/.test(ql)) return agent(watchText(["BTC", "SOL"], "🎯 Zonas en vigilancia · Crypto") + "\n\n" + watchText(["XAU"], "🎯 Zonas en vigilancia · Oro"));

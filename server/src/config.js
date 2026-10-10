@@ -1,7 +1,7 @@
 // Configuración fija (portada del panel v2.4) y variables de entorno.
 import path from "node:path";
 
-export const VERSION = "v3.3-server · 10 oct 2026";
+export const VERSION = "v3.4-server · 10 oct 2026";
 
 export const SYMS = {
   BTC: { stream: "btcusdt", label: "BTCUSDT", dec: 1, min: 3000000, max: 6000000, ch: "crypto" },

@@ -12,7 +12,7 @@ import { openCount } from "./results.js";
 import { kvGet } from "./store.js";
 import { px, fullPR, shortPR } from "./util.js";
 import { SENT, sentData } from "./sentiment.js";
-import { CAL, IDX, idxLine } from "./macro.js";
+import { CAL, IDX, idxLine, onTv, tvSecret } from "./macro.js";
 import { sesEstado } from "./sesionny.js";
 
 export const BOOT = Date.now();
@@ -72,6 +72,13 @@ export function startHttp() {
     const u = req.url.split("?")[0];
     const json = (code, obj) => { res.writeHead(code, { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*", "cache-control": "no-store" }); res.end(JSON.stringify(obj)); };
     if (u === "/alive") return json(200, { ok: true, version: VERSION });
+    if (u.startsWith("/tv/")) {
+      if (req.method !== "POST" || u.slice(4) !== tvSecret()) return json(404, { error: "no existe" });
+      let body = "";
+      req.on("data", (c) => { body += c; if (body.length > 4096) req.destroy(); });
+      req.on("end", () => { const r = onTv(body.trim()); json(r.ok ? 200 : 400, r); });
+      return;
+    }
     if (u === "/health") { const h = healthData(); return json(h.ok ? 200 : 503, h); }
     if (u === "/state") return json(200, stateData());
     if (u === "/" || u === "/index.html") {

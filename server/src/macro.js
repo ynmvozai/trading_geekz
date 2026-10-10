@@ -3,7 +3,8 @@
 import { ENV } from "./config.js";
 import { post, agent } from "./discord.js";
 import { kvGet, kvSet } from "./store.js";
-import { log } from "./util.js";
+import crypto from "node:crypto";
+import { log, etParts } from "./util.js";
 
 const TZ = "America/Puerto_Rico";
 const UA = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36", accept: "application/json,text/csv,*/*" };
@@ -101,6 +102,7 @@ async function yahoo(sym, interval, range) {
 
 export async function refreshIdx() {
   for (const k of ["YM", "NQ"]) {
+    if (IDX[k] && /^TradingView/.test(IDX[k].fuente || "") && Date.now() - IDX[k].t < 20 * 60000) continue; // TradingView manda en vivo
     try {
       const d = await yahoo(YAHOO[k], "1d", "2mo");
       let h1 = [];
@@ -131,7 +133,56 @@ export function idxLine() {
   return f("YM", "US30/YM") + " · " + f("NQ", "NQ");
 }
 
+// ---------- TradingView (tus gráficos DJ30 / USTEC) por webhook ----------
+// Alerta de TradingView cada 5 min con: {"s":"{{ticker}}","o":{{open}},"h":{{high}},"l":{{low}},"c":{{close}},"t":"{{time}}"}
+export const TV = { n: 0, last: null, err: "" };
+export function tvSecret() {
+  let s = kvGet("tvSecret", null);
+  if (!s) { s = crypto.randomBytes(12).toString("hex"); kvSet("tvSecret", s); }
+  return s;
+}
+export function tvSym(s) {
+  s = String(s || "").toUpperCase();
+  if (/US30|DJ30|DJI|\bYM|DOW|WS30/.test(s)) return "YM";
+  if (/USTEC|NAS|NQ|NDX|US100|USTECH/.test(s)) return "NQ";
+  return null;
+}
+function tvRebuild(k) {
+  const bars = kvGet("tv5:" + k, []) || [], daily = kvGet("tvD:" + k, {}) || {};
+  const h1 = new Map();
+  for (const b of bars) { const hk = b[0].slice(0, 13); const x = h1.get(hk); if (!x) h1.set(hk, [hk.replace("T", " ") + ":00", b[1], b[2], b[3], b[4]]); else { x[2] = Math.max(x[2], b[2]); x[3] = Math.min(x[3], b[3]); x[4] = b[4]; } }
+  const last = bars[bars.length - 1];
+  if (!last) return;
+  IDX[k] = { price: last[4], daily: Object.keys(daily).sort().slice(-30).map((d) => [d, ...daily[d]]), h1: [...h1.values()].slice(-60), fuente: "TradingView (" + (kvGet("tvTicker:" + k, "") || k) + ")", t: kvGet("tvT:" + k, Date.now()) };
+  IDX.err[k] = "";
+}
+export function onTv(body) {
+  let o = body;
+  if (typeof o === "string") { try { o = JSON.parse(o); } catch { const a = o.split(/[,;\s]+/); o = { s: a[0], o: a[1], h: a[2], l: a[3], c: a[4], t: a[5] }; } }
+  const k = tvSym(o && (o.s || o.sym || o.ticker));
+  const c = +o.c, op = +(o.o ?? c), h = +(o.h ?? c), l = +(o.l ?? c);
+  if (!k || !(c > 0)) { TV.err = "mensaje inválido"; return { ok: false, error: "mensaje inválido: necesito s (ticker) y c (precio)" }; }
+  const tt = Date.parse(o.t) || Date.now(), iso = new Date(tt).toISOString().slice(0, 16);
+  const bars = kvGet("tv5:" + k, []) || [];
+  const i = bars.findIndex((b) => b[0] === iso), bar = [iso, op, h, l, c];
+  if (i >= 0) bars[i] = bar; else bars.push(bar);
+  bars.sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  while (bars.length > 600) bars.shift();
+  kvSet("tv5:" + k, bars);
+  const d = etParts(tt).date, daily = kvGet("tvD:" + k, {}) || {}, x = daily[d];
+  daily[d] = x ? [x[0], Math.max(x[1], h), Math.min(x[2], l), c] : [op, h, l, c];
+  const keys = Object.keys(daily).sort(); while (keys.length > 60) delete daily[keys.shift()];
+  kvSet("tvD:" + k, daily);
+  kvSet("tvTicker:" + k, String(o.s || o.sym || o.ticker).slice(0, 30));
+  kvSet("tvT:" + k, Date.now());
+  TV.n++; TV.last = { k, c, t: Date.now() }; TV.err = "";
+  tvRebuild(k);
+  return { ok: true, sym: k, price: c };
+}
+export function tvLoad() { for (const k of ["YM", "NQ"]) tvRebuild(k); }
+
 export function startMacro() {
+  tvLoad();
   refreshCal(); refreshIdx();
   setInterval(refreshCal, 3 * 3600000);
   setInterval(refreshIdx, 15 * 60000);
