@@ -7,6 +7,7 @@ import { kvGet, kvSet, feedSetAlert } from "./store.js";
 import { usd, px, hhmmss, sideEs, fullPR, prParts } from "./util.js";
 import { recordAlert } from "./results.js";
 import { sentFor, sentRead, sentLine } from "./sentiment.js";
+import { sesMirror } from "./sesionny.js";
 
 export const A = { paused: false, sent: 0, failed: 0, last: null, lastErr: "" };
 export const hookOf = (sym) => (SYMS[sym].ch === "oro" ? ENV.hooks.oro : ENV.hooks.crypto);
@@ -35,7 +36,7 @@ function onBig(o) {
   if (!hk) { setAlert(o, "falta el webhook"); return; }
   setAlert(o, "en cola");
   post(hk, buildMessage(o))
-    .then(() => { setAlert(o, "enviada"); A.sent++; A.last = { t: Date.now(), txt: o.sym + " " + sideEs(o.side) + " " + usd(o.usd) }; kvSet("lastAlert", A.last); })
+    .then(() => { sesMirror((o.zone >= 0 ? "🔥 **HOT ZONE** · " : "📍 **CERCA DE ZONA** · ") + (NAMES[o.sym] || o.sym) + " · " + (o.side === "buy" ? "🟢 compra agresiva " : "🔴 venta agresiva ") + usd(o.usd) + " a " + px(o.price, o.sym) + " · " + (z.side === "buy" ? "zona de compra " : "zona de venta ") + z.name + " " + px(Math.min(z.lo, z.hi), o.sym) + " – " + px(Math.max(z.lo, z.hi), o.sym) + (z.sl ? " · SL " + px(z.sl, o.sym) : "") + (z.tp1 ? " · TP1 " + px(z.tp1, o.sym) : "")); setAlert(o, "enviada"); A.sent++; A.last = { t: Date.now(), txt: o.sym + " " + sideEs(o.side) + " " + usd(o.usd) }; kvSet("lastAlert", A.last); })
     .catch((e) => { setAlert(o, "falló"); A.failed++; A.lastErr = e.message; });
 }
 

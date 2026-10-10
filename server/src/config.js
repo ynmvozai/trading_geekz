@@ -1,7 +1,7 @@
 // Configuración fija (portada del panel v2.4) y variables de entorno.
 import path from "node:path";
 
-export const VERSION = "v3.2-server · 10 oct 2026";
+export const VERSION = "v3.3-server · 10 oct 2026";
 
 export const SYMS = {
   BTC: { stream: "btcusdt", label: "BTCUSDT", dec: 1, min: 3000000, max: 6000000, ch: "crypto" },
@@ -30,9 +30,11 @@ export const ENV = {
     aicrypto: env.WEBHOOK_AICRYPTO || "",
     resultados: env.WEBHOOK_RESULTADOS || "",
     indices: env.WEBHOOK_INDICES || "",
+    sesion: env.WEBHOOK_SESION || "",
   },
   botToken: env.DISCORD_BOT_TOKEN || "",
   anthropicKey: env.ANTHROPIC_API_KEY || "",
+  sesionChannelId: env.SESION_CHANNEL_ID || "1558528510354788392",
   agentChannelId: env.AGENT_CHANNEL_ID || "1557585826810962102",
   guildId: env.GUILD_ID || "1557574932064509982",
   ownerIds: (env.OWNER_IDS || "").split(",").map((s) => s.trim()).filter(Boolean),

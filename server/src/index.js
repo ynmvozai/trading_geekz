@@ -13,6 +13,7 @@ import { log, prParts } from "./util.js";
 import { startSentiment } from "./sentiment.js";
 import { startMacro } from "./macro.js";
 import { sessionTick } from "./sesion.js";
+import { sesTick } from "./sesionny.js";
 
 log("Hot Zone", VERSION, "arrancando · datos en", ENV.dataDir);
 log("Variables:", Object.entries(ENV.hooks).map(([k, v]) => k + "=" + mask(v)).join(" "), "bot=" + mask(ENV.botToken), "anthropic=" + mask(ENV.anthropicKey));
@@ -71,6 +72,7 @@ setInterval(() => {
 }, 250);
 setInterval(() => M.gcSecs(), 10000);
 setInterval(watchTick, 15000);
+setInterval(() => { try { sesTick(); } catch (e) { log("sesTick", e.message); } }, 30000);
 
 // Aviso si pasan más de 2 minutos sin datos de Binance (y aviso cuando vuelve).
 let staleSince = 0;

@@ -14,6 +14,7 @@ import { usd, px, hhmmss, sideEs, prParts, log } from "./util.js";
 import { sentimentText, refreshSentiment } from "./sentiment.js";
 import { calText, refreshCal } from "./macro.js";
 import { runSession } from "./sesion.js";
+import { boardText, radarText, sesPost } from "./sesionny.js";
 
 const pending = new Map(); // id de usuario -> {what, run, until}
 
@@ -56,7 +57,7 @@ export function quickAnswer(text) {
 
 function ayuda() {
   return "Hot Zone " + VERSION + " · Comandos:\n" +
-    "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados** · **sentimiento** · **calendario** · **plan ny**\n" +
+    "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados** · **sentimiento** · **calendario** · **plan ny** · **radar** · **probar sesion**\n" +
     "**pausar alertas** · **reanudar alertas** · **cargar zonas** [JSON o enlace del panel] · **borrar zona** [n] · **actualiza zonas** · **reiniciar**\n" +
     "**check** [dirección del token] · **mapa diario apagar/encender** · **plan ny apagar/encender**\n" +
     "Mercados: btc, sol, oro. Cualquier otra pregunta la contesta TITO con Ai.";
@@ -89,6 +90,8 @@ export async function onAgentMessage(msg) {
   if (/^plan ny (encender|prender|on)$/.test(ql)) { kvSet("sessionOff", false); return agent("Plan de sesión NY automático encendido: lunes a viernes, 8:15 AM hora de Nueva York."); }
   if (/^(plan ny|plan de (la )?sesi[oó]n|sesi[oó]n ny|plan nueva york)$/.test(ql)) return runSession(true);
   if (/^(calendario|noticias)\b/.test(ql)) { await refreshCal(); return agent(calText(7)); }
+  if (/^radar$/.test(ql)) return agent(radarText("📡 **Radar ahora** (última hora)", Date.now() - 3600000, null));
+  if (/^probar sesi[oó]n$/.test(ql)) { await sesPost(boardText("🧪 **Prueba de #sesion-ny** · así se verá el canal", Date.now() - 3600000, null)); return agent("Envié una prueba a #sesion-ny. Si no llegó, escribe **estado** y mira la línea de #sesion-ny."); }
   if (/^vigilancia$/.test(ql)) return agent(watchText(["BTC", "SOL"], "🎯 Zonas en vigilancia · Crypto") + "\n\n" + watchText(["XAU"], "🎯 Zonas en vigilancia · Oro"));
   if (/^resultados/.test(ql)) { const d = +(/(\d+)/.exec(ql) || [])[1] || 30; return agent(resultsText(Math.min(d, 365))); }
   if (/^reiniciar$/.test(ql)) {

@@ -13,6 +13,7 @@ import { kvGet } from "./store.js";
 import { px, fullPR, shortPR } from "./util.js";
 import { SENT, sentData } from "./sentiment.js";
 import { CAL, IDX, idxLine } from "./macro.js";
+import { sesEstado } from "./sesionny.js";
 
 export const BOOT = Date.now();
 const STALE_MS = 180000;
@@ -46,6 +47,7 @@ export function estadoText() {
   L.push((SENT.crypto ? "✅" : "❌") + " Fear & Greed crypto: " + (SENT.crypto ? SENT.crypto.v + "/100 · " + SENT.crypto.label : "sin dato" + (SENT.lastErr.crypto ? " (" + SENT.lastErr.crypto + ")" : "")) + " · acciones (ref. oro): " + (SENT.stocks ? SENT.stocks.v + "/100 · " + SENT.stocks.label : "sin dato" + (SENT.lastErr.stocks ? " (" + SENT.lastErr.stocks + ")" : "")));
   L.push((CAL.t ? "✅" : "❌") + " Calendario USD: " + (CAL.t ? CAL.events.length + " eventos medio/alto" + (CAL.err ? " (" + CAL.err + ")" : "") : "sin dato" + (CAL.err ? " (" + CAL.err + ")" : "")) + " · plan sesión NY " + (kvGet("sessionOff", false) ? "apagado" : "8:15 AM ET L-V") + (kvGet("lastSession") ? " (último " + kvGet("lastSession") + ")" : ""));
   L.push((IDX.YM && IDX.NQ ? "✅" : "❌") + " Índices: " + idxLine() + " · #indices-zonas " + (ENV.hooks.indices ? "✅" : "❌ (falta WEBHOOK_INDICES, va a #agent)"));
+  L.push(sesEstado());
   L.push("Discord: " + hookStats.sent + " mensajes enviados" + (hookStats.failed ? " · " + hookStats.failed + " fallidos" : ""));
   return L.join("\n");
 }

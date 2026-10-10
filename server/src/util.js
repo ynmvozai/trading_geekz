@@ -25,6 +25,14 @@ export function prParts(t = Date.now()) {
   return { date: `${o.year}-${o.month}-${o.day}`, hour: +o.hour, minute: +o.minute, weekday: o.weekday };
 }
 
+// Hora de Nueva York (cambia sola con el horario de verano/invierno; Puerto Rico no cambia).
+export function etParts(t = Date.now()) {
+  const f = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", weekday: "short" });
+  const o = {};
+  for (const p of f.formatToParts(new Date(t))) o[p.type] = p.value;
+  return { date: `${o.year}-${o.month}-${o.day}`, hour: +o.hour, minute: +o.minute, weekday: o.weekday };
+}
+
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export function log(...a) {
