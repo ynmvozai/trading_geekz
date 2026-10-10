@@ -11,6 +11,7 @@ import { T } from "./tito.js";
 import { openCount } from "./results.js";
 import { kvGet } from "./store.js";
 import { px, fullPR, shortPR } from "./util.js";
+import { SENT, sentData } from "./sentiment.js";
 
 export const BOOT = Date.now();
 const STALE_MS = 180000;
@@ -41,6 +42,7 @@ export function estadoText() {
   L.push((A.paused ? "⏸️ Alertas PAUSADAS (escribe **reanudar alertas**)" : "✅ Alertas activas") + " · enviadas " + A.sent + (A.failed ? " · fallidas " + A.failed + " (" + A.lastErr + ")" : "") + " · última: " + (A.last ? A.last.txt + " · " + shortPR(A.last.t) : "ninguna todavía"));
   L.push("Zonas: " + Z.list.length + " (" + (Z.date || "sin cargar") + ") · señales en seguimiento: " + h.senales_en_seguimiento + " · Ai Crypto: " + simStats());
   L.push(ck(ENV.anthropicKey && !T.lastErr) + " Ai (TITO): " + (ENV.anthropicKey ? T.calls + " llamadas · " + Math.round(T.inTok / 1000) + "K tokens entrada · " + Math.round(T.outTok / 1000) + "K salida" + (T.lastErr ? " · último error: " + T.lastErr : "") : "falta ANTHROPIC_API_KEY") + " · mapa diario " + (kvGet("dailyOff", false) ? "apagado" : "7:48 AM") + (kvGet("lastDaily") ? " (último " + kvGet("lastDaily") + ")" : ""));
+  L.push((SENT.crypto ? "✅" : "❌") + " Fear & Greed crypto: " + (SENT.crypto ? SENT.crypto.v + "/100 · " + SENT.crypto.label : "sin dato" + (SENT.lastErr.crypto ? " (" + SENT.lastErr.crypto + ")" : "")) + " · acciones (ref. oro): " + (SENT.stocks ? SENT.stocks.v + "/100 · " + SENT.stocks.label : "sin dato" + (SENT.lastErr.stocks ? " (" + SENT.lastErr.stocks + ")" : "")));
   L.push("Discord: " + hookStats.sent + " mensajes enviados" + (hookStats.failed ? " · " + hookStats.failed + " fallidos" : ""));
   return L.join("\n");
 }
@@ -51,7 +53,7 @@ export function stateData() {
   ORDER.forEach((k) => { const f = flow(k, 300000, now); mercados[k] = { precio: S[k].price, retraso_ms: S[k].lag == null ? null : Math.round(S[k].lag), compras_5m: Math.round(f.buy), ventas_5m: Math.round(f.sell) }; });
   return {
     version: VERSION, hora: fullPR(now), t: now, ok: healthData().ok, pausadas: A.paused, zonas_fecha: Z.date,
-    mercados,
+    mercados, sentimiento: sentData(),
     zonas: Z.list.map((z, i) => ({ ...z, proximidad: S[z.sym].price ? +prox(z, S[z.sym].price).toFixed(2) : null, ahora: zoneStatus(z, i, S[z.sym].price)[0] })),
     ordenes: feed.slice(0, 300).map((o) => ({ t: o.t, sym: o.sym, side: o.side, usd: Math.round(o.usd), price: o.price, zn: o.zn, alert: o.alert })),
     grandes: big.slice(0, 20).map((o) => ({ t: o.t, sym: o.sym, side: o.side, usd: Math.round(o.usd), price: o.price, alert: o.alert })),

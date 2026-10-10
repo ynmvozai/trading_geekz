@@ -6,6 +6,7 @@ import { Z, nearZone, nearR, proxNear, prox, zDist, zkey } from "./zones.js";
 import { kvGet, kvSet, feedSetAlert } from "./store.js";
 import { usd, px, hhmmss, sideEs, fullPR, prParts } from "./util.js";
 import { recordAlert } from "./results.js";
+import { sentFor, sentRead, sentLine } from "./sentiment.js";
 
 export const A = { paused: false, sent: 0, failed: 0, last: null, lastErr: "" };
 export const hookOf = (sym) => (SYMS[sym].ch === "oro" ? ENV.hooks.oro : ENV.hooks.crypto);
@@ -60,6 +61,11 @@ export function buildMessage(o) {
     if (st) fields.push({ name: "Dinero dentro de la zona", value: "Compras " + usd(st.buy) + " · Ventas " + usd(st.sell), inline: false });
     fields.push({ name: "SL / TP1 / TP2", value: px(z.sl, y) + " / " + px(z.tp1, y) + " / " + px(z.tp2, y), inline: false });
   }
+  const zz = z || nzz;
+  if (zz) {
+    const s = sentFor(y);
+    fields.push({ name: "Sentimiento · Fear & Greed" + (y === "XAU" ? " (acciones EE. UU., referencia)" : " (crypto)"), value: (s ? sentLine(s) + "\n" : "") + sentRead(zz.side, s).txt, inline: false });
+  }
   return {
     content: title + (hot ? " · racha de " + o.count : ""),
     embeds: [{ title, color: o.side === "buy" ? 0x3ecf8e : 0xf26d6d, fields, footer: { text: "Binance futuros " + SYMS[y].label + " · " + fullPR(o.t) + " · validar en tu gráfico" } }],
@@ -73,7 +79,10 @@ export function watchLine(z, p) {
   const v = prox(z, p), d = zDist(z, p) * 100;
   return (v >= 100 ? "🎯" : v >= 80 ? "🔥" : v >= 50 ? "🟡" : "⚪") + " **" + (NAMES[z.sym] || z.sym) + " · " + z.name + " " + (z.grade || "") + "** · " + (z.side === "buy" ? "compra · se espera que SUBA" : "venta · se espera que BAJE") +
     "\n   " + px(Math.min(z.lo, z.hi), z.sym) + " – " + px(Math.max(z.lo, z.hi), z.sym) + " · precio " + px(p, z.sym) + " · " + (v >= 100 ? "EN LA ZONA" : "a " + d.toFixed(2) + "%") +
-    "\n   " + pbar(v) + " **" + v.toFixed(2) + "%**" + (z.sl ? " · SL " + px(z.sl, z.sym) : "") + (z.tp1 ? " · TP1 " + px(z.tp1, z.sym) : "");
+    "\n   " + pbar(v) + " **" + v.toFixed(2) + "%**" + (z.sl ? " · SL " + px(z.sl, z.sym) : "") + (z.tp1 ? " · TP1 " + px(z.tp1, z.sym) : "") + sentTag(z);
+}
+const TAGS = { "a favor": "✅ sentimiento a favor", contra: "⚠️ sentimiento en contra", neutral: "⚪ sentimiento neutral" };
+function sentTag(z) { const r = sentRead(z.side, sentFor(z.sym)); return TAGS[r.tag] ? " · " + TAGS[r.tag] : "";
 }
 export function watchText(syms, title) {
   const ls = [];
@@ -88,7 +97,9 @@ export function watchText(syms, title) {
     return "**" + title + "**\n" + (any ? "Ninguna zona dentro del rango de vigilancia (" + syms.map((s) => s + " " + WATCH[s] + "%").join(" · ") + ")." : "Sin zonas cargadas para este canal. Pídele a TITO \"actualiza zonas\".");
   }
   ls.sort((a, b) => b.v - a.v);
-  return ("**" + title + "**\n" + ls.map((x) => x.t).join("\n") + "\n_Proximidad: 0% = lejos · 100% = en la zona. La entrada la validas tú._").slice(0, 1990);
+  const s = sentFor(syms[0]);
+  const sl = "🧭 Fear & Greed " + (syms[0] === "XAU" ? "(acciones EE. UU., referencia)" : "crypto") + ": " + (s ? sentLine(s) : "sin dato");
+  return ("**" + title + "**\n" + sl + "\n" + ls.map((x) => x.t).join("\n") + "\n_Proximidad: 0% = lejos · 100% = en la zona. La entrada la validas tú._").slice(0, 1990);
 }
 export function watchAll() {
   if (A.paused) return;

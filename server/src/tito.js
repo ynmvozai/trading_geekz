@@ -7,12 +7,15 @@ import { simStats } from "./alerts.js";
 import { kl } from "./binance.js";
 import { kvGet, kvSet } from "./store.js";
 import { hhmmss, fullPR, sleep } from "./util.js";
+import { sentData } from "./sentiment.js";
+
+const SENT_NOTE = "\n\n# SENTIMIENTO (FEAR & GREED INDEX)\nEn [PANEL_HOT_ZONE] recibes sentimiento_fear_greed: crypto_btc_sol (alternative.me, 0-100) y acciones_ref_oro (CNN, acciones de EE. UU.; para el oro es solo referencia del ánimo general). 0-24 miedo extremo, 25-44 miedo, 45-55 neutral, 56-75 codicia, 76-100 codicia extrema. Úsalo como factor de contexto en cada zona con lectura contraria: miedo extremo en zona de compra o codicia extrema en zona de venta = confluencia; lo opuesto = más riesgo, pide mejor confirmación. Menciona el valor, el de ayer y el de hace 7 días cuando aporte. Nunca lo uses como gatillo de entrada ni como certeza. Si viene null, di que no hay dato.";
 
 export const T = { calls: 0, errors: 0, lastErr: "", lastOk: 0, inTok: 0, outTok: 0 };
 let hist = null;
 
 export function panelData() {
-  const now = Date.now(), out = { hora_PR: fullPR(now), mercados: {}, zonas: [], ordenes_1h: [], ai_crypto_senales: simStats() };
+  const now = Date.now(), out = { hora_PR: fullPR(now), mercados: {}, zonas: [], ordenes_1h: [], ai_crypto_senales: simStats(), sentimiento_fear_greed: sentData() };
   ORDER.forEach((k) => { const f = flow(k, 300000, now); out.mercados[k] = { precio: S[k].price, compras_5m: Math.round(f.buy), ventas_5m: Math.round(f.sell), retraso_datos_ms: S[k].lag == null ? null : Math.round(S[k].lag) }; });
   Z.list.forEach((z, i) => out.zonas.push({ mercado: z.sym, tipo: z.name, direccion: z.side === "buy" ? "Compra" : "Venta", bajo: z.lo, alto: z.hi, grado: z.grade || "", estado: z.estado || "", sl: z.sl, tp1: z.tp1, tp2: z.tp2, ahora: zoneStatus(z, i, S[z.sym].price)[0], capital_en_zona_24h: zoneCap(z, 86400000, 0), capital_cerca_1pct_4h: zoneCap(z, 14400000, 0.01) }));
   for (const o of feed) { if (out.ordenes_1h.length >= 25 || now - o.t > 3600000) break; if (o.usd < 1000000) continue; out.ordenes_1h.push([hhmmss(o.t), o.sym, o.side === "buy" ? "compra" : "venta", Math.round(o.usd), o.price]); }
@@ -37,7 +40,7 @@ export async function aiAsk(question) {
 
 async function call(msgs, attempt, plain) {
   T.calls++;
-  const body = { model: ENV.aiModel, max_tokens: 16000, system: AI_PROMPT, messages: msgs };
+  const body = { model: ENV.aiModel, max_tokens: 16000, system: AI_PROMPT + SENT_NOTE, messages: msgs };
   if (!plain) { body.thinking = { type: "between_tools" }; body.output_config = { effort: attempt >= 2 ? "low" : "medium" }; }
   let r, j;
   try {

@@ -3,6 +3,7 @@ import { NAMES, ORDER } from "./config.js";
 import { alertInsert, alertsOpen, alertUpdate, alertsSince } from "./store.js";
 import { zkey } from "./zones.js";
 import { px, shortPR } from "./util.js";
+import { sentFor, sentRead } from "./sentiment.js";
 
 const H48 = 48 * 3600000;
 let open = []; // seguimiento en memoria (copia de la base de datos)
@@ -14,7 +15,8 @@ export const openCount = () => open.length;
 function valid(side, e, sl, tp) { return sl > 0 && tp > 0 && (side === "sell" ? sl > e && tp < e : sl < e && tp > e); }
 
 export function recordAlert({ t, sym, kind, z, order_side, entry, prox, usd }) {
-  const a = { t, sym, kind, zone_name: z.name, grade: z.grade, side: z.side, order_side, entry, prox, usd, sl: z.sl, tp1: z.tp1, tp2: z.tp2, zkey: zkey(z) };
+  const s = sentFor(sym);
+  const a = { t, sym, kind, zone_name: z.name, grade: z.grade, side: z.side, order_side, entry, prox, usd, sl: z.sl, tp1: z.tp1, tp2: z.tp2, zkey: zkey(z), fg: s ? s.v : null, fg_read: sentRead(z.side, s).tag };
   if (open.some((x) => x.zkey === a.zkey)) { a.track = 0; a.status = "repetida"; }      // ya hay una señal abierta en esa zona
   else if (!valid(z.side, entry, z.sl, z.tp1)) { a.track = 0; a.status = "sin niveles"; } // SL/TP no cuadran con el precio
   else { a.track = 1; a.status = "abierta"; }
@@ -90,6 +92,7 @@ export function resultsText(days = 30) {
   ORDER.forEach((k) => { const l = line(NAMES[k] || k, agg(rows.filter((a) => a.sym === k))); if (l) L.push(l); });
   ["A++", "A", "B"].forEach((g) => { const l = line("Grado " + g, agg(rows.filter((a) => a.grade === g))); if (l) L.push(l); });
   ["Order block", "Fair value gap", "Otra"].forEach((t) => { const l = line(t, agg(rows.filter((a) => tipo(a.zone_name) === t))); if (l) L.push(l); });
+  [["a favor", "Sentimiento a favor"], ["neutral", "Sentimiento neutral"], ["contra", "Sentimiento en contra"]].forEach(([k, n]) => { const l = line(n, agg(rows.filter((a) => a.fg_read === k))); if (l) L.push(l); });
   const op = rows.filter((a) => a.status === "abierta" || a.status === "tp1");
   if (op.length) L.push("En seguimiento ahora: " + op.length + (op.length ? " (" + op.slice(0, 5).map((a) => a.sym + " " + a.zone_name + " " + px(a.entry, a.sym) + (a.status === "tp1" ? " ✅TP1" : "")).join(" · ") + ")" : ""));
   const last = rows.filter((a) => ["TP1", "TP2", "SL"].includes(a.status)).slice(0, 5);

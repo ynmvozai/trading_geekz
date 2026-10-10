@@ -22,6 +22,8 @@ export function openStore(file) {
       track INTEGER, status TEXT, tp1_t INTEGER, end_t INTEGER, r REAL);
     CREATE INDEX IF NOT EXISTS alerts_status ON alerts(status);
   `);
+  // v3.1: sentimiento (Fear & Greed) al momento de la alerta
+  for (const c of ["fg INTEGER", "fg_read TEXT"]) { try { db.exec("ALTER TABLE alerts ADD COLUMN " + c); } catch {} }
   return db;
 }
 
@@ -48,9 +50,9 @@ export function feedPrune(before) {
 }
 
 export function alertInsert(a) {
-  const r = db.prepare(`INSERT INTO alerts(t,sym,kind,zone_name,grade,side,order_side,entry,prox,usd,sl,tp1,tp2,zkey,track,status)
-    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(a.t, a.sym, a.kind, a.zone_name, a.grade || "", a.side, a.order_side || "",
-    a.entry, a.prox ?? null, a.usd ?? null, a.sl || 0, a.tp1 || 0, a.tp2 || 0, a.zkey, a.track ? 1 : 0, a.status);
+  const r = db.prepare(`INSERT INTO alerts(t,sym,kind,zone_name,grade,side,order_side,entry,prox,usd,sl,tp1,tp2,zkey,track,status,fg,fg_read)
+    VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(a.t, a.sym, a.kind, a.zone_name, a.grade || "", a.side, a.order_side || "",
+    a.entry, a.prox ?? null, a.usd ?? null, a.sl || 0, a.tp1 || 0, a.tp2 || 0, a.zkey, a.track ? 1 : 0, a.status, a.fg ?? null, a.fg_read || null);
   return Number(r.lastInsertRowid);
 }
 export function alertsOpen() {

@@ -11,6 +11,7 @@ import { estadoText } from "./health.js";
 import { DAILY_Q, ZONES_Q } from "./prompts.js";
 import { kvGet, kvSet } from "./store.js";
 import { usd, px, hhmmss, sideEs, prParts, log } from "./util.js";
+import { sentimentText, refreshSentiment } from "./sentiment.js";
 
 const pending = new Map(); // id de usuario -> {what, run, until}
 
@@ -53,7 +54,7 @@ export function quickAnswer(text) {
 
 function ayuda() {
   return "Hot Zone " + VERSION + " · Comandos:\n" +
-    "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados**\n" +
+    "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados** · **sentimiento**\n" +
     "**pausar alertas** · **reanudar alertas** · **cargar zonas** [JSON o enlace del panel] · **borrar zona** [n] · **actualiza zonas** · **reiniciar**\n" +
     "**check** [dirección del token] · **mapa diario apagar/encender**\n" +
     "Mercados: btc, sol, oro. Cualquier otra pregunta la contesta TITO con Ai.";
@@ -81,6 +82,7 @@ export async function onAgentMessage(msg) {
   if (/^(estado|status)$/.test(ql)) return agent(estadoText());
   if (/^pausar( alertas)?$/.test(ql)) { setPaused(true); return agent("⏸️ Alertas pausadas. No se envía nada a #cryptoman, #oro-índice ni #ai-crypto (el sistema sigue midiendo y guardando). Escribe **reanudar alertas** para volver."); }
   if (/^reanudar( alertas)?$/.test(ql)) { setPaused(false); return agent("▶️ Alertas activas otra vez."); }
+  if (/^(sentimiento|miedo|codicia|fear|fear ?(&|and|y) ?greed|fng)\b/.test(ql)) { await refreshSentiment(); return agent(sentimentText()); }
   if (/^vigilancia$/.test(ql)) return agent(watchText(["BTC", "SOL"], "🎯 Zonas en vigilancia · Crypto") + "\n\n" + watchText(["XAU"], "🎯 Zonas en vigilancia · Oro"));
   if (/^resultados/.test(ql)) { const d = +(/(\d+)/.exec(ql) || [])[1] || 30; return agent(resultsText(Math.min(d, 365))); }
   if (/^reiniciar$/.test(ql)) {

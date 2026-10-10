@@ -10,6 +10,7 @@ import { botStart, agent, post } from "./discord.js";
 import { onAgentMessage, dailyTick } from "./commands.js";
 import { startHttp, estadoText, BOOT } from "./health.js";
 import { log, prParts } from "./util.js";
+import { startSentiment } from "./sentiment.js";
 
 log("Hot Zone", VERSION, "arrancando · datos en", ENV.dataDir);
 log("Variables:", Object.entries(ENV.hooks).map(([k, v]) => k + "=" + mask(v)).join(" "), "bot=" + mask(ENV.botToken), "anthropic=" + mask(ENV.anthropicKey));
@@ -20,6 +21,7 @@ M.loadMarket();
 loadResults();
 initAlerts();
 startHttp();
+startSentiment();
 
 // ---------- Binance ----------
 let blockedWarned = false;
