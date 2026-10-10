@@ -141,3 +141,13 @@ test("v3.2: calendario, índices y plan de sesión", async () => {
   assert.equal(SE.etParts(Date.parse("2026-11-16T13:20:00Z")).hour, 8);   // 8:20 AM ET en noviembre (EST)
   assert.match(SE.SESSION_Q, /\[\[INDICES\]\]/);
 });
+
+test("v3.3: canal #sesion-ny (ventana, índices y radar)", async () => {
+  const SN = await import("../src/sesionny.js");
+  assert.equal(SN.inWindow(Date.parse("2026-10-12T13:05:00Z")), true);   // lunes 9:05 AM PR
+  assert.equal(SN.inWindow(Date.parse("2026-10-12T21:35:00Z")), false);  // lunes 5:35 PM PR
+  assert.equal(SN.inWindow(Date.parse("2026-10-10T15:00:00Z")), false);  // sábado
+  assert.equal(SN.setIdxZones([{ sym: "US30", name: "x", side: "sell", lo: 51875, hi: 51765 }, { sym: "BTC", lo: 1, hi: 2 }]), 1);
+  assert.equal(SN.idxZones()[0].lo, 51765);
+  assert.match(SN.radarText("t", Date.now() - 3600000, null), /US30 \(Dow\)/);
+});
