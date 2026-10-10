@@ -1,6 +1,6 @@
 # CONTINUAR · estado del proyecto Hot Zone 24/7
 
-_Última actualización: 9 oct 2026._ Lee esto primero si eres una sesión nueva de Claude Code.
+_Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nueva de Claude Code.
 
 ## Contexto rápido
 - Dueño: Yasser Nieves (Visionary_GeeKz). Habla español, no es programador, maneja todo desde el iPhone.
@@ -53,3 +53,10 @@ _Última actualización: 9 oct 2026._ Lee esto primero si eres una sesión nueva
 - Comandos de control solo para el dueño del servidor de Discord (o `OWNER_IDS`).
 - Historial: una señal seguida por zona a la vez (las repetidas se guardan como "repetida"); si SL y TP caen en la misma vela de 1 min tras un corte, cuenta SL. Señales con SL/TP que no cuadran con el precio: "sin niveles", no cuentan.
 - `reiniciar` sale con código 1 y Railway lo levanta (reinicio "ALWAYS").
+
+
+## v3.1 · Sentimiento Fear & Greed (10 oct 2026)
+- Nuevo `src/sentiment.js`: crypto (BTC/SOL) de `api.alternative.me/fng` y referencia de acciones EE. UU. (para oro) de CNN `production.dataviz.cnn.io/index/fearandgreed/graphdata`. Se refresca cada 30 min; si falla, "sin dato" (nunca se rellena).
+- Aparece en: alertas (campo "Sentimiento · Fear & Greed" con lectura contraria por zona), resumen de vigilancia (línea 🧭 y etiqueta ✅/⚠️/⚪ por zona), `estado`, `/state`, comando `sentimiento` en #agent y contexto de TITO (nota añadida en `tito.js`, sin tocar `prompts.js`).
+- Historial: columnas nuevas `fg` y `fg_read` en `alerts` (migración automática). `resultados` separa "Sentimiento a favor / neutral / en contra" para medir si mejora los aciertos en 2–4 semanas. Por ahora solo etiqueta, no filtra.
+- Pendiente idea de Yasser: sesgo de temporalidad mayor (4H/diario/semanal) con order flow (CVD, open interest, funding). No implementado aún.
