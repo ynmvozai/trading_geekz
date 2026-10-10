@@ -1,6 +1,6 @@
 // Comandos del canal #agent (control remoto desde el celular). Todo lo demás va a TITO.
 import { ENV, ORDER, NAMES, VERSION, PUBLIC_URL } from "./config.js";
-import { agent, isAdmin } from "./discord.js";
+import { agent, isAdmin, idxPost } from "./discord.js";
 import { S, flow, feed, prices } from "./market.js";
 import { Z, zonesText, sanitizeZones, parseZoneInput, setZones, applyAiZones, shareLink } from "./zones.js";
 import { setPaused, watchText } from "./alerts.js";
@@ -14,7 +14,7 @@ import { usd, px, hhmmss, sideEs, prParts, log } from "./util.js";
 import { sentimentText, refreshSentiment } from "./sentiment.js";
 import { calText, refreshCal, tvSecret, TV } from "./macro.js";
 import { runSession } from "./sesion.js";
-import { boardText, radarText, sesPost } from "./sesionny.js";
+import { boardText, radarText, sesPost, SES } from "./sesionny.js";
 
 const pending = new Map(); // id de usuario -> {what, run, until}
 
@@ -93,7 +93,13 @@ export async function onAgentMessage(msg) {
   if (/^tv url$/.test(ql)) return agent("📺 **Webhook de TradingView para índices** (no lo compartas)\n" + (ENV.serverUrl || "https://<tu-servidor>") + "/tv/" + tvSecret() +
     "\nMensaje de la alerta (5 min, \"Once per bar close\"):\n`{\"s\":\"{{ticker}}\",\"o\":{{open}},\"h\":{{high}},\"l\":{{low}},\"c\":{{close}},\"t\":\"{{time}}\"}`\nRecibidos hasta ahora: " + TV.n);
   if (/^radar$/.test(ql)) return agent(radarText("📡 **Radar ahora** (última hora)", Date.now() - 3600000, null));
-  if (/^probar sesi[oó]n$/.test(ql)) { await sesPost(boardText("🧪 **Prueba de #sesion-ny** · así se verá el canal", Date.now() - 3600000, null)); return agent("Envié una prueba a #sesion-ny. Si no llegó, escribe **estado** y mira la línea de #sesion-ny."); }
+  if (/^probar sesi[oó]n$/.test(ql)) {
+    const res = [];
+    await sesPost(boardText("🧪 **Prueba de #sesion-ny** · así se verá el canal", Date.now() - 3600000, null));
+    res.push(SES.lastErr ? "❌ #sesion-ny: " + SES.lastErr : "✅ #sesion-ny: prueba enviada");
+    try { await idxPost("🧪 **Prueba de #indices-zonas** · aquí llegarán el plan NY de US30/NAS100 y los avisos de noticias."); res.push("✅ #indices-zonas: prueba enviada"); } catch (e) { res.push("❌ #indices-zonas: " + e.message); }
+    return agent(res.join("\n") + "\nSi algún canal dice 403: en Discord → Editar canal → Permisos → agrega al bot con \"Enviar mensajes\".");
+  }
   if (/^vigilancia$/.test(ql)) return agent(watchText(["BTC", "SOL"], "🎯 Zonas en vigilancia · Crypto") + "\n\n" + watchText(["XAU"], "🎯 Zonas en vigilancia · Oro"));
   if (/^resultados/.test(ql)) { const d = +(/(\d+)/.exec(ql) || [])[1] || 30; return agent(resultsText(Math.min(d, 365))); }
   if (/^reiniciar$/.test(ql)) {

@@ -46,7 +46,7 @@ export function estadoText() {
   L.push(ck(ENV.anthropicKey && !T.lastErr) + " Ai (TITO): " + (ENV.anthropicKey ? T.calls + " llamadas · " + Math.round(T.inTok / 1000) + "K tokens entrada · " + Math.round(T.outTok / 1000) + "K salida" + (T.lastErr ? " · último error: " + T.lastErr : "") : "falta ANTHROPIC_API_KEY") + " · mapa diario " + (kvGet("dailyOff", false) ? "apagado" : "7:48 AM") + (kvGet("lastDaily") ? " (último " + kvGet("lastDaily") + ")" : ""));
   L.push((SENT.crypto ? "✅" : "❌") + " Fear & Greed crypto: " + (SENT.crypto ? SENT.crypto.v + "/100 · " + SENT.crypto.label : "sin dato" + (SENT.lastErr.crypto ? " (" + SENT.lastErr.crypto + ")" : "")) + " · acciones (ref. oro): " + (SENT.stocks ? SENT.stocks.v + "/100 · " + SENT.stocks.label : "sin dato" + (SENT.lastErr.stocks ? " (" + SENT.lastErr.stocks + ")" : "")));
   L.push((CAL.t ? "✅" : "❌") + " Calendario USD: " + (CAL.t ? CAL.events.length + " eventos medio/alto" + (CAL.err ? " (" + CAL.err + ")" : "") : "sin dato" + (CAL.err ? " (" + CAL.err + ")" : "")) + " · plan sesión NY " + (kvGet("sessionOff", false) ? "apagado" : "8:15 AM ET L-V") + (kvGet("lastSession") ? " (último " + kvGet("lastSession") + ")" : ""));
-  L.push((IDX.YM && IDX.NQ ? "✅" : "❌") + " Índices: " + idxLine() + " · #indices-zonas " + (ENV.hooks.indices ? "✅" : "❌ (falta WEBHOOK_INDICES, va a #agent)"));
+  L.push((IDX.YM && IDX.NQ ? "✅" : "❌") + " Índices: " + idxLine() + " · #indices-zonas por " + (ENV.hooks.indices ? "webhook" : "bot"));
   L.push(sesEstado());
   L.push("Discord: " + hookStats.sent + " mensajes enviados" + (hookStats.failed ? " · " + hookStats.failed + " fallidos" : ""));
   return L.join("\n");

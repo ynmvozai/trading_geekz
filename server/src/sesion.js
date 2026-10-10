@@ -1,7 +1,7 @@
 // Plan de la sesión de Nueva York: TITO lo arma con data real y cada parte va a su canal.
 // Crypto → #cryptoman · Oro → #oro-índice · Índices → #indices-zonas (WEBHOOK_INDICES) · resumen → #agent.
 import { ENV } from "./config.js";
-import { postLong, agent } from "./discord.js";
+import { postLong, agent, idxPost } from "./discord.js";
 import { aiAsk } from "./tito.js";
 import { kl } from "./binance.js";
 import { prices } from "./market.js";
@@ -54,9 +54,10 @@ export async function runSession(manual = false) {
     const send = (hook, title, body) => (body ? (hook ? postLong(hook, head(title) + body) : agent(head(title) + body)) : Promise.resolve());
     await send(ENV.hooks.crypto, "Crypto", s.CRYPTO);
     await send(ENV.hooks.oro, "Oro", s.ORO);
-    await send(ENV.hooks.indices, "Índices", s.INDICES);
+    let idxOk = true;
+    if (s.INDICES) { try { await idxPost(head("Índices") + s.INDICES); } catch (e) { idxOk = false; await agent(head("Índices") + s.INDICES + "\n\n⚠️ No pude publicar en #indices-zonas: " + e.message); } }
     await agent("🗽 **Plan de la sesión de Nueva York**\n" + (s.RESUMEN || "") +
-      "\n\nDetalle en #cryptoman, #oro-índice" + (ENV.hooks.indices ? " y #indices-zonas" : " (índices aquí abajo: falta WEBHOOK_INDICES)") + "." +
+      "\n\nDetalle en #cryptoman, #oro-índice" + (idxOk ? " y #indices-zonas" : " (índices aquí en #agent)") + "." +
       (r.n ? "\n✅ " + r.n + " zonas de BTC/SOL/oro cargadas: las alertas ya las vigilan." : r.err ? "\n⚠️ No pude leer las zonas (" + r.err + ")." : "") + (nIdx ? "\n✅ " + nIdx + " zonas de US30/NAS100 para #sesion-ny." : ""));
     kvSet("lastSession", etParts().date);
   } catch (e) {

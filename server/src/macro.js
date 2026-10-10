@@ -1,7 +1,7 @@
 // Macro: calendario económico de USD (Forex Factory, gratis) e índices (futuros del Dow YM y Nasdaq NQ).
 // Data real; si una fuente falla se dice "sin dato", nunca se rellena.
 import { ENV } from "./config.js";
-import { post, agent } from "./discord.js";
+import { post, agent, idxPost } from "./discord.js";
 import { kvGet, kvSet } from "./store.js";
 import crypto from "node:crypto";
 import { log, etParts } from "./util.js";
@@ -69,7 +69,8 @@ export function calTick(now = Date.now()) {
     kvSet(k, 1);
     const txt = "⚠️ **Noticia de alto impacto USD en 30 min** · " + fmtPR(e.t) + "\n**" + e.title + "**" + (e.forecast ? " · pronóstico " + e.forecast : "") + (e.previous ? " · anterior " + e.previous : "") +
       "\nSugerencia: pausa entradas nuevas hasta ver la reacción. Después de la noticia, analiza solo la reacción técnica y la absorción de liquidez.";
-    for (const h of [ENV.hooks.crypto, ENV.hooks.oro, ENV.hooks.indices]) if (h) post(h, txt).catch(() => {});
+    for (const h of [ENV.hooks.crypto, ENV.hooks.oro]) if (h) post(h, txt).catch(() => {});
+    idxPost(txt).catch(() => {});
     agent(txt);
   }
 }

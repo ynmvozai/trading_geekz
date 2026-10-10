@@ -66,6 +66,21 @@ export async function postLong(url, txt) {
   for (const part of splitLong(txt)) await post(url, { content: part });
 }
 
+// Publicar con el bot en un canal por su id (sin webhook). Requiere permiso de "Enviar mensajes" del bot en ese canal.
+export async function botPost(channelId, txt) {
+  if (!ENV.botToken || !channelId) throw new Error("falta DISCORD_BOT_TOKEN o el id del canal");
+  for (const part of splitLong(txt)) {
+    const r = await fetch("https://discord.com/api/v10/channels/" + channelId + "/messages", {
+      method: "POST", headers: { "content-type": "application/json", authorization: "Bot " + ENV.botToken },
+      body: JSON.stringify({ content: part, allowed_mentions: { parse: [] } }), signal: AbortSignal.timeout(15000),
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status + (r.status === 403 ? " (el bot no tiene permiso de escribir en ese canal)" : ""));
+    hookStats.sent++;
+  }
+}
+// #indices-zonas: webhook si existe; si no, el bot.
+export const idxPost = (txt) => (ENV.hooks.indices ? postLong(ENV.hooks.indices, txt) : botPost(ENV.indicesChannelId, txt));
+
 export const agent = (txt) => (ENV.hooks.agent ? postLong(ENV.hooks.agent, txt).catch(() => {}) : Promise.resolve());
 
 // ---------- Bot por gateway ----------
