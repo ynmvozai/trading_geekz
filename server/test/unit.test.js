@@ -151,3 +151,15 @@ test("v3.3: canal #sesion-ny (ventana, índices y radar)", async () => {
   assert.equal(SN.idxZones()[0].lo, 51765);
   assert.match(SN.radarText("t", Date.now() - 3600000, null), /US30 \(Dow\)/);
 });
+
+test("v3.4: índices por webhook de TradingView", async () => {
+  const MA = await import("../src/macro.js");
+  assert.equal(MA.tvSym("DJ30"), "YM"); assert.equal(MA.tvSym("USTEC"), "NQ"); assert.equal(MA.tvSym("OANDA:US30USD"), "YM"); assert.equal(MA.tvSym("BTCUSD"), null);
+  const r = MA.onTv('{"s":"DJ30","o":51600,"h":51700,"l":51550,"c":51650,"t":"2026-10-12T13:35:00Z"}');
+  assert.equal(r.ok, true); assert.equal(MA.IDX.YM.price, 51650); assert.match(MA.IDX.YM.fuente, /^TradingView/);
+  MA.onTv({ s: "DJ30", o: 51650, h: 51800, l: 51640, c: 51790, t: "2026-10-12T13:40:00Z" });
+  assert.deepEqual(MA.IDX.YM.daily[MA.IDX.YM.daily.length - 1], ["2026-10-12", 51600, 51800, 51550, 51790]);
+  assert.equal(MA.IDX.YM.h1.length, 1);
+  assert.equal(MA.onTv("{}").ok, false);
+  assert.equal(MA.tvSecret().length, 24);
+});
