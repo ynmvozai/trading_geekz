@@ -8,31 +8,32 @@ import { kl } from "./binance.js";
 import { kvGet, kvSet } from "./store.js";
 import { hhmmss, fullPR, sleep } from "./util.js";
 import { sentData } from "./sentiment.js";
+import { calForAi } from "./macro.js";
 
-const SENT_NOTE = "\n\n# SENTIMIENTO (FEAR & GREED INDEX)\nEn [PANEL_HOT_ZONE] recibes sentimiento_fear_greed: crypto_btc_sol (alternative.me, 0-100) y acciones_ref_oro (CNN, acciones de EE. UU.; para el oro es solo referencia del ánimo general). 0-24 miedo extremo, 25-44 miedo, 45-55 neutral, 56-75 codicia, 76-100 codicia extrema. Úsalo como factor de contexto en cada zona con lectura contraria: miedo extremo en zona de compra o codicia extrema en zona de venta = confluencia; lo opuesto = más riesgo, pide mejor confirmación. Menciona el valor, el de ayer y el de hace 7 días cuando aporte. Nunca lo uses como gatillo de entrada ni como certeza. Si viene null, di que no hay dato.";
+const SENT_NOTE = "\n\n# SENTIMIENTO (FEAR & GREED INDEX)\nEn [PANEL_HOT_ZONE] recibes sentimiento_fear_greed: crypto_btc_sol (alternative.me, 0-100) y acciones_ref_oro (CNN, acciones de EE. UU.; para el oro es solo referencia del ánimo general). 0-24 miedo extremo, 25-44 miedo, 45-55 neutral, 56-75 codicia, 76-100 codicia extrema. Úsalo como factor de contexto en cada zona con lectura contraria: miedo extremo en zona de compra o codicia extrema en zona de venta = confluencia; lo opuesto = más riesgo, pide mejor confirmación. Menciona el valor, el de ayer y el de hace 7 días cuando aporte. Nunca lo uses como gatillo de entrada ni como certeza. Si viene null, di que no hay dato.\n\n# CALENDARIO E ÍNDICES (ACTUALIZACIÓN v3.2)\nYa tienes calendario conectado: [PANEL_HOT_ZONE].calendario_usd_7_dias trae los eventos USD de impacto medio y alto (Forex Factory, hora de PR). Úsalo para noticias; si dice sin dato, dilo. Esto reemplaza lo que dice arriba sobre no tener calendario. Cuando recibas [INDICES], son futuros reales de US30 (YM) y NAS100 (NQ): úsalos en vez de QQQUSDT.";
 
 export const T = { calls: 0, errors: 0, lastErr: "", lastOk: 0, inTok: 0, outTok: 0 };
 let hist = null;
 
 export function panelData() {
-  const now = Date.now(), out = { hora_PR: fullPR(now), mercados: {}, zonas: [], ordenes_1h: [], ai_crypto_senales: simStats(), sentimiento_fear_greed: sentData() };
+  const now = Date.now(), out = { hora_PR: fullPR(now), mercados: {}, zonas: [], ordenes_1h: [], ai_crypto_senales: simStats(), sentimiento_fear_greed: sentData(), calendario_usd_7_dias: calForAi() };
   ORDER.forEach((k) => { const f = flow(k, 300000, now); out.mercados[k] = { precio: S[k].price, compras_5m: Math.round(f.buy), ventas_5m: Math.round(f.sell), retraso_datos_ms: S[k].lag == null ? null : Math.round(S[k].lag) }; });
   Z.list.forEach((z, i) => out.zonas.push({ mercado: z.sym, tipo: z.name, direccion: z.side === "buy" ? "Compra" : "Venta", bajo: z.lo, alto: z.hi, grado: z.grade || "", estado: z.estado || "", sl: z.sl, tp1: z.tp1, tp2: z.tp2, ahora: zoneStatus(z, i, S[z.sym].price)[0], capital_en_zona_24h: zoneCap(z, 86400000, 0), capital_cerca_1pct_4h: zoneCap(z, 14400000, 0.01) }));
   for (const o of feed) { if (out.ordenes_1h.length >= 25 || now - o.t > 3600000) break; if (o.usd < 1000000) continue; out.ordenes_1h.push([hhmmss(o.t), o.sym, o.side === "buy" ? "compra" : "venta", Math.round(o.usd), o.price]); }
   return out;
 }
 
-export async function aiAsk(question) {
+export async function aiAsk(question, extra = "", label = "") {
   if (!ENV.anthropicKey) throw new Error("falta ANTHROPIC_API_KEY en Railway");
   if (!hist) hist = kvGet("aiHist", []) || [];
   const syms = ["BTCUSDT", "SOLUSDT", "XAUUSDT", "QQQUSDT"];
   const res = await Promise.all(syms.map((s) => Promise.all([kl(s, "4h", 42), kl(s, "1h", 36)])));
   const velas = {};
   syms.forEach((s, i) => { velas[s] = { "4h": res[i][0], "1h": res[i][1] }; });
-  const ctx = "[PANEL_HOT_ZONE]\n" + JSON.stringify(panelData()) + "\n\n[VELAS]\n" + JSON.stringify(velas) + "\n\n[MAPA_INDICES]\n" + JSON.stringify(INDEX_MAP);
+  const ctx = "[PANEL_HOT_ZONE]\n" + JSON.stringify(panelData()) + "\n\n[VELAS]\n" + JSON.stringify(velas) + "\n\n[MAPA_INDICES]\n" + JSON.stringify(INDEX_MAP) + (extra ? "\n\n" + extra : "");
   const msgs = hist.slice(-8).concat([{ role: "user", content: ctx + "\n\n[PREGUNTA DE YASSER]\n" + question }]);
   const txt = await call(msgs, 1, false);
-  hist.push({ role: "user", content: question }, { role: "assistant", content: txt });
+  hist.push({ role: "user", content: label || question }, { role: "assistant", content: txt });
   if (hist.length > 16) hist = hist.slice(-16);
   kvSet("aiHist", hist);
   return txt;

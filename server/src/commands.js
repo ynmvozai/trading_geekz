@@ -12,6 +12,8 @@ import { DAILY_Q, ZONES_Q } from "./prompts.js";
 import { kvGet, kvSet } from "./store.js";
 import { usd, px, hhmmss, sideEs, prParts, log } from "./util.js";
 import { sentimentText, refreshSentiment } from "./sentiment.js";
+import { calText, refreshCal } from "./macro.js";
+import { runSession } from "./sesion.js";
 
 const pending = new Map(); // id de usuario -> {what, run, until}
 
@@ -54,13 +56,13 @@ export function quickAnswer(text) {
 
 function ayuda() {
   return "Hot Zone " + VERSION + " · Comandos:\n" +
-    "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados** · **sentimiento**\n" +
+    "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados** · **sentimiento** · **calendario** · **plan ny**\n" +
     "**pausar alertas** · **reanudar alertas** · **cargar zonas** [JSON o enlace del panel] · **borrar zona** [n] · **actualiza zonas** · **reiniciar**\n" +
-    "**check** [dirección del token] · **mapa diario apagar/encender**\n" +
+    "**check** [dirección del token] · **mapa diario apagar/encender** · **plan ny apagar/encender**\n" +
     "Mercados: btc, sol, oro. Cualquier otra pregunta la contesta TITO con Ai.";
 }
 
-const ADMIN_RE = /^(pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario)/;
+const ADMIN_RE = /^(pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|plan ny (apagar|encender|on|off))/;
 
 export async function onAgentMessage(msg) {
   const q = (msg.content || "").trim();
@@ -83,6 +85,10 @@ export async function onAgentMessage(msg) {
   if (/^pausar( alertas)?$/.test(ql)) { setPaused(true); return agent("⏸️ Alertas pausadas. No se envía nada a #cryptoman, #oro-índice ni #ai-crypto (el sistema sigue midiendo y guardando). Escribe **reanudar alertas** para volver."); }
   if (/^reanudar( alertas)?$/.test(ql)) { setPaused(false); return agent("▶️ Alertas activas otra vez."); }
   if (/^(sentimiento|miedo|codicia|fear|fear ?(&|and|y) ?greed|fng)\b/.test(ql)) { await refreshSentiment(); return agent(sentimentText()); }
+  if (/^plan ny (apagar|apagado|off)$/.test(ql)) { kvSet("sessionOff", true); return agent("Plan de sesión NY automático apagado. Puedes pedirlo con **plan ny**."); }
+  if (/^plan ny (encender|prender|on)$/.test(ql)) { kvSet("sessionOff", false); return agent("Plan de sesión NY automático encendido: lunes a viernes, 8:15 AM hora de Nueva York."); }
+  if (/^(plan ny|plan de (la )?sesi[oó]n|sesi[oó]n ny|plan nueva york)$/.test(ql)) return runSession(true);
+  if (/^(calendario|noticias)\b/.test(ql)) { await refreshCal(); return agent(calText(7)); }
   if (/^vigilancia$/.test(ql)) return agent(watchText(["BTC", "SOL"], "🎯 Zonas en vigilancia · Crypto") + "\n\n" + watchText(["XAU"], "🎯 Zonas en vigilancia · Oro"));
   if (/^resultados/.test(ql)) { const d = +(/(\d+)/.exec(ql) || [])[1] || 30; return agent(resultsText(Math.min(d, 365))); }
   if (/^reiniciar$/.test(ql)) {

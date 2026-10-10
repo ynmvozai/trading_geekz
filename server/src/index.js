@@ -11,6 +11,8 @@ import { onAgentMessage, dailyTick } from "./commands.js";
 import { startHttp, estadoText, BOOT } from "./health.js";
 import { log, prParts } from "./util.js";
 import { startSentiment } from "./sentiment.js";
+import { startMacro } from "./macro.js";
+import { sessionTick } from "./sesion.js";
 
 log("Hot Zone", VERSION, "arrancando · datos en", ENV.dataDir);
 log("Variables:", Object.entries(ENV.hooks).map(([k, v]) => k + "=" + mask(v)).join(" "), "bot=" + mask(ENV.botToken), "anthropic=" + mask(ENV.anthropicKey));
@@ -22,6 +24,7 @@ loadResults();
 initAlerts();
 startHttp();
 startSentiment();
+startMacro();
 
 // ---------- Binance ----------
 let blockedWarned = false;
@@ -84,6 +87,7 @@ setInterval(() => {
 
 setInterval(() => {
   dailyTick();
+  sessionTick();
   expire();
   const pp = prParts();
   // Latido diario 8:00 AM
