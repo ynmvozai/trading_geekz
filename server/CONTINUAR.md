@@ -76,3 +76,8 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
   BTC/SOL/Oro: zonas + órdenes grandes reales (dónde quedaron respecto al precio y a la zona). US30/NAS100: solo zonas (sin órdenes en vivo), zonas guardadas en kv `idxZones` desde el plan NY.
 - Envío: `WEBHOOK_SESION` si existe; si no, el bot por REST (`DISCORD_BOT_TOKEN` + id del canal). Si el bot no tiene permiso, `estado` lo dice (HTTP 403).
 - Comandos: `radar` (en #agent) y `probar sesion` (manda una prueba a #sesion-ny).
+
+## v3.4 · Índices desde TradingView (10 oct 2026)
+- En Railway, Yahoo (429) y Stooq (403) bloquean. Solución: alertas de TradingView de Yasser (DJ30 y USTEC, 5 min, "Once per bar close") hacen POST a `/tv/<secreto>` con `{"s":"{{ticker}}","o":{{open}},"h":{{high}},"l":{{low}},"c":{{close}},"t":"{{time}}"}`.
+- El secreto se genera solo (kv `tvSecret`); el dueño lo ve con `tv url` en #agent. El servidor guarda velas de 5 min (2 días), arma 1H y diarias (60 días) y llena `IDX.YM` / `IDX.NQ` (fuente "TradingView"). Yahoo/Stooq quedan de respaldo.
+- La historia diaria de índices se llena con los días: al principio TITO tendrá poca historia.
