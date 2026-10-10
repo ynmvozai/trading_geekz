@@ -68,3 +68,11 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - TITO recibe `calendario_usd_7_dias` en el payload y una nota que reemplaza "no tienes calendario".
 - Ojo costo: el plan NY (8:15) y el mapa diario (7:48) llaman a Claude cada uno. Si Yasser quiere uno solo: `mapa diario apagar`.
 - Fuentes Yahoo/Stooq no se pudieron probar desde el entorno de desarrollo (bloqueadas); verificar con `estado` en Railway.
+
+## v3.3 · Canal #sesion-ny (10 oct 2026)
+- Canal creado en Discord: `#sesion-ny` (categoría ALERTAS, id `1558528510354788392`, variable `SESION_CHANNEL_ID`).
+- `src/sesionny.js`: activo L-V de 9:00 AM a 5:30 PM hora de PR (ventana fija en PR); open (9:30 AM ET) y cierre (4:00 PM ET) en hora de NY (`etParts` en util.js), así el cambio de horario se ajusta solo.
+  Publica: pre-apertura (9:00 PR), OPEN de NY, radar compacto cada hora (10:30–3:30 ET), CIERRE de NY con zonas tocadas, alertas 80%/100% de los 5 mercados y copia de las alertas de órdenes grandes en zona.
+  BTC/SOL/Oro: zonas + órdenes grandes reales (dónde quedaron respecto al precio y a la zona). US30/NAS100: solo zonas (sin órdenes en vivo), zonas guardadas en kv `idxZones` desde el plan NY.
+- Envío: `WEBHOOK_SESION` si existe; si no, el bot por REST (`DISCORD_BOT_TOKEN` + id del canal). Si el bot no tiene permiso, `estado` lo dice (HTTP 403).
+- Comandos: `radar` (en #agent) y `probar sesion` (manda una prueba a #sesion-ny).
