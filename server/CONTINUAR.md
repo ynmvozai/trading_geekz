@@ -60,3 +60,11 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Aparece en: alertas (campo "Sentimiento · Fear & Greed" con lectura contraria por zona), resumen de vigilancia (línea 🧭 y etiqueta ✅/⚠️/⚪ por zona), `estado`, `/state`, comando `sentimiento` en #agent y contexto de TITO (nota añadida en `tito.js`, sin tocar `prompts.js`).
 - Historial: columnas nuevas `fg` y `fg_read` en `alerts` (migración automática). `resultados` separa "Sentimiento a favor / neutral / en contra" para medir si mejora los aciertos en 2–4 semanas. Por ahora solo etiqueta, no filtra.
 - Pendiente idea de Yasser: sesgo de temporalidad mayor (4H/diario/semanal) con order flow (CVD, open interest, funding). No implementado aún.
+
+## v3.2 · Plan de sesión NY, calendario e índices (10 oct 2026)
+- `src/sesion.js`: plan de la sesión de Nueva York automático L-V 8:15 AM hora de NY (`etParts`, cambia solo con el horario de invierno). TITO usa velas diarias + 4H/1H, índices, calendario y Fear & Greed; responde en secciones `[[RESUMEN]] [[CRYPTO]] [[ORO]] [[INDICES]]` + bloque JSON de zonas (se cargan con `applyAiZones`). Envío: crypto → WEBHOOK_CRYPTO, oro → WEBHOOK_ORO, índices → **WEBHOOK_INDICES** (nueva variable; sin ella va a #agent), resumen → #agent.
+- `src/macro.js`: calendario USD (Forex Factory `ff_calendar_thisweek/nextweek.json`, impacto medio/alto) cada 3 h, aviso automático 30 min antes de cada noticia de alto impacto a #cryptoman, #oro-índice, #indices-zonas y #agent; índices YM=F y NQ=F de Yahoo (fallback Stooq diario) cada 15 min. Todo con "sin dato" si falla.
+- Comandos: `plan ny` (a pedido), `plan ny apagar/encender` (dueño), `calendario` / `noticias`. `estado` muestra calendario, índices y plan.
+- TITO recibe `calendario_usd_7_dias` en el payload y una nota que reemplaza "no tienes calendario".
+- Ojo costo: el plan NY (8:15) y el mapa diario (7:48) llaman a Claude cada uno. Si Yasser quiere uno solo: `mapa diario apagar`.
+- Fuentes Yahoo/Stooq no se pudieron probar desde el entorno de desarrollo (bloqueadas); verificar con `estado` en Railway.
