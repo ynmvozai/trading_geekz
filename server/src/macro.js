@@ -177,7 +177,7 @@ export function storeIdxBar(k, iso, op, h, l, c, day, label) {
 }
 
 // CNBC (cotización en vivo de futuros @YM.1 / @NQ.1, con apertura, máximo y mínimo del día).
-const CNBC = { YM: "@YM.1", NQ: "@NQ.1" };
+const CNBC = { YM: "@DJ.1", NQ: "@ND.1" }; // Dow Jones Fut y NASDAQ 100 Fut en CNBC
 const num = (v) => (v == null ? NaN : +String(v).replace(/[,%$\s]/g, ""));
 export function parseCnbc(j) {
   const out = {};
@@ -193,10 +193,13 @@ async function refreshCnbc() {
   for (const k of ["YM", "NQ"]) {
     const x = q[CNBC[k]]; if (!x) continue;
     const c = num(x.last); if (!(c > 0)) continue;
-    const t = Date.parse(x.last_time || x.last_timedate || "") || Date.now();
+    if (x.code != null && +x.code !== 0) continue;
+    const lt = String(x.last_time || "");
+    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(lt); // mercado cerrado: CNBC da solo la fecha
+    const t = dateOnly ? Date.now() : Date.parse(lt) || Date.now();
     const iso = new Date(Math.floor(t / 300000) * 300000).toISOString().slice(0, 16);
     const o = num(x.open), h = num(x.high), l = num(x.low);
-    const day = o > 0 && h > 0 && l > 0 ? { d: etParts(t).date, ohlc: [o, h, l, c] } : null;
+    const day = o > 0 && h > 0 && l > 0 ? { d: dateOnly ? lt : etParts(t).date, ohlc: [o, h, l, c] } : null;
     storeIdxBar(k, iso, c, c, c, c, day, "CNBC " + CNBC[k]);
     n++;
   }
