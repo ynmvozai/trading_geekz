@@ -102,3 +102,15 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Ai Crypto: "Señal: VENDER Bitcoin a X" + SL/TP; resultado "llegó al TP / tocó SL".
 - Plan NY (TITO): prompt pide lenguaje simple, máx. 700 caracteres por sección y cada zona en una línea.
 - Próximo: tracking de wallets "whale" (Cielo vs tracker propio, Yasser decide).
+
+## v3.9 · Formato aprobado por Yasser (11 oct 2026)
+- Propuesta aprobada: https://claude.ai/artifact/C1CCojfdeWBYENXXoJsZqM. Regla clave: la 1.ª línea de cada alerta va SIN `**` ni `_` (las notificaciones del celular los muestran crudos). "🛑 Stop / 🎯 Meta" en vez de SL/TP, Bitcoin sin decimales y sin ".00" (`pf` en friendly.js), cercanía en palabras (lejos / a medio camino / muy cerca / dentro).
+- Orden grande: "🐋 Bitcoin: ballena VENDIÓ $4.83M · 83,119" + "Dentro/Cerca de zona de VENTA → empuja a favor ✅" (o "⚠️ Ojo: empuja en contra…"). Agrupación: misma moneda + lado + zona en 2 min → un solo mensaje y luego "➕ siguen VENDIENDO · +$X en N órdenes más".
+- Zona 80/100%: "🔴 Oro entró a zona de VENTA · precio". Resumen de cada hora solo si alguna zona está a ≥50% (`watchText` devuelve "" si no).
+- #sesion-ny: tablero de 1 línea por mercado ordenado por cercanía + línea de ballenas; radar solo con mercados ≥50%; cierre con `closeText` (zonas tocadas, cambio desde el open, qué vigilar mañana). Índices se llaman "Dow" y "Nasdaq".
+- Noticias: un solo aviso, en #sesion-ny dentro de su horario o en #agent fuera; nombre en español (`newsEs`).
+- Ai Crypto: "🤖 Señal Ai: VENDER Bitcoin · precio" / "✅ Señal Ai ganó…" / "❌ Señal Ai tocó el stop…" + "📊 Récord: X de N ganadas".
+- #agent: arranque y latido diario con `bootText` (solo lista lo que falla); `estado` sigue dando el detalle.
+- #resultados (domingo 6 PM): `weeklyText(7)` amigable; el comando `resultados` mantiene el detalle.
+- Plan NY: el prompt prohíbe siglas (BOS, FVG, OB, R) y fija el formato de una línea por zona.
+- Pendiente aprobado en idea: alerta 🐳 mega ballena (sin importar zona) + liquidaciones grandes, y tracker propio de wallets de Solana (regla 3 de 10). Falta que Yasser confirme montos y lista de wallets / API key de Helius.
