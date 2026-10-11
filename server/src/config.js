@@ -1,7 +1,7 @@
 // Configuración fija (portada del panel v2.4) y variables de entorno.
 import path from "node:path";
 
-export const VERSION = "v4.0-server · 11 oct 2026";
+export const VERSION = "v4.1-server · 11 oct 2026";
 
 export const SYMS = {
   BTC: { stream: "btcusdt", label: "BTCUSDT", dec: 1, min: 3000000, max: 6000000, ch: "crypto" },
@@ -42,6 +42,7 @@ export const ENV = {
   megaChannelId: env.MEGA_CHANNEL_ID || "1558942738181787748",
   walletChannelId: env.WALLET_CHANNEL_ID || "1558158617411190865",
   heliusKey: env.HELIUS_API_KEY || "",
+  solanaRpc: env.SOLANA_RPC || "",
   agentChannelId: env.AGENT_CHANNEL_ID || "1557585826810962102",
   guildId: env.GUILD_ID || "1557574932064509982",
   ownerIds: (env.OWNER_IDS || "").split(",").map((s) => s.trim()).filter(Boolean),
