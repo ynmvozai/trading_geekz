@@ -91,5 +91,5 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Así las alertas de TradingView se configuran con `https://tradinggeekz-production.up.railway.app/tv` sin manejar secretos. `estado` muestra recibidos/rechazados y la última IP rechazada (por si Railway cambia el encabezado).
 
 ## v3.7 · CNBC para índices y #resultados (11 oct 2026)
-- Índices: orden de fuentes = TradingView (si llega por /tv) → **CNBC** (`quote.cnbc.com` @YM.1 / @NQ.1, precio en vivo + apertura/máximo/mínimo del día) → Yahoo → Stooq. CNBC y TradingView guardan velas en la misma memoria (`tv5:`, `tvD:` en kv) con `storeIdxBar`.
+- Índices: orden de fuentes = TradingView (si llega por /tv) → **CNBC** (`quote.cnbc.com` @DJ.1 / @ND.1, precio en vivo + apertura/máximo/mínimo del día) → Yahoo → Stooq. CNBC y TradingView guardan velas en la misma memoria (`tv5:`, `tvD:` en kv) con `storeIdxBar`.
 - Canal `#resultados` creado (id `1558812052053688400`, `RESULTADOS_CHANNEL_ID`); el resumen del domingo 6 PM lo publica el bot ahí.
