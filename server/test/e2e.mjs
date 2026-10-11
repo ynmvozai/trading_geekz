@@ -51,7 +51,7 @@ const crypto = got.filter((g) => g.ch === "crypto"), oro = got.filter((g) => g.c
 ok(crypto.some((g) => /^🐋 Bitcoin: ballena VENDIÓ \$4\.01M/.test(g.body.content)), "alerta HOT ZONE BTC a #cryptoman: " + (crypto[0] && crypto[0].body.content));
 ok(oro.some((g) => /^🐋 Oro: ballena VENDIÓ \$[\d.]+M · [\d,.]+\nCerca de zona de VENTA \(\d+%\)/.test(g.body.content)), "alerta CERCA DE ZONA oro a #oro: " + (oro[0] && oro[0].body.content));
 ok(got.some((g) => g.ch === "aicrypto" && /^🤖 Señal Ai: /.test(g.body.content)), "señal Ai Crypto a #ai-crypto");
-ok(ag.some((g) => /^🟢 Sistema encendido · v3\.9/.test(g.body.content)), "mensaje de arranque en #agent");
+ok(ag.some((g) => /^🟢 Sistema encendido · v\d/.test(g.body.content)), "mensaje de arranque en #agent");
 ok(h.ok && h.mercados.BTC.precio === 100200 && h.binance.conectado, "/health ok con precio y conexión");
 ok(st.zonas.length === 2 && st.ordenes.length >= 2, "/state con zonas y órdenes");
 console.log(ag.map((g) => g.body.content).join("\n---\n").slice(0, 1500));

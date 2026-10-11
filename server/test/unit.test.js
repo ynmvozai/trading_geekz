@@ -184,3 +184,29 @@ test("v3.7: índices desde CNBC", async () => {
   assert.equal(MA.IDX.NQ.price, 25010); assert.match(MA.IDX.NQ.fuente, /^CNBC/);
   assert.deepEqual(MA.IDX.NQ.daily[MA.IDX.NQ.daily.length - 1], ["2026-10-12", 24900, 25050, 24850, 25010]);
 });
+
+test("v4.0: mega ballenas por rangos, liquidaciones y wallets", async () => {
+  const MG = await import("../src/mega.js");
+  assert.equal(MG.megaLevel("BTC", 10e6), 0); assert.equal(MG.megaLevel("BTC", 20e6), 1); assert.equal(MG.megaLevel("BTC", 50e6), 2); assert.equal(MG.megaLevel("BTC", 150e6), 3);
+  assert.match(MG.rangoTxt("BTC", 2), /Rango: \$40\.00M–\$100\.00M \(nivel 2 de 3\)/);
+  assert.match(MG.rangoTxt("SOL", 3), /más de \$40\.00M/);
+  const t0 = Date.now();
+  const one = MG.onBurst({ sym: "BTC", side: "sell", usd: 18e6, first: t0 }, 100200, t0);
+  assert.match(one, /^🐳 MEGA BALLENA · Bitcoin\n🔴 Vendieron \$18\.00M en una sola orden · 100,200\nRango: \$15\.00M–\$40\.00M/);
+  assert.equal(MG.onBurst({ sym: "BTC", side: "sell", usd: 2e6, first: t0 + 1000 }, 100100, t0 + 1000), null);       // mismo nivel en 5 min: no repite
+  assert.equal(MG.onBurst({ sym: "BTC", side: "buy", usd: 200e3, first: t0 }, 100100, t0), null);                     // orden chica no cuenta
+  for (let i = 0; i < 3; i++) MG.onBurst({ sym: "SOL", side: "buy", usd: 1.4e6, first: t0 + i * 5000 }, 200, t0 + i * 5000);
+  const acc = MG.onBurst({ sym: "SOL", side: "buy", usd: 1.4e6, first: t0 + 15000 }, 201, t0 + 15000);
+  assert.match(acc || "", /🐳 MEGA BALLENA · Solana\n🟢 Compraron \$5\.60M en 4 órdenes en 15 segundos/);
+  assert.equal(MG.onLiq("BTC", "long", 3e6, 99000, t0, t0), null);
+  assert.match(MG.onLiq("BTC", "long", 2.5e6, 98900, t0 + 60000, t0 + 60000), /^💥 LIQUIDACIONES GRANDES · Bitcoin\nCerraron a la fuerza \$5\.50M en compras \(largos\)/);
+  const WL = await import("../src/wallets.js");
+  const w1 = "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin";
+  const tx = { signature: "s", timestamp: 1760000000, nativeTransfers: [{ fromUserAccount: w1, toUserAccount: "pool", amount: 2e9 }],
+    tokenTransfers: [{ fromUserAccount: "pool", toUserAccount: w1, mint: "MEMEmint1111111111111111111111111111111111", tokenAmount: 1000000 }] };
+  const sw = WL.parseSwaps(tx, [w1], 150);
+  assert.equal(sw.length, 1); assert.equal(sw[0].side, "buy"); assert.equal(sw[0].usd, 300);
+  assert.match(WL.addWallet(w1, "Ballena1"), /Agregada: Ballena1/);
+  assert.match(WL.addWallet("hola", "x"), /no parece/);
+  assert.match(WL.walletsText(), /Wallets en seguimiento: 1/);
+});
