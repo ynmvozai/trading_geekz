@@ -6,7 +6,7 @@ import * as M from "./market.js";
 import { initAlerts, watchAll, watchTick } from "./alerts.js";
 import { loadResults, checkRange, expire, resultsText } from "./results.js";
 import { binanceStart, probeBinance, klinesRaw, bn } from "./binance.js";
-import { botStart, agent, post } from "./discord.js";
+import { botStart, agent, post, botPost } from "./discord.js";
 import { onAgentMessage, dailyTick } from "./commands.js";
 import { startHttp, estadoText, BOOT } from "./health.js";
 import { log, prParts } from "./util.js";
@@ -98,7 +98,8 @@ setInterval(() => {
   if (pp.weekday === "Sun" && pp.hour === 18 && kvGet("lastWeekly") !== pp.date) {
     kvSet("lastWeekly", pp.date);
     const txt = "🗓️ **Resumen semanal**\n" + resultsText(7) + "\n\n" + resultsText(90).replace("📊 ", "");
-    if (ENV.hooks.resultados) post(ENV.hooks.resultados, { content: txt.slice(0, 1990) }).catch(() => agent(txt)); else agent(txt);
+    if (ENV.hooks.resultados) post(ENV.hooks.resultados, { content: txt.slice(0, 1990) }).catch(() => agent(txt));
+    else botPost(ENV.resultadosChannelId, txt).catch((e) => agent(txt + "\n\n⚠️ No pude publicar en #resultados: " + e.message));
   }
 }, 30000);
 

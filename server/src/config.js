@@ -1,7 +1,7 @@
 // Configuración fija (portada del panel v2.4) y variables de entorno.
 import path from "node:path";
 
-export const VERSION = "v3.6-server · 10 oct 2026";
+export const VERSION = "v3.7-server · 11 oct 2026";
 
 export const SYMS = {
   BTC: { stream: "btcusdt", label: "BTCUSDT", dec: 1, min: 3000000, max: 6000000, ch: "crypto" },
@@ -34,6 +34,7 @@ export const ENV = {
   },
   botToken: env.DISCORD_BOT_TOKEN || "",
   anthropicKey: env.ANTHROPIC_API_KEY || "",
+  resultadosChannelId: env.RESULTADOS_CHANNEL_ID || "1558812052053688400",
   indicesChannelId: env.INDICES_CHANNEL_ID || "1557713241722069072",
   sesionChannelId: env.SESION_CHANNEL_ID || "1558528510354788392",
   agentChannelId: env.AGENT_CHANNEL_ID || "1557585826810962102",

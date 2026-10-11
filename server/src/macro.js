@@ -102,7 +102,12 @@ async function yahoo(sym, interval, range) {
 }
 
 export async function refreshIdx() {
+  const tvFresh = (k) => IDX[k] && /^TradingView/.test(IDX[k].fuente || "") && Date.now() - IDX[k].t < 20 * 60000;
+  if (!tvFresh("YM") || !tvFresh("NQ")) {
+    try { await refreshCnbc(); IDX.cnbcErr = ""; } catch (e) { IDX.cnbcErr = e.message; log("CNBC falló:", e.message); }
+  }
   for (const k of ["YM", "NQ"]) {
+    if (IDX[k] && /^CNBC/.test(IDX[k].fuente || "") && Date.now() - IDX[k].t < 20 * 60000) continue; // CNBC en vivo
     if (IDX[k] && /^TradingView/.test(IDX[k].fuente || "") && Date.now() - IDX[k].t < 20 * 60000) continue; // TradingView manda en vivo
     try {
       const d = await yahoo(YAHOO[k], "1d", "2mo");
@@ -130,7 +135,7 @@ export function idxForAi() {
 }
 
 export function idxLine() {
-  const f = (k, n) => n + " " + (IDX[k] ? IDX[k].price + " (" + IDX[k].fuente + ")" : "sin dato" + (IDX.err[k] ? " (" + IDX.err[k] + ")" : ""));
+  const f = (k, n) => n + " " + (IDX[k] ? IDX[k].price + " (" + IDX[k].fuente + ")" : "sin dato" + (IDX.err[k] || IDX.cnbcErr ? " (" + [IDX.cnbcErr, IDX.err[k]].filter(Boolean).join(" · ") + ")" : ""));
   return f("YM", "US30/YM") + " · " + f("NQ", "NQ");
 }
 
@@ -155,13 +160,56 @@ export function tvSym(s) {
   if (/USTEC|NAS|NQ|NDX|US100|USTECH/.test(s)) return "NQ";
   return null;
 }
+// Guarda una vela de 5 min (y la diaria) para un índice. La usan TradingView y CNBC.
+export function storeIdxBar(k, iso, op, h, l, c, day, label) {
+  const bars = kvGet("tv5:" + k, []) || [];
+  const i = bars.findIndex((b) => b[0] === iso);
+  if (i >= 0) { const b = bars[i]; bars[i] = [iso, b[1], Math.max(b[2], h), Math.min(b[3], l), c]; } else bars.push([iso, op, h, l, c]);
+  bars.sort((a, b) => (a[0] < b[0] ? -1 : 1));
+  while (bars.length > 600) bars.shift();
+  kvSet("tv5:" + k, bars);
+  const daily = kvGet("tvD:" + k, {}) || {};
+  if (day) daily[day.d] = day.ohlc;
+  const keys = Object.keys(daily).sort(); while (keys.length > 60) delete daily[keys.shift()];
+  kvSet("tvD:" + k, daily);
+  kvSet("tvTicker:" + k, label); kvSet("tvT:" + k, Date.now());
+  tvRebuild(k);
+}
+
+// CNBC (cotización en vivo de futuros @YM.1 / @NQ.1, con apertura, máximo y mínimo del día).
+const CNBC = { YM: "@YM.1", NQ: "@NQ.1" };
+const num = (v) => (v == null ? NaN : +String(v).replace(/[,%$\s]/g, ""));
+export function parseCnbc(j) {
+  const out = {};
+  const walk = (x) => { if (!x || typeof x !== "object") return; if (Array.isArray(x)) return x.forEach(walk); if (x.symbol && x.last != null) out[x.symbol] = x; else Object.values(x).forEach(walk); };
+  walk(j);
+  return out;
+}
+async function refreshCnbc() {
+  const r = await fetch("https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=" + encodeURIComponent(CNBC.YM + "|" + CNBC.NQ) + "&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json", { headers: UA, signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error("CNBC HTTP " + r.status);
+  const q = parseCnbc(await r.json());
+  let n = 0;
+  for (const k of ["YM", "NQ"]) {
+    const x = q[CNBC[k]]; if (!x) continue;
+    const c = num(x.last); if (!(c > 0)) continue;
+    const t = Date.parse(x.last_time || x.last_timedate || "") || Date.now();
+    const iso = new Date(Math.floor(t / 300000) * 300000).toISOString().slice(0, 16);
+    const o = num(x.open), h = num(x.high), l = num(x.low);
+    const day = o > 0 && h > 0 && l > 0 ? { d: etParts(t).date, ohlc: [o, h, l, c] } : null;
+    storeIdxBar(k, iso, c, c, c, c, day, "CNBC " + CNBC[k]);
+    n++;
+  }
+  if (!n) throw new Error("CNBC sin datos");
+}
+
 function tvRebuild(k) {
   const bars = kvGet("tv5:" + k, []) || [], daily = kvGet("tvD:" + k, {}) || {};
   const h1 = new Map();
   for (const b of bars) { const hk = b[0].slice(0, 13); const x = h1.get(hk); if (!x) h1.set(hk, [hk.replace("T", " ") + ":00", b[1], b[2], b[3], b[4]]); else { x[2] = Math.max(x[2], b[2]); x[3] = Math.min(x[3], b[3]); x[4] = b[4]; } }
   const last = bars[bars.length - 1];
   if (!last) return;
-  IDX[k] = { price: last[4], daily: Object.keys(daily).sort().slice(-30).map((d) => [d, ...daily[d]]), h1: [...h1.values()].slice(-60), fuente: "TradingView (" + (kvGet("tvTicker:" + k, "") || k) + ")", t: kvGet("tvT:" + k, Date.now()) };
+  IDX[k] = { price: last[4], daily: Object.keys(daily).sort().slice(-30).map((d) => [d, ...daily[d]]), h1: [...h1.values()].slice(-60), fuente: /^CNBC/.test(kvGet("tvTicker:" + k, "")) ? kvGet("tvTicker:" + k, "") : "TradingView (" + (kvGet("tvTicker:" + k, "") || k) + ")", t: kvGet("tvT:" + k, Date.now()) };
   IDX.err[k] = "";
 }
 export function onTv(body) {
