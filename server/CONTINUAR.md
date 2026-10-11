@@ -93,3 +93,12 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 ## v3.7 · CNBC para índices y #resultados (11 oct 2026)
 - Índices: orden de fuentes = TradingView (si llega por /tv) → **CNBC** (`quote.cnbc.com` @DJ.1 / @ND.1, precio en vivo + apertura/máximo/mínimo del día) → Yahoo → Stooq. CNBC y TradingView guardan velas en la misma memoria (`tv5:`, `tvD:` en kv) con `storeIdxBar`.
 - Canal `#resultados` creado (id `1558812052053688400`, `RESULTADOS_CHANNEL_ID`); el resumen del domingo 6 PM lo publica el bot ahí.
+
+## v3.8 · Mensajes cortos y amigables (11 oct 2026)
+- Pedido de Yasser: notificaciones "people friendly", sin mensajes largos. Piezas comunes en `src/friendly.js` (`dot`, `lado`, `espera`, `quien`, `rango`, `niveles`, `empuje`, `animo`, `animoTag`).
+- Orden grande (`buildMessage`): texto plano de 4-6 líneas, sin embed: título (EN LA ZONA / CERCA DE ZONA %), quién empujó y cuánto, zona y hacia dónde se espera, SL/TP, si la orden va a favor o en contra de la zona, ánimo (Fear & Greed). Racha solo si hay 2+.
+- Vigilancia por hora: una línea por zona (máx. 6). Alertas 80%/100%: "Bitcoin se acerca / entró a la zona de VENTA" + 3 líneas.
+- #sesion-ny: tablero con 2-3 líneas por mercado (precio, zona más cercana, mayor orden y quién gana); radar 1 línea por mercado; títulos cortos ("Abrió / Cerró Nueva York").
+- Ai Crypto: "Señal: VENDER Bitcoin a X" + SL/TP; resultado "llegó al TP / tocó SL".
+- Plan NY (TITO): prompt pide lenguaje simple, máx. 700 caracteres por sección y cada zona en una línea.
+- Próximo: tracking de wallets "whale" (Cielo vs tracker propio, Yasser decide).
