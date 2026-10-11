@@ -81,3 +81,11 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - En Railway, Yahoo (429) y Stooq (403) bloquean. Solución: alertas de TradingView de Yasser (DJ30 y USTEC, 5 min, "Once per bar close") hacen POST a `/tv/<secreto>` con `{"s":"{{ticker}}","o":{{open}},"h":{{high}},"l":{{low}},"c":{{close}},"t":"{{time}}"}`.
 - El secreto se genera solo (kv `tvSecret`); el dueño lo ve con `tv url` en #agent. El servidor guarda velas de 5 min (2 días), arma 1H y diarias (60 días) y llena `IDX.YM` / `IDX.NQ` (fuente "TradingView"). Yahoo/Stooq quedan de respaldo.
 - La historia diaria de índices se llena con los días: al principio TITO tendrá poca historia.
+
+## v3.5 · #indices-zonas sin webhook (10 oct 2026)
+- `idxPost` (discord.js): usa `WEBHOOK_INDICES` si existe; si no, el bot publica por REST en el canal `INDICES_CHANNEL_ID` (default `1557713241722069072`). Lo mismo que #sesion-ny. Así Yasser no tiene que copiar webhooks.
+- `probar sesion` prueba #sesion-ny y #indices-zonas y dice si falta permiso (403).
+
+## v3.6 · TradingView sin secreto (10 oct 2026)
+- `POST /tv` acepta solo las IPs oficiales de TradingView (52.89.214.238, 34.212.75.30, 54.218.53.128, 52.32.178.7; se lee la última IP de X-Forwarded-For) y descarta precios que se alejen más de 8% del último. `/tv/<secreto>` sigue funcionando.
+- Así las alertas de TradingView se configuran con `https://tradinggeekz-production.up.railway.app/tv` sin manejar secretos. `estado` muestra recibidos/rechazados y la última IP rechazada (por si Railway cambia el encabezado).
