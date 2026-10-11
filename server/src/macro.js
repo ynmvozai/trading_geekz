@@ -5,6 +5,7 @@ import { post, agent, idxPost } from "./discord.js";
 import { kvGet, kvSet } from "./store.js";
 import crypto from "node:crypto";
 import { log, etParts } from "./util.js";
+import { newsEs } from "./friendly.js";
 
 const TZ = "America/Puerto_Rico";
 const UA = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36", accept: "application/json,text/csv,*/*" };
@@ -67,11 +68,9 @@ export function calTick(now = Date.now()) {
     const k = "calWarn:" + e.title + ":" + e.t;
     if (kvGet(k)) continue;
     kvSet(k, 1);
-    const txt = "⚠️ **Noticia de alto impacto USD en 30 min** · " + fmtPR(e.t) + "\n**" + e.title + "**" + (e.forecast ? " · pronóstico " + e.forecast : "") + (e.previous ? " · anterior " + e.previous : "") +
-      "\nSugerencia: pausa entradas nuevas hasta ver la reacción. Después de la noticia, analiza solo la reacción técnica y la absorción de liquidez.";
-    for (const h of [ENV.hooks.crypto, ENV.hooks.oro]) if (h) post(h, txt).catch(() => {});
-    idxPost(txt).catch(() => {});
-    agent(txt);
+    const txt = "📰 En 30 min (" + new Date(e.t).toLocaleTimeString("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" }) + "): " + newsEs(e.title) + "\nImpacto alto" + (e.forecast ? " · esperado " + e.forecast : "") + (e.previous ? " (antes " + e.previous + ")" : "") + "\nMejor no abrir entradas hasta ver la reacción.";
+    // v3.9: un solo canal. En horario de #sesion-ny va allí; fuera de ese horario, a #agent.
+    import("./sesionny.js").then((SN) => (SN.inWindow(now) ? SN.sesPost(txt) : agent(txt))).catch(() => agent(txt));
   }
 }
 

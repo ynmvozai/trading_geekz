@@ -33,6 +33,18 @@ export function healthData() {
   };
 }
 
+// v3.9: versión corta del estado para el arranque y el latido diario. Solo lista lo que falla.
+export function bootText(title) {
+  const lines = estadoText().split("\n"), ok = lines.filter((l) => /^\s*✅/.test(l)).length, bad = lines.filter((l) => /^\s*❌/.test(l));
+  const lags = ORDER.map((k) => S[k].lag).filter((v) => v != null), lag = lags.length ? Math.max(...lags) / 1000 : null;
+  const L = [title + " · " + VERSION.split("-")[0]];
+  L.push(bad.length ? "⚠️ " + bad.length + " de " + (ok + bad.length) + " con problema:" : "Todo funcionando (" + ok + " de " + ok + ")" + (lag != null ? " · datos con " + lag.toFixed(1) + " s de retraso" : ""));
+  bad.forEach((l) => L.push(l.trim().slice(0, 160)));
+  if (A.paused) L.push("⏸️ Alertas en pausa (escribe “reanudar alertas”)");
+  L.push("-# Escribe “estado” para ver el detalle.");
+  return L.join("\n");
+}
+
 export function estadoText() {
   const h = healthData(), now = Date.now(), ck = (v) => (v ? "✅" : "❌");
   const L = ["📋 **Estado de Hot Zone** · " + VERSION + " · encendido " + (h.horas_encendido < 48 ? h.horas_encendido.toFixed(1) + " h" : (h.horas_encendido / 24).toFixed(1) + " días")];

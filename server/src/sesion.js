@@ -16,13 +16,13 @@ export { etParts };
 
 export const SESSION_Q = `Haz el PLAN DE LA SESIÓN DE NUEVA YORK de hoy con la data real del payload ([PANEL_HOT_ZONE], [VELAS], [VELAS_DIARIAS], [INDICES], [CALENDARIO_USD] y el sentimiento Fear & Greed).
 Método (en este orden): 1) tendencia HTF diaria/4H y estructura (máximos y mínimos más bajos o más altos); 2) liquidez objetivo (máximos/mínimos iguales, máximo y mínimo del día anterior); 3) BOS; 4) FVG / order blocks 1H-4H; 5) sesión NY. Para US30 aplica la regla overnight de 300 puntos. Los índices son US30 (futuros YM) y NAS100 (futuros NQ).
-Para cada mercado: sesgo (comprador/vendedor/rango) en una línea con el porqué, y 1-2 zonas ordenadas por prioridad: dirección esperada, rango exacto, SL, TP1, TP2 y la R aproximada al TP1. Marca con ⭐ la zona de mayor probabilidad del día (a favor de la tendencia HTF). Si hay noticias de alto impacto hoy, dilo con la hora y la regla de no entrar 30 min antes. Menciona el Fear & Greed cuando sume o reste a una zona.
+Para cada mercado: quién manda (compradores/vendedores/de lado) en una línea con el porqué en palabras simples, y 1-2 zonas ordenadas por prioridad: dirección esperada, rango exacto, stop (SL) y meta (TP1; TP2 solo si cabe). Marca con ⭐ la zona de mayor probabilidad del día (a favor de la tendencia HTF). Si hay noticias de alto impacto hoy, dilo con la hora y la regla de no entrar 30 min antes. Menciona el Fear & Greed cuando sume o reste a una zona.
 FORMATO OBLIGATORIO (sin texto antes de [[RESUMEN]]):
-[[RESUMEN]] máximo 4 líneas cortas: las 3 zonas prioritarias del día (una línea cada una) y la noticia de riesgo con su hora.
+[[RESUMEN]] máximo 4 líneas cortas: las 3 zonas prioritarias del día (una línea cada una, con el mercado) y la noticia de riesgo con su hora.
 [[CRYPTO]] BTC y SOL.
 [[ORO]] Oro (XAUUSDT).
 [[INDICES]] US30 y NAS100. Si [INDICES] dice "sin dato", escribe que hoy no hay datos de índices y no inventes niveles.
-ESTILO (obligatorio): lenguaje simple y amigable, como para alguien que empieza; nada de párrafos largos ni jerga sin explicar. Cada sección máximo 700 caracteres. Por mercado: 1 línea de sesgo corta ("📈 comprador porque…") y cada zona en UNA sola línea, así: "⭐ Compra 82,700–83,000 · SL 82,400 · TP1 84,000 · TP2 85,200 (1:2)". Noticias de riesgo en una línea con la hora. Cierra cada sección con: "Escenarios, no asesoría. La decisión final siempre es tuya."
+ESTILO (obligatorio, mensajes para el celular): lenguaje simple y amigable, como para alguien que empieza. Nada de párrafos ni siglas sin explicar (no escribas BOS, FVG, OB, HTF, R ni "sesgo"). No uses ** ni _ en la primera línea de cada sección. Cada sección máximo 600 caracteres. Llama a los índices "Dow" y "Nasdaq". Por mercado: 1 línea con emoji y quién manda, así: "📉 Bitcoin: vendedores mandan (el diario baja)" o "↔️ Solana: de lado, esperar". Cada zona en UNA línea, así: "⭐ Venta 83,200–83,500 · 🛑 83,700 · 🎯 82,100" (⭐ solo en la de mayor probabilidad; usa 🛑 para el stop y 🎯 para la meta; sin ".00"). Noticia de riesgo en una línea: "📰 8:30 AM: dato de empleo · no entrar 30 min antes". Cierra cada sección con la línea: "-# Escenarios, no asesoría. La decisión final siempre es tuya."
 Solo precios que salen de las velas; nunca inventes. ` + ZONES_Q + " En ese MISMO bloque JSON añade también hasta 2 zonas de US30 (sym \"US30\", precios de futuros YM) y hasta 2 de NAS100 (sym \"NQ\", precios de futuros NQ) con el mismo formato, calculadas con [INDICES]; si [INDICES] no tiene datos, no las incluyas.";
 
 export function splitSections(txt) {
@@ -49,16 +49,16 @@ export async function runSession(manual = false) {
     const r = applyAiZones(t, prices());
     const pz = parseAiZones(t), nIdx = pz.arr ? setIdxZones(pz.arr) : 0;
     const s = splitSections(r.txt);
-    if (!s.CRYPTO && !s.ORO && !s.INDICES) { await agent("🗽 **Plan de sesión NY**\n" + r.txt); return; }
-    const head = (x) => "🗽 **Plan sesión NY · " + x + "**\n";
+    if (!s.CRYPTO && !s.ORO && !s.INDICES) { await agent("🗽 Plan NY de hoy\n" + r.txt); return; }
+    const head = (x) => "🗽 Plan NY · " + x + "\n";
     const send = (hook, title, body) => (body ? (hook ? postLong(hook, head(title) + body) : agent(head(title) + body)) : Promise.resolve());
     await send(ENV.hooks.crypto, "Crypto", s.CRYPTO);
     await send(ENV.hooks.oro, "Oro", s.ORO);
     let idxOk = true;
     if (s.INDICES) { try { await idxPost(head("Índices") + s.INDICES); } catch (e) { idxOk = false; await agent(head("Índices") + s.INDICES + "\n\n⚠️ No pude publicar en #indices-zonas: " + e.message); } }
-    await agent("🗽 **Plan de la sesión de Nueva York**\n" + (s.RESUMEN || "") +
-      "\n\nDetalle en #cryptoman, #oro-índice" + (idxOk ? " y #indices-zonas" : " (índices aquí en #agent)") + "." +
-      (r.n ? "\n✅ " + r.n + " zonas de BTC/SOL/oro cargadas: las alertas ya las vigilan." : r.err ? "\n⚠️ No pude leer las zonas (" + r.err + ")." : "") + (nIdx ? "\n✅ " + nIdx + " zonas de US30/NAS100 para #sesion-ny." : ""));
+    await agent("🗽 Plan NY de hoy\n" + (s.RESUMEN || "") +
+      "\n-# Detalle en #cryptoman, #oro-índice" + (idxOk ? " y #indices-zonas" : " (índices aquí en #agent)") + "." +
+      (r.n ? "\n-# ✅ " + r.n + " zonas de Bitcoin, Solana y oro cargadas: las alertas ya las vigilan." : r.err ? "\n⚠️ No pude leer las zonas (" + r.err + ")." : "") + (nIdx ? "\n-# ✅ " + nIdx + " zonas del Dow y Nasdaq para #sesion-ny." : ""));
     kvSet("lastSession", etParts().date);
   } catch (e) {
     log("Plan de sesión falló:", e.message);

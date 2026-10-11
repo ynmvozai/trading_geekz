@@ -92,10 +92,10 @@ export async function onAgentMessage(msg) {
   if (/^(calendario|noticias)\b/.test(ql)) { await refreshCal(); return agent(calText(7)); }
   if (/^tv url$/.test(ql)) return agent("📺 **Webhook de TradingView para índices** (no lo compartas)\n" + (ENV.serverUrl || "https://<tu-servidor>") + "/tv/" + tvSecret() +
     "\nMensaje de la alerta (5 min, \"Once per bar close\"):\n`{\"s\":\"{{ticker}}\",\"o\":{{open}},\"h\":{{high}},\"l\":{{low}},\"c\":{{close}},\"t\":\"{{time}}\"}`\nRecibidos hasta ahora: " + TV.n);
-  if (/^radar$/.test(ql)) return agent(radarText("📡 **Radar ahora** (última hora)", Date.now() - 3600000, null));
+  if (/^radar$/.test(ql)) return agent(boardText("📡 Radar ahora", Date.now() - 3600000, null));
   if (/^probar sesi[oó]n$/.test(ql)) {
     const res = [];
-    await sesPost(boardText("🧪 **Prueba de #sesion-ny** · así se verá el canal", Date.now() - 3600000, null));
+    await sesPost(boardText("🧪 Prueba de #sesion-ny · así se verá el canal", Date.now() - 3600000, null));
     res.push(SES.lastErr ? "❌ #sesion-ny: " + SES.lastErr : "✅ #sesion-ny: prueba enviada");
     try { await idxPost("🧪 **Prueba de #indices-zonas** · aquí llegarán el plan NY de US30/NAS100 y los avisos de noticias."); res.push("✅ #indices-zonas: prueba enviada"); } catch (e) { res.push("❌ #indices-zonas: " + e.message); }
     return agent(res.join("\n") + "\nSi algún canal dice 403: en Discord → Editar canal → Permisos → agrega al bot con \"Enviar mensajes\".");

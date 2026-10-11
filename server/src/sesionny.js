@@ -9,11 +9,11 @@ import { IDX, refreshIdx } from "./macro.js";
 import { etParts } from "./sesion.js";
 import { kvGet, kvSet } from "./store.js";
 import { usd, px, prParts, splitLong, log } from "./util.js";
-import { dot, lado, espera, quien, rango, niveles } from "./friendly.js";
+import { pf, dot, cerca, lado, ladoMin, flecha, espera, rango, niveles } from "./friendly.js";
 
 export const SES = { sent: 0, failed: 0, lastErr: "" };
 export const MKTS = ["BTC", "SOL", "XAU", "US30", "NQ"];
-const MNAME = { ...NAMES, US30: "US30 (Dow)", NQ: "NAS100" };
+const MNAME = { ...NAMES, US30: "Dow", NQ: "Nasdaq" };
 const IDXK = { US30: "YM", NQ: "NQ" };
 const IDX_RADIUS = { US30: 1.5, NQ: 1.5 }; // % para proximidad de índices
 
@@ -72,13 +72,6 @@ const fmt = (v, m) => (v == null || !isFinite(v) ? "—" : IDXK[m] ? Number(v).t
 const pct = (a, b) => (a && b ? ((a - b) / b) * 100 : null);
 const sgn = (v) => (v == null ? "—" : (v >= 0 ? "+" : "") + v.toFixed(2) + "%");
 
-// Dónde está una orden respecto a las zonas (corto).
-function where(o) {
-  let best = null;
-  for (const z of Z.list.filter((z) => z.sym === o.sym)) { const d = zDist(z, o.price); if (!best || d < best.d) best = { z, d }; }
-  if (!best) return "";
-  return best.d === 0 ? "dentro de zona de " + best.z.side.replace("buy", "compra").replace("sell", "venta") : "";
-}
 export function topOrders(m, since, n = 3) {
   return feed.filter((o) => o.sym === m && o.t >= since).sort((a, b) => b.usd - a.usd).slice(0, n);
 }
@@ -87,38 +80,47 @@ function flowSince(m, since) {
   for (const o of feed) { if (o.t < since) break; if (o.sym !== m) continue; if (o.side === "buy") b += o.usd; else s += o.usd; }
   return { b, s };
 }
-
-export function marketBlock(m, since, opts = {}) {
-  const p = priceOf(m), st = opts.st, op = st && st.open[m], f = (v) => fmt(v, m), L = [];
-  L.push("**" + MNAME[m] + "** " + f(p) + (op ? " (" + sgn(pct(p, op)) + " desde el open)" : ""));
-  if (p == null) return L[0] + " · sin dato ahora";
-  const zs = zonesOf(m).map((z) => ({ z, v: proxOf(z, p) })).sort((a, b) => b.v - a.v).slice(0, opts.zones || 1);
-  if (!zs.length) L.push("   Sin zonas" + (IDXK[m] ? " (llegan con el plan de las 8:15 AM NY)" : ""));
-  zs.forEach(({ z, v }) => L.push("   " + dot(v) + " " + lado(z.side).toLowerCase() + " " + rango(z, f) + " · " + (v >= 100 ? "**EN LA ZONA**" : "**" + v.toFixed(0) + "%**") + (z.tp1 ? " · TP1 " + f(z.tp1) : "")));
-  if (IDXK[m]) return L.join("\n");
-  const o = topOrders(m, since, 1)[0];
-  if (o) { const fl = flowSince(m, since), w = where(o); L.push("   🐋 Mayor orden: " + quien(o.side).toLowerCase() + " " + usd(o.usd) + " a " + px(o.price, m) + (w ? " (" + w + ")" : "") + " · ganan " + (fl.b >= fl.s ? "🟢 compradores" : "🔴 vendedores")); }
+const pfm = (v, m) => pf(v, m);
+const chg = (p, op) => { const c = pct(p, op); return c == null ? "" : (c >= 0 ? "▲" : "▼") + Math.abs(c).toFixed(1) + "%"; };
+// Zona más cercana de cada mercado, ordenados del más caliente al más frío.
+function heat(m) {
+  const p = priceOf(m); if (p == null) return { m, p, v: -1 };
+  const z = zonesOf(m).map((z) => ({ z, v: proxOf(z, p) })).sort((a, b) => b.v - a.v)[0];
+  return { m, p, z: z && z.z, v: z ? z.v : -1 };
+}
+function heatLine(h) {
+  const f = (v) => pfm(v, h.m);
+  if (h.p == null) return "⚪ " + MNAME[h.m] + " · sin dato ahora";
+  if (!h.z) return "⚪ " + MNAME[h.m] + " " + f(h.p) + " · sin zona hoy";
+  return dot(h.v) + " " + MNAME[h.m] + " " + f(h.p) + " · " + (h.v >= 100 ? "dentro de " + ladoMin(h.z.side) : h.v < 50 ? "lejos de zonas" : cerca(h.v) + " de " + ladoMin(h.z.side));
+}
+// Mercado con más flujo neto de ballenas (solo crypto y oro tienen órdenes en vivo).
+function whaleLine(since) {
+  let best = null;
+  for (const m of MKTS) { if (IDXK[m]) continue; const fl = flowSince(m, since), net = fl.b - fl.s; if (fl.b + fl.s > 0 && (!best || Math.abs(net) > Math.abs(best.net))) best = { m, net }; }
+  return best ? "🐋 Ballenas: ganan " + (best.net >= 0 ? "compradores" : "vendedores") + " en " + MNAME[best.m] + " (neto " + usd(Math.abs(best.net)) + ")" : "";
+}
+export function boardText(title, since, st) {
+  const L = [title, ...MKTS.map(heat).sort((a, b) => b.v - a.v).map(heatLine)];
+  const w = whaleLine(since); if (w) L.push(w);
+  L.push("-# La decisión final siempre es tuya.");
   return L.join("\n");
 }
-
-export function boardText(title, since, st, opts = {}) {
-  return title + "\n\n" + MKTS.map((m) => marketBlock(m, since, { st, ...opts })).join("\n") +
-    "\n\n_% = qué tan cerca está el precio de la zona (100% = dentro). 🟢/🔴 = quién empujó, no una recomendación. La decisión final siempre es tuya._";
-}
-
-// Una línea por mercado: precio, cambio desde el open y la zona más cercana.
+// Radar: solo los mercados con algo que contar (a medio camino o más de una zona).
 export function radarText(title, since, st) {
-  const L = [title];
-  MKTS.forEach((m) => {
-    const p = priceOf(m), op = st && st.open && st.open[m], f = (v) => fmt(v, m);
-    if (p == null) { L.push("**" + MNAME[m] + "** · sin dato"); return; }
-    const z = zonesOf(m).map((z) => ({ z, v: proxOf(z, p) })).sort((a, b) => b.v - a.v)[0];
-    let line = (z ? dot(z.v) : "⚪") + " **" + MNAME[m] + "** " + f(p) + (op ? " (" + sgn(pct(p, op)) + ")" : "");
-    if (z) line += " · " + lado(z.z.side).toLowerCase() + " " + rango(z.z, f) + " " + (z.v >= 100 ? "EN LA ZONA" : z.v.toFixed(0) + "%");
-    if (!IDXK[m]) { const o = topOrders(m, since, 1)[0]; if (o) line += " · 🐋 " + (o.side === "buy" ? "🟢 " : "🔴 ") + usd(o.usd); }
-    L.push(line);
-  });
-  L.push("_La decisión final siempre es tuya._");
+  const hs = MKTS.map(heat).filter((h) => h.v >= 50).sort((a, b) => b.v - a.v);
+  if (!hs.length) return title + "\nTodo tranquilo: ningún mercado cerca de sus zonas.";
+  return [title, ...hs.map((h) => { const op = st && st.open && st.open[h.m], c = op ? chg(h.p, op) : ""; return dot(h.v) + " " + MNAME[h.m] + (c ? " " + c : " " + pfm(h.p, h.m)) + " · " + (h.v >= 100 ? "en zona de " : cerca(h.v) + " de ") + ladoMin(h.z.side); })].join("\n");
+}
+export function closeText(st, since) {
+  const L = ["🏁 Cerró Nueva York"];
+  L.push(st.touched.length ? (st.touched.length === 1 ? "🎯 Hoy se tocó 1 zona: " : "🎯 Hoy se tocaron " + st.touched.length + " zonas: ") + st.touched.join(" · ") : "🎯 Hoy no se tocó ninguna zona");
+  const ch = MKTS.map((m) => { const p = priceOf(m), op = st.open && st.open[m]; return p != null && op ? MNAME[m] + " " + chg(p, op) : null; }).filter(Boolean);
+  if (ch.length) L.push("📊 " + ch.join(" · "));
+  const next = MKTS.map(heat).filter((h) => h.z && h.v < 100 && !st.touched.includes(MNAME[h.m] + " " + ladoMin(h.z.side))).sort((a, b) => b.v - a.v)[0];
+  if (next) L.push("📌 Mañana vigila: " + MNAME[next.m] + " " + ladoMin(next.z.side) + " " + rango(next.z, (v) => pfm(v, next.m)));
+  const w = whaleLine(since); if (w) L.push(w);
+  L.push("-# La decisión final siempre es tuya.");
   return L.join("\n");
 }
 
@@ -133,22 +135,21 @@ export function sesTick(now = Date.now()) {
   // Máximos y mínimos de la sesión (desde el open de NY).
   if (em >= 9 * 60 + 30 && em <= 16 * 60) MKTS.forEach((m) => { const p = priceOf(m); if (p == null) return; st.hi[m] = Math.max(st.hi[m] || p, p); st.lo[m] = Math.min(st.lo[m] || p, p); });
   // Pre-apertura: al abrir la ventana (9:00 AM PR).
-  if (!st.posted.pre) { st.posted.pre = 1; save(st); sesPost(boardText("🗽 **Sesión NY · " + (em < 9 * 60 + 30 ? "abre en " + (9 * 60 + 30 - em) + " min" : "en curso") + "**", now - 2 * 3600000, st)); return; }
+  if (!st.posted.pre) { st.posted.pre = 1; save(st); sesPost(boardText(em < 9 * 60 + 30 ? "🗽 Nueva York abre en " + (9 * 60 + 30 - em) + " min" : "🗽 Sesión de Nueva York en curso", now - 2 * 3600000, st)); return; }
   // Open de NY: 9:30 AM ET.
   if (!st.posted.open && em >= 9 * 60 + 30 && em < 10 * 60) {
     st.posted.open = 1; MKTS.forEach((m) => { const p = priceOf(m); if (p != null) { st.open[m] = p; st.hi[m] = p; st.lo[m] = p; } }); save(st);
-    sesPost(boardText("🔔 **Abrió Nueva York**", winStart, st)); return;
+    sesPost(boardText("🔔 Abrió Nueva York", winStart, st)); return;
   }
   // Radar compacto cada hora (10:30 AM a 3:30 PM ET).
   if (em >= 10 * 60 + 30 && em < 16 * 60 && et.minute >= 30 && et.minute < 33) {
     const k = et.hour + ":30";
-    if (!st.posted["r" + k]) { st.posted["r" + k] = 1; save(st); sesPost(radarText("📡 **Radar NY · " + k + " ET**", now - 3600000, st)); return; }
+    if (!st.posted["r" + k]) { st.posted["r" + k] = 1; save(st); sesPost(radarText("📡 NY " + (et.hour % 12 || 12) + ":30 · desde el open", now - 3600000, st)); return; }
   }
   // Cierre de NY: 4:00 PM ET.
   if (!st.posted.close && em >= 16 * 60 && em < 17 * 60) {
     st.posted.close = 1; save(st);
-    const touched = st.touched.length ? "\n🎯 Zonas tocadas hoy: " + st.touched.join(" · ") : "\n🎯 Zonas tocadas hoy: ninguna";
-    sesPost(boardText("🏁 **Cerró Nueva York**" + touched, st.open && Object.keys(st.open).length ? openT : winStart, st, { zones: 2, orders: 3 })); return;
+    sesPost(closeText(st, st.open && Object.keys(st.open).length ? openT : winStart)); return;
   }
   // Alertas de zona 80% / 100% para los 5 mercados (cooldown 30 min).
   MKTS.forEach((m) => {
@@ -158,10 +159,14 @@ export function sesTick(now = Date.now()) {
       if (prev == null) { st.lvl[k] = lvl; return; }
       if (lvl > prev && now - (st.t[k] || 0) > 1800000) {
         st.t[k] = now;
-        if (lvl === 2 && !st.touched.includes(MNAME[m] + " " + z.name)) st.touched.push(MNAME[m] + " " + z.name);
-        const f = (v) => fmt(v, m), n = niveles(z, f);
-        sesPost((lvl === 2 ? "🎯 **" + MNAME[m] + " entró a la zona de " + lado(z.side) + "**" : "🔥 **" + MNAME[m] + " se acerca a la zona de " + lado(z.side) + " (" + v.toFixed(0) + "%)**") +
-          "\nZona " + rango(z, f) + " · precio " + f(p) + " → " + espera(z.side) + (n ? "\n" + n : "") + "\n_Tú validas la entrada._");
+        const tk = MNAME[m] + " " + ladoMin(z.side);
+        if (lvl === 2 && !st.touched.includes(tk)) st.touched.push(tk);
+        const f = (x) => pfm(x, m), n = niveles(z, f), L = [];
+        if (lvl === 2) { L.push(flecha(z.side) + " " + MNAME[m] + " entró a zona de " + lado(z.side) + " · " + fmt(p, m)); L.push(espera(z.side) + " · zona " + rango(z, f)); }
+        else { L.push(flecha(z.side) + " " + MNAME[m] + " cerca de zona de " + lado(z.side) + " · " + fmt(p, m)); L.push("Falta poco (" + v.toFixed(0) + "%) · zona " + rango(z, f)); }
+        if (n) L.push(n);
+        if (IDXK[m]) L.push("-# Índice: solo zona, sin órdenes en vivo.");
+        sesPost(L.join("\n"));
       }
       st.lvl[k] = lvl;
     });

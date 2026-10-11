@@ -4,11 +4,11 @@ import { openStore, kvGet, kvSet } from "./store.js";
 import { loadZones, Z } from "./zones.js";
 import * as M from "./market.js";
 import { initAlerts, watchAll, watchTick } from "./alerts.js";
-import { loadResults, checkRange, expire, resultsText } from "./results.js";
+import { loadResults, checkRange, expire, weeklyText } from "./results.js";
 import { binanceStart, probeBinance, klinesRaw, bn } from "./binance.js";
 import { botStart, agent, post, botPost } from "./discord.js";
 import { onAgentMessage, dailyTick } from "./commands.js";
-import { startHttp, estadoText, BOOT } from "./health.js";
+import { startHttp, bootText, BOOT } from "./health.js";
 import { log, prParts } from "./util.js";
 import { startSentiment } from "./sentiment.js";
 import { startMacro } from "./macro.js";
@@ -93,11 +93,11 @@ setInterval(() => {
   expire();
   const pp = prParts();
   // Latido diario 8:00 AM
-  if (pp.hour === 8 && pp.minute < 5 && kvGet("lastBeat") !== pp.date) { kvSet("lastBeat", pp.date); agent("🟢 Hot Zone sigue vivo\n" + estadoText()); }
+  if (pp.hour === 8 && pp.minute < 5 && kvGet("lastBeat") !== pp.date) { kvSet("lastBeat", pp.date); agent(bootText("🟢 Buenos días · sistema vivo")); }
   // Resumen de resultados cada domingo 6:00 PM
   if (pp.weekday === "Sun" && pp.hour === 18 && kvGet("lastWeekly") !== pp.date) {
     kvSet("lastWeekly", pp.date);
-    const txt = "🗓️ **Resumen semanal**\n" + resultsText(7) + "\n\n" + resultsText(90).replace("📊 ", "");
+    const txt = weeklyText(7);
     if (ENV.hooks.resultados) post(ENV.hooks.resultados, { content: txt.slice(0, 1990) }).catch(() => agent(txt));
     else botPost(ENV.resultadosChannelId, txt).catch((e) => agent(txt + "\n\n⚠️ No pude publicar en #resultados: " + e.message));
   }
@@ -107,7 +107,7 @@ setInterval(() => { try { M.persistMarket(); } catch (e) { log("persist", e.mess
 
 // Mensajes al arrancar
 setTimeout(() => {
-  agent("🟢 **Servidor Hot Zone encendido**\n" + estadoText() + (Z.list.length ? "" : "\n\n⚠️ No hay zonas cargadas. Escribe **actualiza zonas** (TITO las calcula con velas reales) o **cargar zonas** seguido del JSON."));
+  agent(bootText("🟢 Sistema encendido") + (Z.list.length ? "" : "\n⚠️ No hay zonas cargadas: escribe “actualiza zonas”."));
 }, 20000);
 setTimeout(watchAll, 40000);
 

@@ -82,6 +82,29 @@ function line(label, s) {
     " · R promedio " + (s.n ? (s.rAvg >= 0 ? "+" : "") + s.rAvg.toFixed(2) : "—") + (s.n ? " · tiempo medio " + dur(s.tAvg) : "") + (s.nores ? " · " + s.nores + " sin resolver" : "");
 }
 
+// v3.9: resumen semanal amigable (el detalle completo queda en el comando "resultados").
+export function weeklyText(days = 7) {
+  const rows = alertsSince(Date.now() - days * 86400000).filter((a) => a.track === 1);
+  const done = rows.filter((a) => ["TP1", "TP2", "SL"].includes(a.status));
+  const L = ["📊 Tu semana en números"];
+  if (!done.length) { L.push(rows.length ? "Señales en seguimiento: " + rows.length + " · todavía ninguna llegó a meta ni a stop." : "Esta semana no hubo señales."); L.push("-# Precio real de Binance, sin ajustar. Escribe “resultados” para el detalle."); return L.join("\n"); }
+  const w = done.filter((a) => a.status !== "SL").length, l = done.length - w, r = done.reduce((s, a) => s + a.r, 0);
+  L.push("✅ " + w + (w === 1 ? " ganada" : " ganadas") + " · ❌ " + l + (l === 1 ? " perdida" : " perdidas") + " → " + Math.round((w / done.length) * 100) + "% de acierto");
+  L.push("💰 Balance: " + (r >= 0 ? "ganaste " : "perdiste ") + Math.abs(r).toFixed(1) + " veces lo arriesgado por señal");
+  const by = ORDER.map((k) => { const d = done.filter((a) => a.sym === k); return { k, n: d.length, w: d.filter((a) => a.status !== "SL").length }; }).filter((x) => x.n >= 2);
+  if (by.length >= 2) {
+    by.sort((a, b) => b.w / b.n - a.w / a.n);
+    const best = by[0], worst = by[by.length - 1];
+    L.push("🏆 Mejor: " + (NAMES[best.k] || best.k) + " (" + best.w + " de " + best.n + ")" + (worst.w / worst.n < best.w / best.n ? " · 😬 Más flojo: " + (NAMES[worst.k] || worst.k) + " (" + worst.w + " de " + worst.n + ")" : ""));
+  }
+  const fav = done.filter((a) => a.fg_read === "a favor");
+  if (fav.length >= 3) L.push("💡 Con el ánimo a favor se acertó " + Math.round((fav.filter((a) => a.status !== "SL").length / fav.length) * 100) + "%");
+  const op = rows.filter((a) => a.status === "abierta" || a.status === "tp1").length;
+  if (op) L.push("⏳ " + op + " en seguimiento todavía");
+  L.push("-# Precio real de Binance, sin ajustar. Escribe “resultados” para el detalle.");
+  return L.join("\n");
+}
+
 export function resultsText(days = 30) {
   const since = Date.now() - days * 86400000;
   const rows = alertsSince(since).filter((a) => a.track === 1);
