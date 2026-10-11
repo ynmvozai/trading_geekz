@@ -209,4 +209,9 @@ test("v4.0: mega ballenas por rangos, liquidaciones y wallets", async () => {
   assert.match(WL.addWallet(w1, "Ballena1"), /Agregada: Ballena1/);
   assert.match(WL.addWallet("hola", "x"), /no parece/);
   assert.match(WL.walletsText(), /Wallets en seguimiento: 1/);
+  const rtx = { blockTime: 1760000000, meta: { err: null, preBalances: [5e9], postBalances: [3e9],
+    preTokenBalances: [], postTokenBalances: [{ owner: w1, mint: "MEMEmint1111111111111111111111111111111111", uiTokenAmount: { uiAmount: 5000 } }] },
+    transaction: { message: { accountKeys: [{ pubkey: w1 }] } } };
+  const rs = WL.parseRpcTx(rtx, w1, 150);
+  assert.equal(rs.length, 1); assert.equal(rs[0].side, "buy"); assert.equal(rs[0].usd, 300); assert.equal(rs[0].qty, 5000);
 });
