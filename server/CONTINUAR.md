@@ -121,3 +121,9 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Liquidaciones: stream `@forceOrder` de Binance (mismo WebSocket). Suma por lado en 5 min; aviso desde BTC $5M · SOL $2M · Oro $2M (`LIQ`); 🚨 y mención si es 4× o más.
 - `src/wallets.js` → **#wallet-tracking** (id `1558158617411190865`, `WALLET_CHANNEL_ID`): wallets de Solana vía Helius. Con `HELIUS_API_KEY` en Railway el servidor crea/actualiza solo su webhook (tipo SWAP, enhanced) hacia `/helius/<secreto>`. Regla por defecto: 3+ wallets compran la misma moneda en 24 h → aviso con link de DexScreener. USD gastado = SOL que salió × precio real de SOL (Binance) o USDC/USDT. Comandos en #agent: `wallets`, `wallet agregar <dir> <nombre>`, `wallet quitar <nombre>`, `wallet regla <mín> <horas>`, `wallet solos on/off`, `probar mega`.
 - Pendiente: Yasser crea la API key gratis en helius.dev y la pega en Railway (`HELIUS_API_KEY`); cargar la lista de wallets.
+
+## v4.1 · Wallets sin Helius (11 oct 2026)
+- Si no hay `HELIUS_API_KEY`, `pollWallets()` revisa cada 60 s la red pública de Solana (`SOLANA_RPC` o api.mainnet-beta.solana.com): `getSignaturesForAddress` + `getTransaction` (jsonParsed) y saca compras/ventas por cambio de saldos (`parseRpcTx`). La primera vuelta solo marca desde dónde empezar (no reenvía historia).
+- Compras sueltas encendidas por defecto (`walletRule().solos = true`): un mensaje agrupado por vuelta "🟢 Cooker compró $X · $1.2K · 4:32 PM · cap $850K". Nombre, liquidez y cap de DexScreener (público, sin clave).
+- Con `HELIUS_API_KEY` el webhook manda al instante y el sondeo se apaga solo.
+- Pendiente (Yasser, en la Mac mini): clave de Helius en Railway, elegir regla del auditor (A estricta 1,000–5,000%/año x 3 años · B respaldo ≥300%/año), cargar wallets. Después: construir `wallet auditar <dirección>` (PnL por año desde la blockchain).
