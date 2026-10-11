@@ -12,7 +12,7 @@ import { openCount } from "./results.js";
 import { kvGet } from "./store.js";
 import { px, fullPR, shortPR } from "./util.js";
 import { SENT, sentData } from "./sentiment.js";
-import { CAL, IDX, idxLine, onTv, tvSecret } from "./macro.js";
+import { CAL, IDX, idxLine, onTv, tvSecret, tvIpOk, TV } from "./macro.js";
 import { sesEstado } from "./sesionny.js";
 
 export const BOOT = Date.now();
@@ -46,7 +46,7 @@ export function estadoText() {
   L.push(ck(ENV.anthropicKey && !T.lastErr) + " Ai (TITO): " + (ENV.anthropicKey ? T.calls + " llamadas · " + Math.round(T.inTok / 1000) + "K tokens entrada · " + Math.round(T.outTok / 1000) + "K salida" + (T.lastErr ? " · último error: " + T.lastErr : "") : "falta ANTHROPIC_API_KEY") + " · mapa diario " + (kvGet("dailyOff", false) ? "apagado" : "7:48 AM") + (kvGet("lastDaily") ? " (último " + kvGet("lastDaily") + ")" : ""));
   L.push((SENT.crypto ? "✅" : "❌") + " Fear & Greed crypto: " + (SENT.crypto ? SENT.crypto.v + "/100 · " + SENT.crypto.label : "sin dato" + (SENT.lastErr.crypto ? " (" + SENT.lastErr.crypto + ")" : "")) + " · acciones (ref. oro): " + (SENT.stocks ? SENT.stocks.v + "/100 · " + SENT.stocks.label : "sin dato" + (SENT.lastErr.stocks ? " (" + SENT.lastErr.stocks + ")" : "")));
   L.push((CAL.t ? "✅" : "❌") + " Calendario USD: " + (CAL.t ? CAL.events.length + " eventos medio/alto" + (CAL.err ? " (" + CAL.err + ")" : "") : "sin dato" + (CAL.err ? " (" + CAL.err + ")" : "")) + " · plan sesión NY " + (kvGet("sessionOff", false) ? "apagado" : "8:15 AM ET L-V") + (kvGet("lastSession") ? " (último " + kvGet("lastSession") + ")" : ""));
-  L.push((IDX.YM && IDX.NQ ? "✅" : "❌") + " Índices: " + idxLine() + " · #indices-zonas por " + (ENV.hooks.indices ? "webhook" : "bot"));
+  L.push((IDX.YM && IDX.NQ ? "✅" : "❌") + " Índices: " + idxLine() + " · #indices-zonas por " + (ENV.hooks.indices ? "webhook" : "bot") + " · TradingView: " + TV.n + " recibidos" + (TV.rejected ? " · " + TV.rejected + " rechazados (última IP " + TV.lastIp + ")" : "") + (TV.err ? " · " + TV.err : ""));
   L.push(sesEstado());
   L.push("Discord: " + hookStats.sent + " mensajes enviados" + (hookStats.failed ? " · " + hookStats.failed + " fallidos" : ""));
   return L.join("\n");
@@ -72,8 +72,10 @@ export function startHttp() {
     const u = req.url.split("?")[0];
     const json = (code, obj) => { res.writeHead(code, { "content-type": "application/json; charset=utf-8", "access-control-allow-origin": "*", "cache-control": "no-store" }); res.end(JSON.stringify(obj)); };
     if (u === "/alive") return json(200, { ok: true, version: VERSION });
-    if (u.startsWith("/tv/")) {
-      if (req.method !== "POST" || u.slice(4) !== tvSecret()) return json(404, { error: "no existe" });
+    if (u === "/tv" || u.startsWith("/tv/")) {
+      if (req.method !== "POST") return json(404, { error: "no existe" });
+      if (u === "/tv") { const v = tvIpOk(req.headers["x-forwarded-for"], req.socket.remoteAddress); TV.lastIp = v.ip; if (!v.ok) { TV.rejected++; return json(403, { error: "solo TradingView" }); } }
+      else if (u.slice(4) !== tvSecret()) return json(404, { error: "no existe" });
       let body = "";
       req.on("data", (c) => { body += c; if (body.length > 4096) req.destroy(); });
       req.on("end", () => { const r = onTv(body.trim()); json(r.ok ? 200 : 400, r); });

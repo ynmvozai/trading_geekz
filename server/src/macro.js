@@ -136,7 +136,14 @@ export function idxLine() {
 
 // ---------- TradingView (tus gráficos DJ30 / USTEC) por webhook ----------
 // Alerta de TradingView cada 5 min con: {"s":"{{ticker}}","o":{{open}},"h":{{high}},"l":{{low}},"c":{{close}},"t":"{{time}}"}
-export const TV = { n: 0, last: null, err: "" };
+export const TV = { n: 0, last: null, err: "", rejected: 0, lastIp: "" };
+// IPs oficiales desde donde TradingView envía webhooks (tradingview.com/support/solutions/43000529348).
+export const TV_IPS = ["52.89.214.238", "34.212.75.30", "54.218.53.128", "52.32.178.7"];
+export function tvIpOk(xff, remote) {
+  const parts = String(xff || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const ip = (parts.length ? parts[parts.length - 1] : String(remote || "")).replace(/^::ffff:/, "");
+  return { ok: TV_IPS.includes(ip), ip };
+}
 export function tvSecret() {
   let s = kvGet("tvSecret", null);
   if (!s) { s = crypto.randomBytes(12).toString("hex"); kvSet("tvSecret", s); }
@@ -163,6 +170,8 @@ export function onTv(body) {
   const k = tvSym(o && (o.s || o.sym || o.ticker));
   const c = +o.c, op = +(o.o ?? c), h = +(o.h ?? c), l = +(o.l ?? c);
   if (!k || !(c > 0)) { TV.err = "mensaje inválido"; return { ok: false, error: "mensaje inválido: necesito s (ticker) y c (precio)" }; }
+  const prev = IDX[k] && IDX[k].price;
+  if (prev && Math.abs(c - prev) / prev > 0.08) { TV.err = "precio fuera de rango (" + c + " vs " + prev + ")"; return { ok: false, error: TV.err }; }
   const tt = Date.parse(o.t) || Date.now(), iso = new Date(tt).toISOString().slice(0, 16);
   const bars = kvGet("tv5:" + k, []) || [];
   const i = bars.findIndex((b) => b[0] === iso), bar = [iso, op, h, l, c];
