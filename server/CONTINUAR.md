@@ -89,3 +89,7 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 ## v3.6 · TradingView sin secreto (10 oct 2026)
 - `POST /tv` acepta solo las IPs oficiales de TradingView (52.89.214.238, 34.212.75.30, 54.218.53.128, 52.32.178.7; se lee la última IP de X-Forwarded-For) y descarta precios que se alejen más de 8% del último. `/tv/<secreto>` sigue funcionando.
 - Así las alertas de TradingView se configuran con `https://tradinggeekz-production.up.railway.app/tv` sin manejar secretos. `estado` muestra recibidos/rechazados y la última IP rechazada (por si Railway cambia el encabezado).
+
+## v3.7 · CNBC para índices y #resultados (11 oct 2026)
+- Índices: orden de fuentes = TradingView (si llega por /tv) → **CNBC** (`quote.cnbc.com` @YM.1 / @NQ.1, precio en vivo + apertura/máximo/mínimo del día) → Yahoo → Stooq. CNBC y TradingView guardan velas en la misma memoria (`tv5:`, `tvD:` en kv) con `storeIdxBar`.
+- Canal `#resultados` creado (id `1558812052053688400`, `RESULTADOS_CHANNEL_ID`); el resumen del domingo 6 PM lo publica el bot ahí.
