@@ -34,7 +34,7 @@ test("agregación de 250 ms y umbral mínimo", () => {
   assert.equal(got[0].zone, 0);
   assert.equal(got[0].side, "buy");
   const msg = buildMessage(got[0]);
-  assert.match(msg.content, /^HOT ZONE · BTC · COMPRA \$3\.51M/);
+  assert.match(msg.content, /^🔥 \*\*Bitcoin · EN LA ZONA\*\*\n🐋 Orden grande: 🟢 COMPRAN \*\*\$3\.51M\*\*/);
 });
 
 test("cerca de zona: proximidad 0-100%", () => {
