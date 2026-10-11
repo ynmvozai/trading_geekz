@@ -114,3 +114,10 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - #resultados (domingo 6 PM): `weeklyText(7)` amigable; el comando `resultados` mantiene el detalle.
 - Plan NY: el prompt prohíbe siglas (BOS, FVG, OB, R) y fija el formato de una línea por zona.
 - Pendiente aprobado en idea: alerta 🐳 mega ballena (sin importar zona) + liquidaciones grandes, y tracker propio de wallets de Solana (regla 3 de 10). Falta que Yasser confirme montos y lista de wallets / API key de Helius.
+
+## v4.0 · #mega-ballenas y #wallet-tracking (11 oct 2026)
+- Canal **#mega-ballenas** creado (id `1558942738181787748`, `MEGA_CHANNEL_ID`; o `WEBHOOK_MEGA`). Lo publica el bot y menciona al dueño (`OWNER_IDS[0]` o dueño del servidor) para que suene el celular.
+- `src/mega.js`: montos por rangos (`MEGA` en config.js) · BTC 15M/40M/100M · SOL 5M/15M/40M · Oro 15M/40M/100M → 🐳 Mega ballena / 🐳🐳 Ballena gigante / 🚨 Orden histórica. Avisa una sola orden o la suma de órdenes del mismo lado en 60 s (solo cuentan órdenes ≥ 1/3 del mínimo de alerta). Avisa aunque el precio esté lejos de las zonas y dice la zona más cercana. No repite el mismo nivel en 5 min.
+- Liquidaciones: stream `@forceOrder` de Binance (mismo WebSocket). Suma por lado en 5 min; aviso desde BTC $5M · SOL $2M · Oro $2M (`LIQ`); 🚨 y mención si es 4× o más.
+- `src/wallets.js` → **#wallet-tracking** (id `1558158617411190865`, `WALLET_CHANNEL_ID`): wallets de Solana vía Helius. Con `HELIUS_API_KEY` en Railway el servidor crea/actualiza solo su webhook (tipo SWAP, enhanced) hacia `/helius/<secreto>`. Regla por defecto: 3+ wallets compran la misma moneda en 24 h → aviso con link de DexScreener. USD gastado = SOL que salió × precio real de SOL (Binance) o USDC/USDT. Comandos en #agent: `wallets`, `wallet agregar <dir> <nombre>`, `wallet quitar <nombre>`, `wallet regla <mín> <horas>`, `wallet solos on/off`, `probar mega`.
+- Pendiente: Yasser crea la API key gratis en helius.dev y la pega en Railway (`HELIUS_API_KEY`); cargar la lista de wallets.
