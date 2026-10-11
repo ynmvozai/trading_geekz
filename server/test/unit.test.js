@@ -175,8 +175,8 @@ test("v3.6: webhook de TradingView sin secreto (solo IPs de TradingView)", async
 
 test("v3.7: índices desde CNBC", async () => {
   const MA = await import("../src/macro.js");
-  const q = MA.parseCnbc({ FormattedQuoteResult: { FormattedQuote: [{ symbol: "@YM.1", last: "51,800", open: "51,600", high: "51,900", low: "51,500", last_time: "2026-10-12T10:02:00.000-0400" }, { symbol: "@NQ.1", last: "25,010.25" }] } });
-  assert.equal(q["@YM.1"].last, "51,800"); assert.ok(q["@NQ.1"]);
+  const q = MA.parseCnbc({ FormattedQuoteResult: { FormattedQuote: [{ symbol: "@DJ.1", code: 0, last: "51,800", open: "51,600", high: "51,900", low: "51,500", last_time: "2026-10-12T10:02:00.000-0400" }, { symbol: "@NQ.1", last: "25,010.25" }] } });
+  assert.equal(q["@DJ.1"].last, "51,800"); assert.ok(q["@NQ.1"]);
   MA.storeIdxBar("NQ", "2026-10-12T14:00", 25000, 25020, 24990, 25010, { d: "2026-10-12", ohlc: [24900, 25050, 24850, 25010] }, "CNBC @NQ.1");
   assert.equal(MA.IDX.NQ.price, 25010); assert.match(MA.IDX.NQ.fuente, /^CNBC/);
   assert.deepEqual(MA.IDX.NQ.daily[MA.IDX.NQ.daily.length - 1], ["2026-10-12", 24900, 25050, 24850, 25010]);
