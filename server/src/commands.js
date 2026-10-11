@@ -15,6 +15,8 @@ import { sentimentText, refreshSentiment } from "./sentiment.js";
 import { calText, refreshCal, tvSecret, TV } from "./macro.js";
 import { runSession } from "./sesion.js";
 import { boardText, radarText, sesPost, SES } from "./sesionny.js";
+import { megaSend, MG } from "./mega.js";
+import { walletsText, addWallet, removeWallet, setRule, walletSend, W } from "./wallets.js";
 
 const pending = new Map(); // id de usuario -> {what, run, until}
 
@@ -60,10 +62,11 @@ function ayuda() {
     "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados** · **sentimiento** · **calendario** · **plan ny** · **radar** · **probar sesion**\n" +
     "**pausar alertas** · **reanudar alertas** · **cargar zonas** [JSON o enlace del panel] · **borrar zona** [n] · **actualiza zonas** · **reiniciar**\n" +
     "**check** [dirección del token] · **mapa diario apagar/encender** · **plan ny apagar/encender**\n" +
+    "**wallets** · **wallet agregar** [dirección] [nombre] · **wallet quitar** [nombre] · **wallet regla** [mín] [horas] · **wallet solos on/off** · **probar mega**\n" +
     "Mercados: btc, sol, oro. Cualquier otra pregunta la contesta TITO con Ai.";
 }
 
-const ADMIN_RE = /^(pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|plan ny (apagar|encender|on|off)|tv url)/;
+const ADMIN_RE = /^(pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|plan ny (apagar|encender|on|off)|tv url|wallet (agregar|añadir|quitar|borrar|regla|solos))/;
 
 export async function onAgentMessage(msg) {
   const q = (msg.content || "").trim();
@@ -100,7 +103,18 @@ export async function onAgentMessage(msg) {
     try { await idxPost("🧪 **Prueba de #indices-zonas** · aquí llegarán el plan NY de US30/NAS100 y los avisos de noticias."); res.push("✅ #indices-zonas: prueba enviada"); } catch (e) { res.push("❌ #indices-zonas: " + e.message); }
     return agent(res.join("\n") + "\nSi algún canal dice 403: en Discord → Editar canal → Permisos → agrega al bot con \"Enviar mensajes\".");
   }
-  if (/^vigilancia$/.test(ql)) return agent(watchText(["BTC", "SOL"], "🎯 Zonas en vigilancia · Crypto") + "\n\n" + watchText(["XAU"], "🎯 Zonas en vigilancia · Oro"));
+  if (/^vigilancia$/.test(ql)) return agent([watchText(["BTC", "SOL"], "Crypto"), watchText(["XAU"], "Oro")].filter(Boolean).join("\n\n") || "Todo tranquilo: ninguna zona a medio camino o más cerca.");
+  // v4.0 · wallets de Solana (#wallet-tracking)
+  if (/^wallets?$/.test(ql)) return agent(walletsText());
+  { const m = /^wallet (?:agregar|añadir) ([1-9A-HJ-NP-Za-km-z]{32,44})(?: (.+))?$/i.exec(q.trim()); if (m) return agent(addWallet(m[1], m[2])); }
+  { const m = /^wallet (?:quitar|borrar) (.+)$/i.exec(q.trim()); if (m) return agent(removeWallet(m[1].trim())); }
+  { const m = /^wallet regla (\d+)(?: (\d+))?$/.exec(ql); if (m) return agent(setRule(+m[1], m[2] ? +m[2] : null)); }
+  { const m = /^wallet solos (on|off|encender|apagar)$/.exec(ql); if (m) return agent(setRule(null, null, /on|encender/.test(m[1]))); }
+  if (/^probar (mega|ballenas|wallets?)$/.test(ql)) {
+    await megaSend("🧪 Prueba de #mega-ballenas\nAquí llegan órdenes de " + "$15M+ en Bitcoin, $5M+ en Solana y $15M+ en oro (por rangos) y las liquidaciones grandes.", true);
+    await walletSend("🧪 Prueba de #wallet-tracking\nAquí llegan los avisos cuando 3 o más wallets seguidas compran la misma moneda.");
+    return agent([MG.lastErr ? "❌ #mega-ballenas: " + MG.lastErr : "✅ #mega-ballenas: prueba enviada", W.lastErr && !ENV.heliusKey ? "✅ #wallet-tracking: prueba enviada (falta HELIUS_API_KEY para datos reales)" : W.lastErr ? "❌ #wallet-tracking: " + W.lastErr : "✅ #wallet-tracking: prueba enviada"].join("\n"));
+  }
   if (/^resultados/.test(ql)) { const d = +(/(\d+)/.exec(ql) || [])[1] || 30; return agent(resultsText(Math.min(d, 365))); }
   if (/^reiniciar$/.test(ql)) {
     await agent("🔄 Reiniciando el servidor… Railway lo levanta solo en unos segundos. Escribe **estado** en 1 minuto.");

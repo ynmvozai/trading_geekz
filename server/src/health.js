@@ -14,6 +14,8 @@ import { px, fullPR, shortPR } from "./util.js";
 import { SENT, sentData } from "./sentiment.js";
 import { CAL, IDX, idxLine, onTv, tvSecret, tvIpOk, TV } from "./macro.js";
 import { sesEstado } from "./sesionny.js";
+import { megaEstado } from "./mega.js";
+import { walletEstado, walletSecret, onHelius } from "./wallets.js";
 
 export const BOOT = Date.now();
 const STALE_MS = 180000;
@@ -60,6 +62,8 @@ export function estadoText() {
   L.push((CAL.t ? "✅" : "❌") + " Calendario USD: " + (CAL.t ? CAL.events.length + " eventos medio/alto" + (CAL.err ? " (" + CAL.err + ")" : "") : "sin dato" + (CAL.err ? " (" + CAL.err + ")" : "")) + " · plan sesión NY " + (kvGet("sessionOff", false) ? "apagado" : "8:15 AM ET L-V") + (kvGet("lastSession") ? " (último " + kvGet("lastSession") + ")" : ""));
   L.push((IDX.YM && IDX.NQ ? "✅" : "❌") + " Índices: " + idxLine() + " · #indices-zonas por " + (ENV.hooks.indices ? "webhook" : "bot") + " · TradingView: " + TV.n + " recibidos" + (TV.rejected ? " · " + TV.rejected + " rechazados (última IP " + TV.lastIp + ")" : "") + (TV.err ? " · " + TV.err : ""));
   L.push(sesEstado());
+  L.push(megaEstado());
+  L.push(walletEstado());
   L.push("Discord: " + hookStats.sent + " mensajes enviados" + (hookStats.failed ? " · " + hookStats.failed + " fallidos" : ""));
   return L.join("\n");
 }
@@ -91,6 +95,13 @@ export function startHttp() {
       let body = "";
       req.on("data", (c) => { body += c; if (body.length > 4096) req.destroy(); });
       req.on("end", () => { const r = onTv(body.trim()); json(r.ok ? 200 : 400, r); });
+      return;
+    }
+    if (u.startsWith("/helius/")) {
+      if (req.method !== "POST" || u.slice(8) !== walletSecret()) return json(404, { error: "no existe" });
+      let body = "";
+      req.on("data", (c) => { body += c; if (body.length > 2e6) req.destroy(); });
+      req.on("end", () => { onHelius(body).then((r) => json(r.ok ? 200 : 400, r)).catch((e) => json(500, { error: e.message })); });
       return;
     }
     if (u === "/health") { const h = healthData(); return json(h.ok ? 200 : 503, h); }

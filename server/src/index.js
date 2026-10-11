@@ -12,6 +12,8 @@ import { startHttp, bootText, BOOT } from "./health.js";
 import { log, prParts } from "./util.js";
 import { startSentiment } from "./sentiment.js";
 import { startMacro } from "./macro.js";
+import { startMega, onLiq } from "./mega.js";
+import { startWallets } from "./wallets.js";
 import { sessionTick } from "./sesion.js";
 import { sesTick } from "./sesionny.js";
 
@@ -57,7 +59,10 @@ binanceStart({
   onTrade: (sym, p, q, T, m, recv) => { M.onTrade(sym, p, q, T, m, recv); checkRange(sym, p, p, T); },
   onStatus: (st, why) => { if (st === "blocked") warnBlocked("WebSocket HTTP " + why); },
   onReconnect: (from, now) => { backfill(from, now); },
+  onLiq: (sym, kind, amount, price, T) => onLiq(sym, kind, amount, price, T),
 });
+startMega();
+startWallets();
 
 // ---------- Bot de Discord (#agent) ----------
 botStart(onAgentMessage);

@@ -8,7 +8,7 @@ ORDER.forEach((k) => { S[k] = { price: null, lag: null, lastT: 0, lastRecv: 0, s
 export const big = [];     // órdenes sobre el mínimo (últimas 80)
 export let feed = [];      // órdenes ≥ $250K, últimas 24 h (más reciente primero)
 export let stats = {};
-const listeners = { big: [], trade: [] };
+const listeners = { big: [], trade: [], burst: [] };
 export const on = (ev, fn) => listeners[ev].push(fn);
 
 export const lim = (sym) => ({ min: SYMS[sym].min, max: SYMS[sym].max });
@@ -71,6 +71,7 @@ export function finalize(b) {
     feed.unshift(fe); if (feed.length > 6000) feed.pop();
     try { feedInsert(fe); } catch {}
   }
+  for (const fn of listeners.burst) { try { fn(b, vwap); } catch {} }
   if (b.usd < L.min) return null;
   const win = STREAK_MIN * 60000, it = { t: b.first, usd: b.usd, price: vwap };
   let sk = st8.streak;

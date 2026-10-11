@@ -5,10 +5,11 @@ import { log } from "./util.js";
 
 export const bn = { ws: null, connected: false, lastMsg: 0, connects: 0, lastError: "", blocked: false, gapFrom: 0 };
 const BY_STREAM = Object.fromEntries(ORDER.map((k) => [SYMS[k].stream + "@aggTrade", k]));
+const BY_LIQ = Object.fromEntries(ORDER.map((k) => [SYMS[k].stream + "@forceOrder", k]));
 let backoff = 1000, watchdogT = null;
 
-export function binanceStart({ onTrade, onStatus, onReconnect }) {
-  const url = ENV.binanceWs + "?streams=" + ORDER.map((k) => SYMS[k].stream + "@aggTrade").join("/");
+export function binanceStart({ onTrade, onStatus, onReconnect, onLiq }) {
+  const url = ENV.binanceWs + "?streams=" + ORDER.map((k) => SYMS[k].stream + "@aggTrade").concat(ORDER.map((k) => SYMS[k].stream + "@forceOrder")).join("/");
   const open = () => {
     let ws;
     try { ws = new WebSocket(url, { handshakeTimeout: 15000 }); } catch (e) { return retry(e.message); }
@@ -26,6 +27,8 @@ export function binanceStart({ onTrade, onStatus, onReconnect }) {
       const now = Date.now();
       let m; try { m = JSON.parse(raw); } catch { return; }
       const d = m && m.data, k = m && BY_STREAM[m.stream];
+      // Liquidaciones (forceOrder): o.S = SELL → se liquidó una posición en largo; BUY → en corto.
+      if (!k && m && BY_LIQ[m.stream] && d && d.o) { if (onLiq) { const o = d.o, px = parseFloat(o.ap) || parseFloat(o.p), q = parseFloat(o.z) || parseFloat(o.q); if (px > 0 && q > 0) onLiq(BY_LIQ[m.stream], o.S === "SELL" ? "long" : "short", px * q, px, o.T || d.E || now); } return; }
       if (!k || !d || !d.p) return;
       if (bn.gapFrom && onReconnect) { const g = bn.gapFrom; bn.gapFrom = 0; onReconnect(g, now); }
       bn.lastMsg = now;

@@ -1,7 +1,7 @@
 // Configuración fija (portada del panel v2.4) y variables de entorno.
 import path from "node:path";
 
-export const VERSION = "v3.9-server · 11 oct 2026";
+export const VERSION = "v4.0-server · 11 oct 2026";
 
 export const SYMS = {
   BTC: { stream: "btcusdt", label: "BTCUSDT", dec: 1, min: 3000000, max: 6000000, ch: "crypto" },
@@ -31,12 +31,17 @@ export const ENV = {
     resultados: env.WEBHOOK_RESULTADOS || "",
     indices: env.WEBHOOK_INDICES || "",
     sesion: env.WEBHOOK_SESION || "",
+    mega: env.WEBHOOK_MEGA || "",
+    wallets: env.WEBHOOK_WALLETS || "",
   },
   botToken: env.DISCORD_BOT_TOKEN || "",
   anthropicKey: env.ANTHROPIC_API_KEY || "",
   resultadosChannelId: env.RESULTADOS_CHANNEL_ID || "1558812052053688400",
   indicesChannelId: env.INDICES_CHANNEL_ID || "1557713241722069072",
   sesionChannelId: env.SESION_CHANNEL_ID || "1558528510354788392",
+  megaChannelId: env.MEGA_CHANNEL_ID || "1558942738181787748",
+  walletChannelId: env.WALLET_CHANNEL_ID || "1558158617411190865",
+  heliusKey: env.HELIUS_API_KEY || "",
   agentChannelId: env.AGENT_CHANNEL_ID || "1557585826810962102",
   guildId: env.GUILD_ID || "1557574932064509982",
   ownerIds: (env.OWNER_IDS || "").split(",").map((s) => s.trim()).filter(Boolean),
@@ -51,3 +56,9 @@ export function mask(s) {
   if (!s) return "(vacío)";
   return s.length <= 10 ? "***" : s.slice(0, 6) + "…" + s.slice(-3);
 }
+
+// v4.0: montos importantes por rangos (USD). Nivel 1 🐳 Mega ballena · 2 🐳🐳 Ballena gigante · 3 🚨 Orden histórica.
+export const MEGA = { BTC: [15e6, 40e6, 100e6], SOL: [5e6, 15e6, 40e6], XAU: [15e6, 40e6, 100e6] };
+export const MEGA_WIN_MS = 60000;            // suma de órdenes del mismo lado en 60 s
+export const LIQ = { BTC: 5e6, SOL: 2e6, XAU: 2e6 }; // liquidaciones sumadas en 5 min
+export const LIQ_WIN_MS = 300000;
