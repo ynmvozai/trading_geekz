@@ -34,7 +34,8 @@ test("agregación de 250 ms y umbral mínimo", () => {
   assert.equal(got[0].zone, 0);
   assert.equal(got[0].side, "buy");
   const msg = buildMessage(got[0]);
-  assert.match(msg.content, /^🔥 \*\*Bitcoin · EN LA ZONA\*\*\n🐋 Orden grande: 🟢 COMPRAN \*\*\$3\.51M\*\*/);
+  assert.match(msg.content, /^🐋 Bitcoin: ballena COMPRÓ \$3\.51M (en \d+ órdenes )?· 100,200\nDentro de zona de VENTA\n⚠️ Ojo: empuja en contra/);
+  assert.doesNotMatch(msg.content.split("\n")[0], /\*|_/);
 });
 
 test("cerca de zona: proximidad 0-100%", () => {
@@ -94,7 +95,8 @@ test("historial: TP1 luego TP2, SL, niveles inválidos, 48 h", () => {
 test("vigilancia y comandos rápidos", () => {
   setZones([{ ...ZB }], "t");
   M.S.BTC.price = 100200;
-  assert.match(watchText(["BTC", "SOL"], "T"), /EN LA ZONA/);
+  assert.match(watchText(["BTC", "SOL"], "T"), /🎯 Bitcoin → venta .* · dentro/);
+  M.S.BTC.price = 50000; assert.equal(watchText(["BTC", "SOL"], "T"), ""); M.S.BTC.price = 100200;
   assert.match(quickAnswer("zonas btc"), /Order block 1H/);
   assert.match(quickAnswer("precio"), /Bitcoin: 100,200\.0/);
 });
@@ -149,7 +151,8 @@ test("v3.3: canal #sesion-ny (ventana, índices y radar)", async () => {
   assert.equal(SN.inWindow(Date.parse("2026-10-10T15:00:00Z")), false);  // sábado
   assert.equal(SN.setIdxZones([{ sym: "US30", name: "x", side: "sell", lo: 51875, hi: 51765 }, { sym: "BTC", lo: 1, hi: 2 }]), 1);
   assert.equal(SN.idxZones()[0].lo, 51765);
-  assert.match(SN.radarText("t", Date.now() - 3600000, null), /US30 \(Dow\)/);
+  assert.match(SN.boardText("t", Date.now() - 3600000, null), /Dow/);
+  assert.match(SN.radarText("t", Date.now() - 3600000, null), /^t\n/);
 });
 
 test("v3.4: índices por webhook de TradingView", async () => {
