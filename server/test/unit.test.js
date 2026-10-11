@@ -163,3 +163,12 @@ test("v3.4: índices por webhook de TradingView", async () => {
   assert.equal(MA.onTv("{}").ok, false);
   assert.equal(MA.tvSecret().length, 24);
 });
+
+test("v3.6: webhook de TradingView sin secreto (solo IPs de TradingView)", async () => {
+  const MA = await import("../src/macro.js");
+  assert.equal(MA.tvIpOk("1.2.3.4, 52.89.214.238", "").ok, true);
+  assert.equal(MA.tvIpOk("52.89.214.238, 9.9.9.9", "").ok, false);
+  assert.equal(MA.tvIpOk("", "::ffff:34.212.75.30").ok, true);
+  const p = MA.IDX.YM.price;
+  assert.equal(MA.onTv({ s: "DJ30", c: p * 1.5 }).ok, false);
+});
