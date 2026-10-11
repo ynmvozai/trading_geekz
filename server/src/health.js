@@ -9,6 +9,7 @@ import { bot, hookStats } from "./discord.js";
 import { A, sim, simStats } from "./alerts.js";
 import { T } from "./tito.js";
 import { openCount } from "./results.js";
+import { alertsSince } from "./store.js";
 import { kvGet } from "./store.js";
 import { px, fullPR, shortPR } from "./util.js";
 import { SENT, sentData } from "./sentiment.js";
@@ -106,6 +107,8 @@ export function startHttp() {
     }
     if (u === "/health") { const h = healthData(); return json(h.ok ? 200 : 503, h); }
     if (u === "/state") return json(200, stateData());
+    // v4.2: señales registradas (solo lectura) para medir y mejorar el % de acierto.
+    if (u === "/senales") { const d = +(new URL(req.url, "http://x").searchParams.get("dias") || 30); return json(200, alertsSince(Date.now() - Math.min(d, 365) * 86400000)); }
     if (u === "/" || u === "/index.html") {
       try { res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(fs.readFileSync(panelFile)); } catch { return json(404, { error: "sin panel" }); }
     }
