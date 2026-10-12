@@ -160,3 +160,7 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Error corregido en `detectZones`: las zonas se activaban al ABRIR la vela que las confirma (FVG: vela i+1; OB: vela i+3). En la simulación eso permitía entrar en el extremo de esa misma vela. Ahora `t0` = cierre de esa vela. Los resultados de la Fase 2 de la v4.4 (FVG 79–85 %) quedan inválidos; la Fase 2 se repite sola una vez (kv `estudioV47`). Prueba unitaria nueva.
 - Aprobado por Yasser (rec. 8, con data de la Fase 1 corregida): mínimo del oro $1.5M → $3M; #mega-ballenas agrega "Tamaño, no dirección" en cada aviso de orden.
 - Pendiente de la Fase 2 corregida: motor de zonas en vivo para #ai-crypto, solo zonas que cumplan la regla, meta 1R, stop por ATR, filtro de tendencia, oro fuera de NY, ajuste del prompt de TITO.
+
+## v4.8 · Fase 3 sin mirar al futuro (12 oct 2026)
+- Fase 2 corregida (v4.7): sin la entrada imposible, NINGUNA combinación llega a 68 % en entrenamiento y todas pierden en validación (mejores: BTC −0.42R, SOL −0.16R, oro −0.19R por operación). Las metas de 3R aciertan 5–16 %: el precio tiende a atravesar las zonas mecánicas. El motor de zonas (rec. 1–6) NO se despliega; su código queda guardado fuera del repo para cuando haya una regla con ventaja real.
+- Fase 3: a TITO se le pasaban la vela de 1H, la de 4H y la diaria todavía abiertas (con hasta ~12 h de futuro). Ahora solo velas cerradas antes de las 8:15 AM NY, y se descuenta la comisión. Se repite sola una vez (kv `estudioV48`).
