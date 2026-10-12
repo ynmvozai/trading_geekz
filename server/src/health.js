@@ -17,6 +17,7 @@ import { CAL, IDX, idxLine, onTv, tvSecret, tvIpOk, TV } from "./macro.js";
 import { sesEstado } from "./sesionny.js";
 import { megaEstado } from "./mega.js";
 import { B } from "./bias.js";
+import { estudioData } from "./estudio.js";
 import { walletEstado, walletSecret, onHelius } from "./wallets.js";
 
 export const BOOT = Date.now();
@@ -110,6 +111,7 @@ export function startHttp() {
     if (u === "/health") { const h = healthData(); return json(h.ok ? 200 : 503, h); }
     if (u === "/state") return json(200, stateData());
     // v4.2: señales registradas (solo lectura) para medir y mejorar el % de acierto.
+    if (u === "/estudio") return json(200, estudioData());
     if (u === "/senales") { const d = +(new URL(req.url, "http://x").searchParams.get("dias") || 30); return json(200, alertsSince(Date.now() - Math.min(d, 365) * 86400000)); }
     if (u === "/" || u === "/index.html") {
       try { res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(fs.readFileSync(panelFile)); } catch { return json(404, { error: "sin panel" }); }

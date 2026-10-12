@@ -17,6 +17,7 @@ import { runSession } from "./sesion.js";
 import { boardText, radarText, sesPost, SES } from "./sesionny.js";
 import { megaSend, MG } from "./mega.js";
 import { biasText } from "./bias.js";
+import { runEstudio, EST } from "./estudio.js";
 import { walletsText, addWallet, removeWallet, setRule, walletSend, W } from "./wallets.js";
 
 const pending = new Map(); // id de usuario -> {what, run, until}
@@ -63,11 +64,11 @@ function ayuda() {
     "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados** · **sentimiento** · **calendario** · **plan ny** · **radar** · **probar sesion**\n" +
     "**pausar alertas** · **reanudar alertas** · **cargar zonas** [JSON o enlace del panel] · **borrar zona** [n] · **actualiza zonas** · **reiniciar**\n" +
     "**check** [dirección del token] · **mapa diario apagar/encender** · **plan ny apagar/encender**\n" +
-    "**sesgo** · **wallets** · **wallet agregar** [dirección] [nombre] · **wallet quitar** [nombre] · **wallet regla** [mín] [horas] · **wallet solos on/off** · **probar mega**\n" +
+    "**sesgo** · **estudio** [1 2 3] · **estudio estado** · **wallets** · **wallet agregar** [dirección] [nombre] · **wallet quitar** [nombre] · **wallet regla** [mín] [horas] · **wallet solos on/off** · **probar mega**\n" +
     "Mercados: btc, sol, oro. Cualquier otra pregunta la contesta TITO con Ai.";
 }
 
-const ADMIN_RE = /^(pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|plan ny (apagar|encender|on|off)|tv url|wallet (agregar|añadir|quitar|borrar|regla|solos))/;
+const ADMIN_RE = /^(estudio(?! estado)|pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|plan ny (apagar|encender|on|off)|tv url|wallet (agregar|añadir|quitar|borrar|regla|solos))/;
 
 export async function onAgentMessage(msg) {
   const q = (msg.content || "").trim();
@@ -107,6 +108,9 @@ export async function onAgentMessage(msg) {
   if (/^vigilancia$/.test(ql)) return agent([watchText(["BTC", "SOL"], "Crypto"), watchText(["XAU"], "Oro")].filter(Boolean).join("\n\n") || "Todo tranquilo: ninguna zona a medio camino o más cerca.");
   // v4.0 · wallets de Solana (#wallet-tracking)
   if (/^(sesgo|term[oó]metro|order ?flow)$/.test(ql)) return agent(biasText());
+  // v4.4 · estudio de mercado hacia el pasado (backtest)
+  if (/^estudio estado$/.test(ql)) return agent(EST.running ? "🔬 Estudio corriendo · " + EST.fase + " · " + EST.progreso + " · " + Math.round((Date.now() - EST.inicio) / 60000) + " min" : "🔬 Estudio sin correr ahora." + (EST.error ? " Último error: " + EST.error : ""));
+  { const m = /^estudio(?: ([123](?:[ ,]*[123])*))?$/.exec(ql); if (m) { const f = m[1] ? [...new Set(m[1].match(/[123]/g).map(Number))].sort() : [1, 2, 3]; runEstudio(f, agent); return; } }
   if (/^wallets?$/.test(ql)) return agent(walletsText());
   { const m = /^wallet (?:agregar|añadir) ([1-9A-HJ-NP-Za-km-z]{32,44})(?: (.+))?$/i.exec(q.trim()); if (m) return agent(addWallet(m[1], m[2])); }
   { const m = /^wallet (?:quitar|borrar) (.+)$/i.exec(q.trim()); if (m) return agent(removeWallet(m[1].trim())); }
