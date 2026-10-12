@@ -131,18 +131,19 @@ export async function fase1(days = 365, step = 6) {
 
 // ---------- Fase 2 · Zonas algorítmicas + simulación ----------
 // Detecta order blocks (última vela contraria antes de un impulso que rompe estructura) y FVG (hueco de 3 velas).
+// v4.7: cada zona existe recién cuando CIERRA la vela que la confirma (antes se activaba al abrir: entradas imposibles en vivo).
 export function detectZones(K, tf) {
-  const A = atrArr(K), Z = [];
+  const A = atrArr(K), Z = [], TF = tf === "4H" ? 4 * H : H;
   for (let i = 12; i < K.length - 3; i++) {
     const a = A[i]; if (!a) continue;
     // FVG
-    if (K[i + 1][3] - K[i - 1][2] > 0.1 * a) Z.push({ tf, tipo: "FVG", side: "buy", lo: K[i - 1][2], hi: K[i + 1][3], t0: K[i + 1][0] + 1, a });
-    if (K[i - 1][3] - K[i + 1][2] > 0.1 * a) Z.push({ tf, tipo: "FVG", side: "sell", lo: K[i + 1][2], hi: K[i - 1][3], t0: K[i + 1][0] + 1, a });
+    if (K[i + 1][3] - K[i - 1][2] > 0.1 * a) Z.push({ tf, tipo: "FVG", side: "buy", lo: K[i - 1][2], hi: K[i + 1][3], t0: K[i + 1][0] + TF, a });
+    if (K[i - 1][3] - K[i + 1][2] > 0.1 * a) Z.push({ tf, tipo: "FVG", side: "sell", lo: K[i + 1][2], hi: K[i - 1][3], t0: K[i + 1][0] + TF, a });
     // Order block: vela i contraria (la ÚLTIMA antes del impulso: la siguiente ya es fuerte a favor) + impulso i+1..i+3 que cierra fuera del extremo de las 10 velas anteriores
     const prevHi = Math.max(...K.slice(i - 10, i).map((k) => k[2])), prevLo = Math.min(...K.slice(i - 10, i).map((k) => k[3]));
     const imp = K.slice(i + 1, i + 4), rng = imp.reduce((s, k) => s + (k[2] - k[3]), 0);
-    if (K[i][4] < K[i][1] && K[i + 1][4] - K[i + 1][1] > 0.5 * a && imp.some((k) => k[4] > prevHi) && rng > 1.5 * a) Z.push({ tf, tipo: "OB", side: "buy", lo: K[i][3], hi: K[i][2], t0: K[i + 3][0] + 1, a });
-    if (K[i][4] > K[i][1] && K[i + 1][1] - K[i + 1][4] > 0.5 * a && imp.some((k) => k[4] < prevLo) && rng > 1.5 * a) Z.push({ tf, tipo: "OB", side: "sell", lo: K[i][3], hi: K[i][2], t0: K[i + 3][0] + 1, a });
+    if (K[i][4] < K[i][1] && K[i + 1][4] - K[i + 1][1] > 0.5 * a && imp.some((k) => k[4] > prevHi) && rng > 1.5 * a) Z.push({ tf, tipo: "OB", side: "buy", lo: K[i][3], hi: K[i][2], t0: K[i + 3][0] + TF, a });
+    if (K[i][4] > K[i][1] && K[i + 1][1] - K[i + 1][4] > 0.5 * a && imp.some((k) => k[4] < prevLo) && rng > 1.5 * a) Z.push({ tf, tipo: "OB", side: "sell", lo: K[i][3], hi: K[i][2], t0: K[i + 3][0] + TF, a });
   }
   // Grado A si un OB se cruza con un FVG del mismo lado; si no, B.
   Z.forEach((z) => { z.grado = Z.some((w) => w !== z && w.side === z.side && w.tipo !== z.tipo && Math.abs(w.t0 - z.t0) < 6 * (tf === "4H" ? 4 * H : H) && w.lo < z.hi && w.hi > z.lo) ? "A" : "B"; });

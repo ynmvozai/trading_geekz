@@ -1,12 +1,12 @@
 // Configuración fija (portada del panel v2.4) y variables de entorno.
 import path from "node:path";
 
-export const VERSION = "v4.6-server · 12 oct 2026";
+export const VERSION = "v4.7-server · 12 oct 2026";
 
 export const SYMS = {
   BTC: { stream: "btcusdt", label: "BTCUSDT", dec: 1, min: 3000000, max: 6000000, ch: "crypto" },
   SOL: { stream: "solusdt", label: "SOLUSDT", dec: 2, min: 1000000, max: 6000000, ch: "crypto" },
-  XAU: { stream: "xauusdt", label: "XAUUSDT", dec: 2, min: 1500000, max: 6000000, ch: "oro" }, // v4.3: la orden de oro más grande vista fue $1.89M (ninguna ≥ $2M)
+  XAU: { stream: "xauusdt", label: "XAUUSDT", dec: 2, min: 3000000, max: 6000000, ch: "oro" }, // v4.7: estudio Fase 1 (50 días, toda la semana): desde ~$3M el oro acertó 56 % a 1 h; debajo, ~51 %
 };
 export const NAMES = { BTC: "Bitcoin", SOL: "Solana", XAU: "Oro" };
 export const ORDER = ["BTC", "SOL", "XAU"];

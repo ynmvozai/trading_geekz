@@ -76,6 +76,8 @@ startFund();
 if (!kvGet("estudioV44", false)) { kvSet("estudioV44", Date.now()); setTimeout(() => runEstudio([1, 2, 3], agent), 90000); }
 // v4.6: repite solo la Fase 1 una vez, ya con días de toda la semana.
 else if (!kvGet("estudioV46", false)) { kvSet("estudioV46", Date.now()); setTimeout(() => runEstudio([1], agent), 90000); }
+// v4.7: repite la Fase 2 una vez con las zonas sin mirar al futuro.
+else if (!kvGet("estudioV47", false)) { kvSet("estudioV47", Date.now()); setTimeout(() => runEstudio([2], agent), 90000); }
 
 // ---------- Bot de Discord (#agent) ----------
 botStart(onAgentMessage);

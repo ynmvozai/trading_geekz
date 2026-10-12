@@ -65,7 +65,7 @@ export function onBurst(b, price, now = Date.now()) {
   const name = NAMES[sym] || sym, verbo = b.side === "buy" ? "🟢 Compraron " : "🔴 Vendieron ";
   const amount = single >= acc ? b.usd : sum;
   const how = single >= acc ? "en una sola orden" : "en " + arr.length + " órdenes en " + Math.max(1, Math.round((T - arr[0].t) / 1000)) + " segundos";
-  const txt = [LEVELS[lvl] + " · " + name, verbo + usd(amount) + " " + how + " · " + pf(price, sym), rangoTxt(sym, lvl), zonaTxt(sym, price, b.side)].join("\n");
+  const txt = [LEVELS[lvl] + " · " + name, verbo + usd(amount) + " " + how + " · " + pf(price, sym), rangoTxt(sym, lvl), zonaTxt(sym, price, b.side), "-# Tamaño, no dirección: en el estudio de 12 meses las órdenes gigantes acertaron la dirección ~50 %. Úsala para saber dónde hay dinero grande."].join("\n");
   send(txt, true);
   return txt;
 }
