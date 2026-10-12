@@ -151,3 +151,7 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Régimen = crecimiento (riesgo de recesión bajo/medio/alto) × tendencia de la inflación subyacente (ritmo de 3 meses vs anual): Goldilocks, Reflación, Estanflación, Desaceleración. Régimen de cada mercado: tendencia alcista, bajista, consolidación (rango de 20 días < 70 % de lo normal y cerca de su media de 50) o mixto.
 - Publica: panorama los lunes 8:30 AM PR y "🆕 Dato nuevo" cuando FRED trae un CPI, desempleo, PCE o PIB nuevo (revisa 9, 11 y 15 h L-V). Comandos: `macro`, `probar macro`, `macro apagar/encender`. TITO recibe `macro_fundamental` en su panel para contestar sobre inflación, recesión, Fed o consolidación.
 - Menos ruido: el cambio de sesgo necesita 2 lecturas seguidas (30 min) y ya no se publica en #agent (solo en el canal del mercado y en #sesion-ny en horario NY). `sesgo` muestra el cambio pendiente.
+
+## v4.6 · Fase 1 corregida (12 oct 2026)
+- La Fase 1 tomaba 1 día cada 7 desde un sábado: los 53 días fueron sábados (sin sesión NY y solo fin de semana). Ahora toma 1 día cada 6 (rota por todos los días de la semana, ~61 días) y guarda `dias_por_semana`. Se repite sola una vez tras el despliegue (kv `estudioV46`).
+- Resultados v4.4 que siguen válidos: Fase 2 (velas de 1 minuto de todo el año) y Fase 3 (fechas cada 9 días).
