@@ -234,6 +234,70 @@ export async function fase2(days = 365) {
   return res;
 }
 
+// ---------- Fase 4 · Ruptura de zona (v4.9) ----------
+// Hipótesis: con meta de 3R el rebote acertó 5–16 % (menos que el azar): el precio atraviesa las zonas.
+// Se opera la RUPTURA: cierre de vela del marco más allá del borde lejano (dentro de 7 días desde t0), entrada a ese cierre,
+// stop del otro lado de la zona (borde cercano ± k × ATR), meta R × riesgo, máximo 3 días, comisión incluida. Sin mirar al futuro.
+export function breakIdx(K, z, TF) {
+  const buy = z.side === "buy", far = buy ? z.lo : z.hi;
+  let lo = 0, hi = K.length; while (lo < hi) { const m = (lo + hi) >> 1; if (K[m][0] < z.t0) lo = m + 1; else hi = m; }
+  for (let i = lo; i < K.length && K[i][0] < z.t0 + 7 * DAY; i++) if (buy ? K[i][4] < far : K[i][4] > far) return i;
+  return -1;
+}
+export function simBreak(M, K, z, p, TF) {
+  if (z._brk === undefined) z._brk = breakIdx(K, z, TF);
+  if (z._brk < 0) return null;
+  const buy = z.side === "buy", dir = buy ? -1 : 1, near = buy ? z.hi : z.lo, kb = K[z._brk], tE = kb[0] + TF, e = kb[4];
+  const iE = idxAt(M, tE); if (iE < 0 || M.t[iE] < kb[0]) return null;
+  const sl = near - dir * p.k * z.a, risk = Math.abs(e - sl);
+  if (!(risk > 0) || risk < 0.5 * z.a || (dir === 1 ? sl >= e : sl <= e)) return { skip: "stop" };
+  const tp = e + dir * p.R * risk, costR = (FEE_RT * e) / risk;
+  for (let j = iE + 1; j < M.n && M.t[j] < tE + 3 * DAY; j++) {
+    const hitSL = dir === 1 ? M.l[j] <= sl : M.h[j] >= sl, hitTP = dir === 1 ? M.h[j] >= tp : M.l[j] <= tp;
+    if (hitSL) return { t: tE, r: -1 - costR, win: false, dir };
+    if (hitTP) return { t: tE, r: p.R - costR, win: true, dir };
+  }
+  const jl = Math.min(M.n - 1, idxAt(M, tE + 3 * DAY));
+  return { t: tE, r: (dir * (M.c[jl] - e)) / risk - costR, win: false, tiempo: true, dir };
+}
+export async function fase4(days = 365) {
+  const res = { fase: 4, generado: Date.now(), periodo_dias: days, hipotesis: "ruptura de zona", mercados: {} };
+  const end = Math.floor(Date.now() / H) * H, start = end - days * DAY, cut = start + Math.round(days * 8 / 12) * DAY;
+  const grid = [];
+  for (const tf of ["1H", "4H"]) for (const k of [0, 0.25, 0.5]) for (const R of [1, 1.5, 2, 3]) for (const tend of [false, true]) grid.push({ tf, k, R, tend });
+  for (const sym of MARKETS) {
+    EST.progreso = "Fase 4 · " + NAMES[sym] + " · velas 1H/4H";
+    let K1, K4, M;
+    try { K1 = await klinesRange(sym, "1h", start - 30 * DAY, end); K4 = await klinesRange(sym, "4h", start - 60 * DAY, end); }
+    catch (e) { res.mercados[sym] = { error: "sin datos: " + e.message }; continue; }
+    EST.progreso = "Fase 4 · " + NAMES[sym] + " · velas de 1 minuto (puede tardar)";
+    try { M = await minutes(sym, Math.max(start, K1[0] ? K1[0][0] : start), end); } catch (e) { res.mercados[sym] = { error: "sin velas 1m: " + e.message }; continue; }
+    if (M.n < 1000) { res.mercados[sym] = { error: "muy poca historia" }; continue; }
+    const trend = trendFn(K4), KK = { "1H": K1, "4H": K4 }, Zs = { "1H": detectZones(K1, "1H").filter((z) => z.t0 >= M.t[0]), "4H": detectZones(K4, "4H").filter((z) => z.t0 >= M.t[0]) };
+    EST.progreso = "Fase 4 · " + NAMES[sym] + " · simulando " + grid.length + " combinaciones";
+    const rows = [];
+    for (const p of grid) {
+      const tr = []; let cnt = 0;
+      for (const z of Zs[p.tf]) {
+        if (++cnt % 300 === 0) await sleep(0);
+        const s = simBreak(M, KK[p.tf], z, p, p.tf === "4H" ? 4 * H : H); if (!s || s.skip) continue;
+        if (p.tend && trend(s.t) !== s.dir) continue;
+        tr.push({ ...s, tipo: z.tipo, side: s.dir === 1 ? "buy" : "sell", ny: isNY(s.t) });
+      }
+      rows.push({ p, ent: stats(tr.filter((x) => x.t < cut)), val: stats(tr.filter((x) => x.t >= cut)), tr });
+      await sleep(0);
+    }
+    const ok = rows.filter((r) => r.ent.n >= 50).sort((a, b) => b.ent.R_prom - a.ent.R_prom), best = ok[0];
+    const pasa = rows.filter((r) => r.ent.n >= 50 && r.ent.R_prom > 0 && r.val.n >= 30 && r.val.R_prom > 0).sort((a, b) => b.val.R_prom - a.val.R_prom);
+    const det = (r) => { if (!r) return null; const v = r.tr.filter((x) => x.t >= cut), g = (f) => stats(v.filter(f));
+      return { reglas: r.p, entrenamiento: r.ent, validacion: r.val, validacion_por: { compras: g((x) => x.side === "buy"), ventas: g((x) => x.side === "sell"), OB: g((x) => x.tipo === "OB"), FVG: g((x) => x.tipo === "FVG"), sesion_NY: g((x) => x.ny), fuera_NY: g((x) => !x.ny) } }; };
+    res.mercados[sym] = { corte_validacion: new Date(cut).toISOString().slice(0, 10), mejor: det(best), positivas_en_ambos: pasa.length, mejor_validada: det(pasa[0]),
+      top10: ok.slice(0, 10).map((r) => ({ reglas: r.p, entrenamiento: r.ent, validacion: r.val })) };
+    M = null;
+  }
+  return res;
+}
+
 // ---------- Fase 3 · TITO a ciegas (20 días) ----------
 async function askZones(sym, K4, K1, KD) {
   const q = "Eres analista de order blocks y fair value gaps 1H/4H. Con SOLO estas velas reales (formato [hora UTC, apertura, máximo, mínimo, cierre]) marca hasta 3 zonas vigentes de " + sym +
@@ -281,15 +345,15 @@ export async function fase3(dias = 20) {
 }
 
 // ---------- Orquestador ----------
-export function estudioData() { return { estado: EST, fase1: kvGet("estudio1", null), fase2: kvGet("estudio2", null), fase3: kvGet("estudio3", null) }; }
+export function estudioData() { return { estado: EST, fase1: kvGet("estudio1", null), fase2: kvGet("estudio2", null), fase3: kvGet("estudio3", null), fase4: kvGet("estudio4", null) }; }
 export async function runEstudio(fases, notify) {
   if (EST.running) return notify("⏳ El estudio ya está corriendo: " + EST.progreso);
   EST.running = true; EST.inicio = Date.now(); EST.error = "";
   try {
     for (const f of fases) {
       EST.fase = "Fase " + f;
-      await notify("🔬 Estudio · arrancó la Fase " + f + (f === 1 ? " (ballenas, 12 meses, 1 día por semana)" : f === 2 ? " (zonas + reglas, 12 meses de velas de 1 minuto)" : " (TITO a ciegas, 20 días)") + ". Te aviso al terminar.");
-      const r = f === 1 ? await fase1() : f === 2 ? await fase2() : await fase3();
+      await notify("🔬 Estudio · arrancó la Fase " + f + (f === 1 ? " (ballenas, 12 meses, 1 día por semana)" : f === 2 ? " (zonas + reglas, 12 meses de velas de 1 minuto)" : f === 4 ? " (ruptura de zona, 12 meses de velas de 1 minuto)" : " (TITO a ciegas, 20 días)") + ". Te aviso al terminar.");
+      const r = f === 1 ? await fase1() : f === 2 ? await fase2() : f === 4 ? await fase4() : await fase3();
       kvSet("estudio" + f, r);
       await notify("✅ Estudio · Fase " + f + " lista en " + Math.round((Date.now() - EST.inicio) / 60000) + " min.\n" + resumen(f, r));
     }
@@ -299,5 +363,7 @@ export async function runEstudio(fases, notify) {
 function resumen(f, r) {
   if (f === 1) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m) return ""; const t = m.por_tamano || {}; return "• " + NAMES[s] + ": " + m.ordenes + " órdenes en " + m.dias_analizados + " días · " + m.nota_recomendacion; }).join("\n");
   if (f === 2) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m || !m.mejor) return "• " + NAMES[s] + ": " + ((m && m.error) || "sin combinación con 40+ operaciones"); const b = m.mejor; return "• " + NAMES[s] + ": mejor regla " + b.reglas.tf + " · stop " + b.reglas.k + "×ATR · meta " + b.reglas.R + "R · " + b.reglas.confirm + (b.reglas.tend ? " · con tendencia" : "") + " → validación " + b.validacion.acierto + "% acierto, " + b.validacion.R_prom + "R por operación (" + b.validacion.n + " ops)"; }).join("\n");
+  if (f === 4) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m || !m.mejor) return "• " + NAMES[s] + ": " + ((m && m.error) || "sin combinación con 50+ operaciones"); const b = m.mejor_validada || m.mejor, q = b.reglas;
+    return "• " + NAMES[s] + ": " + (m.mejor_validada ? "✅ " : "❌ ") + q.tf + " · stop " + q.k + "×ATR · meta " + q.R + "R" + (q.tend ? " · con tendencia" : "") + " → afinado " + b.entrenamiento.R_prom + "R · validación " + b.validacion.acierto + "% acierto, " + b.validacion.R_prom + "R por operación (" + b.validacion.n + " ops)" + (m.mejor_validada ? "" : " · ninguna positiva en ambos periodos"); }).join("\n");
   return Object.entries(r.tito || {}).map(([s, v]) => "• TITO " + (NAMES[s] || s) + ": " + (v.error || (v.todas.n + " zonas tocadas · " + v.todas.acierto + "% acierto · " + v.todas.R_prom + "R por operación"))).join("\n");
 }

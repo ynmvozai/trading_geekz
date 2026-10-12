@@ -12,8 +12,8 @@ export function post(url, body) {
   if (typeof body === "string") body = { content: body };
   if (body.content && body.content.length > 2000) body.content = body.content.slice(0, 1990) + "…";
   body.allowed_mentions = { parse: [] };
-  // v4.5: los mensajes salen con el nombre del agente (excepto #ai-crypto, que conserva el suyo).
-  if (!body.username && ENV.botName && url !== ENV.hooks.aicrypto) body.username = ENV.botName;
+  // v4.9: solo #agent sale como "TITO 👾🤖"; los demás canales conservan el nombre de su webhook.
+  if (!body.username && ENV.botName && url === ENV.hooks.agent) body.username = ENV.botName;
   return new Promise((resolve, reject) => {
     let q = queues.get(url);
     if (!q) queues.set(url, (q = { items: [], busy: false }));

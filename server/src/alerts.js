@@ -31,7 +31,7 @@ function setAlert(o, t) { o.alert = t; if (o.fe) { o.fe.alert = t; try { feedSet
 // Varias órdenes grandes del mismo lado en la misma zona en 2 min = un solo mensaje + un "siguen…" al final.
 const GROUP_MS = 120000, groups = new Map();
 function onBig(o) {
-  if (o.zone >= 0) simOpen(o, o.zone);
+  // v4.9: Ai Crypto en pausa: el estudio corregido no encontró ventaja en estas señales. Las abiertas se siguen cerrando.
   const nz = o.zone < 0 ? nearZone(o.sym, o.price) : null;
   if (nz && nz.d <= nearR(o.sym) / 100) o.near = nz;
   if (o.zone < 0 && !o.near) { setAlert(o, "fuera de zona"); return; }

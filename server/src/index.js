@@ -80,6 +80,8 @@ else if (!kvGet("estudioV46", false)) { kvSet("estudioV46", Date.now()); setTime
 else if (!kvGet("estudioV47", false)) { kvSet("estudioV47", Date.now()); setTimeout(() => runEstudio([2], agent), 90000); }
 // v4.8: repite la Fase 3 (TITO a ciegas) una vez, solo con velas cerradas.
 else if (!kvGet("estudioV48", false)) { kvSet("estudioV48", Date.now()); setTimeout(() => runEstudio([3], agent), 90000); }
+// v4.9: Fase 4 (ruptura de zona), una vez.
+else if (!kvGet("estudioV49", false)) { kvSet("estudioV49", Date.now()); setTimeout(() => runEstudio([4], agent), 90000); }
 
 // ---------- Bot de Discord (#agent) ----------
 botStart(onAgentMessage);
