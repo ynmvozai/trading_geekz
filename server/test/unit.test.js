@@ -238,3 +238,22 @@ test("v4.3: zonas rotas, lado correcto, stop mínimo y termómetro de sesgo", as
   assert.ok(r.score >= 2, "score " + r.score); assert.equal(r.label, "COMPRADORES");
   assert.ok(BI.atr14(up) > 0);
 });
+
+test("v4.4: estudio · zonas algorítmicas y simulación con velas de 1 minuto", async () => {
+  const E = await import("../src/estudio.js");
+  const H = 3600000, K = [];
+  let p = 100;
+  for (let i = 0; i < 40; i++) { K.push([i * H, p, p + 1, p - 1, p + (i % 2 ? 0.3 : -0.3)]); }
+  K.push([40 * H, 100, 100.5, 98.5, 99]);                                  // vela bajista (order block de compra)
+  K.push([41 * H, 99, 104, 99, 103.8], [42 * H, 103.8, 108, 103.5, 107.5], [43 * H, 107.5, 110, 107, 109.5]); // impulso que rompe
+  for (let i = 44; i < 60; i++) K.push([i * H, 109, 110, 108, 109]);
+  const Z = E.detectZones(K, "1H");
+  const ob = Z.find((z) => z.tipo === "OB" && z.side === "buy");
+  assert.ok(ob, "debe detectar el order block de compra");
+  assert.equal(ob.lo, 98.5); assert.equal(ob.hi, 100.5);
+  // Minutos: el precio baja a la zona (100.5), rebota y sube a la meta.
+  const n = 600, M = { t: new Float64Array(n), h: new Float64Array(n), l: new Float64Array(n), c: new Float64Array(n), n };
+  for (let i = 0; i < n; i++) { const v = i < 200 ? 109 - i * 0.045 : 100 + (i - 200) * 0.05; M.t[i] = ob.t0 + i * 60000; M.h[i] = v + 0.05; M.l[i] = v - 0.05; M.c[i] = v; }
+  const r = E.simZone(M, { ...ob }, { k: 0.25, R: 1, confirm: "toque" });
+  assert.ok(r && r.win === true, "debe ganar: " + JSON.stringify(r));
+});
