@@ -91,7 +91,8 @@ function agg(rows) {
   const f = (k) => { const v = rows.map((r) => r[k]).filter((x) => x != null); return v.length ? { acierto: Math.round((v.filter((x) => x > 0).length / v.length) * 100), prom: +((v.reduce((a, b) => a + b, 0) / v.length) * 100).toFixed(3) } : null; };
   return { n, m15: f("r15"), h1: f("r60"), h4: f("r240") };
 }
-export async function fase1(days = 365, step = 7) {
+// v4.6: paso de 6 días (antes 7). Con 7 todos los días caían en el mismo día de la semana (sábados) y no había sesión NY.
+export async function fase1(days = 365, step = 6) {
   const res = { fase: 1, generado: Date.now(), periodo_dias: days, muestra: "1 día cada " + step, mercados: {} };
   const end = Math.floor(Date.now() / DAY) * DAY - DAY, start = end - days * DAY;
   for (const sym of MARKETS) {
@@ -100,6 +101,7 @@ export async function fase1(days = 365, step = 7) {
     let K4 = []; try { K4 = await klinesRange(sym, "4h", start - 60 * 4 * H, end + DAY); } catch (e) { log("estudio 4h", e.message); }
     const trend = trendFn(K4);
     let dias = 0, sinDato = 0;
+    const wd = {};
     for (let d = start; d < end; d += step * DAY) {
       EST.progreso = "Fase 1 · " + NAMES[sym] + " · día " + new Date(d).toISOString().slice(0, 10) + " (" + dias + " listos)";
       let bursts;
@@ -112,7 +114,7 @@ export async function fase1(days = 365, step = 7) {
         const tr = trend(b.t);
         all.push({ usd: b.usd, side: b.side, r15: ret(15), r60: ret(60), r240: ret(240), tier: tierOf(b.usd, min), ny: isNY(b.t), alineada: tr === 0 ? "plana" : tr === dir ? "a favor" : "en contra", h: etHour(b.t).h });
       }
-      dias++;
+      dias++; { const w = new Date(d).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" }); wd[w] = (wd[w] || 0) + 1; }
     }
     const by = (key) => { const g = {}; all.forEach((r) => { (g[r[key]] = g[r[key]] || []).push(r); }); return Object.fromEntries(Object.entries(g).map(([k, v]) => [k, agg(v)])); };
     const tiers = by("tier");
@@ -120,7 +122,7 @@ export async function fase1(days = 365, step = 7) {
     const orden = ["⅓–1× mínimo", "1–2× mínimo", "2–5× mínimo", "5×+ mínimo"], mult = { "⅓–1× mínimo": 1 / 3, "1–2× mínimo": 1, "2–5× mínimo": 2, "5×+ mínimo": 5 };
     const rec = orden.find((k) => tiers[k] && tiers[k].n >= 30 && tiers[k].h1 && tiers[k].h1.acierto >= 55);
     const megas = [15e6, 40e6, 100e6].map((v) => ({ desde: v, ...agg(all.filter((r) => r.usd >= v)) }));
-    res.mercados[sym] = { dias_analizados: dias, dias_sin_dato: sinDato, ordenes: all.length, minimo_actual: min, por_tamano: tiers, por_tendencia: by("alineada"),
+    res.mercados[sym] = { dias_analizados: dias, dias_por_semana: wd, dias_sin_dato: sinDato, ordenes: all.length, minimo_actual: min, por_tamano: tiers, por_tendencia: by("alineada"),
       sesion_ny: agg(all.filter((r) => r.ny)), fuera_ny: agg(all.filter((r) => !r.ny)), mega_absoluto: megas,
       minimo_recomendado: rec ? Math.round(min * mult[rec]) : null, nota_recomendacion: rec ? "Escalón " + rec + ": acierta " + tiers[rec].h1.acierto + "% a 1 h con " + tiers[rec].n + " casos" : "Ningún tamaño llegó a 55 % de acierto a 1 h con 30+ casos: el tamaño solo no predice dirección" };
   }

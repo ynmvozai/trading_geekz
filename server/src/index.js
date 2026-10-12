@@ -74,6 +74,8 @@ startBias();
 startFund();
 // v4.4: el estudio (fases 1, 2 y 3) arranca solo una vez después de esta actualización; luego se repite con el comando "estudio".
 if (!kvGet("estudioV44", false)) { kvSet("estudioV44", Date.now()); setTimeout(() => runEstudio([1, 2, 3], agent), 90000); }
+// v4.6: repite solo la Fase 1 una vez, ya con días de toda la semana.
+else if (!kvGet("estudioV46", false)) { kvSet("estudioV46", Date.now()); setTimeout(() => runEstudio([1], agent), 90000); }
 
 // ---------- Bot de Discord (#agent) ----------
 botStart(onAgentMessage);
