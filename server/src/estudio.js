@@ -254,7 +254,9 @@ export async function fase3(dias = 20) {
       const d0 = end - n * 9 * DAY + 12 * H + 15 * 60000;                    // ~8:15 AM hora de NY, cada 9 días hacia atrás
       EST.progreso = "Fase 3 · TITO a ciegas · " + NAMES[sym] + " · " + new Date(d0).toISOString().slice(0, 10);
       try {
-        const [K4, K1, KD] = await Promise.all([klinesRange(sym, "4h", d0 - 42 * 4 * H, d0), klinesRange(sym, "1h", d0 - 48 * H, d0), klinesRange(sym, "1d", d0 - 30 * DAY, d0)]);
+        // v4.8: solo velas CERRADAS antes de d0 (antes entraban la vela de 1H, la de 4H y la diaria en curso, con su futuro).
+        const cerr = (K, ms) => K.filter((k) => k[0] + ms <= d0);
+        const [K4, K1, KD] = await Promise.all([klinesRange(sym, "4h", d0 - 42 * 4 * H, d0).then((K) => cerr(K, 4 * H)), klinesRange(sym, "1h", d0 - 48 * H, d0).then((K) => cerr(K, H)), klinesRange(sym, "1d", d0 - 30 * DAY, d0).then((K) => cerr(K, DAY))]);
         const fmt = (K) => K.map((k) => [new Date(k[0]).toISOString().slice(5, 16), k[1], k[2], k[3], k[4]]);
         const zones = await askZones(sym, fmt(K4), fmt(K1), fmt(KD));
         const M = await minutes(sym, d0, d0 + 3 * DAY), a = atrArr(K1).filter(Boolean).pop() || 0;
@@ -266,7 +268,8 @@ export async function fase3(dias = 20) {
           const risk = Math.abs(near - z.sl), reward = Math.abs(z.tp1 - near);
           if (!(risk > 0) || (dir === 1 ? z.sl >= near || z.tp1 <= near : z.sl <= near || z.tp1 >= near)) continue;
           let out = null;
-          for (let j = i + 1; j < M.n; j++) { if (dir === 1 ? M.l[j] <= z.sl : M.h[j] >= z.sl) { out = { win: false, r: -1 }; break; } if (dir === 1 ? M.h[j] >= z.tp1 : M.l[j] <= z.tp1) { out = { win: true, r: reward / risk }; break; } }
+          const costR = (FEE_RT * near) / risk;                               // v4.8: comisión incluida, igual que la Fase 2
+          for (let j = i + 1; j < M.n; j++) { if (dir === 1 ? M.l[j] <= z.sl : M.h[j] >= z.sl) { out = { win: false, r: -1 - costR }; break; } if (dir === 1 ? M.h[j] >= z.tp1 : M.l[j] <= z.tp1) { out = { win: true, r: reward / risk - costR }; break; } }
           if (out) tr.push({ ...out, t: M.t[i], stop_vs_atr: +(risk / (a || 1)).toFixed(2), filtro_v43: risk >= 0.5 * a });
         }
       } catch (e) { log("estudio fase3", e.message); }
