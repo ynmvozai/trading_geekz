@@ -16,6 +16,7 @@ import { SENT, sentData } from "./sentiment.js";
 import { CAL, IDX, idxLine, onTv, tvSecret, tvIpOk, TV } from "./macro.js";
 import { sesEstado } from "./sesionny.js";
 import { megaEstado } from "./mega.js";
+import { B } from "./bias.js";
 import { walletEstado, walletSecret, onHelius } from "./wallets.js";
 
 export const BOOT = Date.now();
@@ -63,6 +64,7 @@ export function estadoText() {
   L.push((CAL.t ? "✅" : "❌") + " Calendario USD: " + (CAL.t ? CAL.events.length + " eventos medio/alto" + (CAL.err ? " (" + CAL.err + ")" : "") : "sin dato" + (CAL.err ? " (" + CAL.err + ")" : "")) + " · plan sesión NY " + (kvGet("sessionOff", false) ? "apagado" : "8:15 AM ET L-V") + (kvGet("lastSession") ? " (último " + kvGet("lastSession") + ")" : ""));
   L.push((IDX.YM && IDX.NQ ? "✅" : "❌") + " Índices: " + idxLine() + " · #indices-zonas por " + (ENV.hooks.indices ? "webhook" : "bot") + " · TradingView: " + TV.n + " recibidos" + (TV.rejected ? " · " + TV.rejected + " rechazados (última IP " + TV.lastIp + ")" : "") + (TV.err ? " · " + TV.err : ""));
   L.push(sesEstado());
+  L.push((Object.keys(B).length ? "✅" : "❌") + " Sesgo (order flow): " + (Object.keys(B).length ? ORDER.map((k) => (NAMES[k] || k) + " " + (B[k] ? B[k].label.toLowerCase() + " " + (B[k].score > 0 ? "+" : "") + B[k].score : "—")).join(" · ") : "calculando…") + " · zonas rotas: " + Object.keys(Z.broken || {}).length);
   L.push(megaEstado());
   L.push(walletEstado());
   L.push("Discord: " + hookStats.sent + " mensajes enviados" + (hookStats.failed ? " · " + hookStats.failed + " fallidos" : ""));

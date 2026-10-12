@@ -4,6 +4,7 @@ import { alertInsert, alertsOpen, alertUpdate, alertsSince } from "./store.js";
 import { zkey } from "./zones.js";
 import { px, shortPR } from "./util.js";
 import { sentFor, sentRead } from "./sentiment.js";
+import { minStop } from "./bias.js";
 
 const H48 = 48 * 3600000;
 let open = []; // seguimiento en memoria (copia de la base de datos)
@@ -19,6 +20,7 @@ export function recordAlert({ t, sym, kind, z, order_side, entry, prox, usd }) {
   const a = { t, sym, kind, zone_name: z.name, grade: z.grade, side: z.side, order_side, entry, prox, usd, sl: z.sl, tp1: z.tp1, tp2: z.tp2, zkey: zkey(z), fg: s ? s.v : null, fg_read: sentRead(z.side, s).tag };
   if (open.some((x) => x.zkey === a.zkey)) { a.track = 0; a.status = "repetida"; }      // ya hay una señal abierta en esa zona
   else if (!valid(z.side, entry, z.sl, z.tp1)) { a.track = 0; a.status = "sin niveles"; } // SL/TP no cuadran con el precio
+  else if (Math.abs(entry - z.sl) < minStop(sym, entry)) { a.track = 0; a.status = "stop muy cerca"; } // v4.3: menos de medio movimiento normal de 1 hora
   else { a.track = 1; a.status = "abierta"; }
   a.id = alertInsert(a);
   if (a.track) open.push({ ...a, tp1_t: null });

@@ -13,6 +13,9 @@ import { log, prParts } from "./util.js";
 import { startSentiment } from "./sentiment.js";
 import { startMacro } from "./macro.js";
 import { startMega, onLiq } from "./mega.js";
+import { startBias, onBiasChange } from "./bias.js";
+import { hookOf } from "./alerts.js";
+import { sesMirror } from "./sesionny.js";
 import { startWallets } from "./wallets.js";
 import { sessionTick } from "./sesion.js";
 import { sesTick } from "./sesionny.js";
@@ -63,6 +66,8 @@ binanceStart({
 });
 startMega();
 startWallets();
+onBiasChange((sym, txt) => { const hk = hookOf(sym); if (hk) post(hk, txt).catch(() => {}); sesMirror(txt); agent(txt); });
+startBias();
 
 // ---------- Bot de Discord (#agent) ----------
 botStart(onAgentMessage);

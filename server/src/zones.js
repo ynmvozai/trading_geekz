@@ -3,23 +3,51 @@ import { SYMS, NEAR, WATCH, NAMES, ORDER } from "./config.js";
 import { kvGet, kvSet } from "./store.js";
 import { px, usd, shortPR } from "./util.js";
 
-export const Z = { list: [], date: null, state: [] }; // state[i] = {inside, buy, sell, since}
+export const Z = { list: [], date: null, state: [], broken: {} }; // state[i] = {inside, buy, sell, since}
 
 export function loadZones() {
   Z.list = kvGet("zones", []) || [];
   Z.date = kvGet("zdate", null);
   Z.state = [];
+  Z.broken = kvGet("zbroken", {}) || {};
 }
 
 export function setZones(list, source) {
   Z.list = list;
   Z.state = [];
   Z.date = shortPR(Date.now()) + (source ? " · " + source : "");
+  const keys = new Set(list.map(zkey));
+  Object.keys(Z.broken).forEach((k) => { if (!keys.has(k)) delete Z.broken[k]; }); kvSet("zbroken", Z.broken);
   kvSet("zones", Z.list);
   kvSet("zdate", Z.date);
 }
 
 export const zkey = (z) => z.sym + "|" + z.lo + "|" + z.hi;
+
+// v4.3 · Zonas rotas: cuando el precio pasa el stop de una zona, la zona muere (no alerta ni cuenta señales).
+export const isBroken = (z) => !!Z.broken[zkey(z)];
+export const liveZones = () => Z.list.filter((z) => !isBroken(z));
+const stopOf = (z) => { const lo = Math.min(z.lo, z.hi), hi = Math.max(z.lo, z.hi); return z.sl > 0 ? z.sl : z.side === "sell" ? hi * 1.003 : lo * 0.997; };
+// Devuelve las zonas que se acaban de romper con este precio (y las guarda).
+export function checkBroken(sym, p, t = Date.now()) {
+  const out = [];
+  let map = null;
+  for (const z of Z.list) {
+    if (z.sym !== sym || !(z.hi > 0)) continue;
+    const s = stopOf(z);
+    if (!((z.side === "sell" && p > s) || (z.side === "buy" && p < s))) continue;
+    map = Z.broken;
+    if (map[zkey(z)]) continue;
+    map[zkey(z)] = t; out.push({ z, stop: s });
+  }
+  if (out.length) {
+    kvSet("zbroken", map);
+    const log = (kvGet("zbrokenLog", []) || []).filter((x) => t - x.t < 48 * 3600000);
+    out.forEach(({ z }) => log.push({ sym: z.sym, side: z.side, t }));
+    kvSet("zbrokenLog", log);
+  }
+  return out;
+}
 export const nearR = (sym) => NEAR[sym] || 1;
 export function zDist(z, p) {
   const lo = Math.min(z.lo, z.hi), hi = Math.max(z.lo, z.hi);
@@ -33,7 +61,7 @@ export const prox = (z, p) => Math.max(0, Math.min(100, (1 - zDist(z, p) / (WATC
 export function zoneAt(sym, p) {
   for (let i = 0; i < Z.list.length; i++) {
     const z = Z.list[i];
-    if (z.sym === sym && z.hi > 0 && p >= Math.min(z.lo, z.hi) && p <= Math.max(z.lo, z.hi)) return i;
+    if (z.sym === sym && z.hi > 0 && !isBroken(z) && p >= Math.min(z.lo, z.hi) && p <= Math.max(z.lo, z.hi)) return i;
   }
   return -1;
 }
@@ -41,7 +69,10 @@ export function nearZone(sym, p) {
   let best = null;
   for (let i = 0; i < Z.list.length; i++) {
     const z = Z.list[i];
-    if (z.sym !== sym || !(z.hi > 0)) continue;
+    if (z.sym !== sym || !(z.hi > 0) || isBroken(z)) continue;
+    // Solo cuenta si el precio llega por el lado correcto: debajo de una zona de venta, encima de una de compra.
+    if (z.side === "sell" && p > Math.max(z.lo, z.hi)) continue;
+    if (z.side === "buy" && p < Math.min(z.lo, z.hi)) continue;
     const d = zDist(z, p);
     if (!best || d < best.d) best = { i, d };
   }

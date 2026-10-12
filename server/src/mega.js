@@ -3,7 +3,7 @@
 import { ENV, NAMES, SYMS, MEGA, MEGA_WIN_MS, LIQ, LIQ_WIN_MS } from "./config.js";
 import { postLong, bot, hookStats } from "./discord.js";
 import { on, S } from "./market.js";
-import { Z, zDist } from "./zones.js";
+import { Z, zDist, isBroken } from "./zones.js";
 import { usd, splitLong, log } from "./util.js";
 import { pf, ladoMin, lado, empuje } from "./friendly.js";
 
@@ -20,7 +20,7 @@ export function rangoTxt(sym, lvl) {
 // Dónde quedó el precio respecto a las zonas, en una línea.
 function zonaTxt(sym, price, side) {
   let best = null;
-  for (const z of Z.list) { if (z.sym !== sym) continue; const d = zDist(z, price); if (!best || d < best.d) best = { z, d }; }
+  for (const z of Z.list) { if (z.sym !== sym || isBroken(z)) continue; const d = zDist(z, price); if (!best || d < best.d) best = { z, d }; }
   if (!best) return "Sin zonas cargadas para comparar";
   const z = best.z, f = (v) => pf(v, sym), rg = f(Math.min(z.lo, z.hi)) + "–" + f(Math.max(z.lo, z.hi));
   if (best.d === 0) return "Dentro de zona de " + lado(z.side) + " " + rg + " → " + (side === z.side ? empuje(side, z.side) : "⚠️ empuja en contra");

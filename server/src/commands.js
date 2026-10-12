@@ -16,6 +16,7 @@ import { calText, refreshCal, tvSecret, TV } from "./macro.js";
 import { runSession } from "./sesion.js";
 import { boardText, radarText, sesPost, SES } from "./sesionny.js";
 import { megaSend, MG } from "./mega.js";
+import { biasText } from "./bias.js";
 import { walletsText, addWallet, removeWallet, setRule, walletSend, W } from "./wallets.js";
 
 const pending = new Map(); // id de usuario -> {what, run, until}
@@ -62,7 +63,7 @@ function ayuda() {
     "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados** · **sentimiento** · **calendario** · **plan ny** · **radar** · **probar sesion**\n" +
     "**pausar alertas** · **reanudar alertas** · **cargar zonas** [JSON o enlace del panel] · **borrar zona** [n] · **actualiza zonas** · **reiniciar**\n" +
     "**check** [dirección del token] · **mapa diario apagar/encender** · **plan ny apagar/encender**\n" +
-    "**wallets** · **wallet agregar** [dirección] [nombre] · **wallet quitar** [nombre] · **wallet regla** [mín] [horas] · **wallet solos on/off** · **probar mega**\n" +
+    "**sesgo** · **wallets** · **wallet agregar** [dirección] [nombre] · **wallet quitar** [nombre] · **wallet regla** [mín] [horas] · **wallet solos on/off** · **probar mega**\n" +
     "Mercados: btc, sol, oro. Cualquier otra pregunta la contesta TITO con Ai.";
 }
 
@@ -105,6 +106,7 @@ export async function onAgentMessage(msg) {
   }
   if (/^vigilancia$/.test(ql)) return agent([watchText(["BTC", "SOL"], "Crypto"), watchText(["XAU"], "Oro")].filter(Boolean).join("\n\n") || "Todo tranquilo: ninguna zona a medio camino o más cerca.");
   // v4.0 · wallets de Solana (#wallet-tracking)
+  if (/^(sesgo|term[oó]metro|order ?flow)$/.test(ql)) return agent(biasText());
   if (/^wallets?$/.test(ql)) return agent(walletsText());
   { const m = /^wallet (?:agregar|añadir) ([1-9A-HJ-NP-Za-km-z]{32,44})(?: (.+))?$/i.exec(q.trim()); if (m) return agent(addWallet(m[1], m[2])); }
   { const m = /^wallet (?:quitar|borrar) (.+)$/i.exec(q.trim()); if (m) return agent(removeWallet(m[1].trim())); }

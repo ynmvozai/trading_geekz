@@ -4,7 +4,7 @@
 import { ENV, NAMES, ORDER } from "./config.js";
 import { postLong } from "./discord.js";
 import { S, feed } from "./market.js";
-import { Z, prox, zDist } from "./zones.js";
+import { Z, prox, zDist, isBroken } from "./zones.js";
 import { IDX, refreshIdx } from "./macro.js";
 import { etParts } from "./sesion.js";
 import { kvGet, kvSet } from "./store.js";
@@ -63,7 +63,7 @@ export function setIdxZones(arr) {
   if (list.length) kvSet("idxZones", { date: prParts().date, list });
   return list.length;
 }
-export function zonesOf(m) { return IDXK[m] ? idxZones().filter((z) => z.sym === m) : Z.list.filter((z) => z.sym === m); }
+export function zonesOf(m) { return IDXK[m] ? idxZones().filter((z) => z.sym === m) : Z.list.filter((z) => z.sym === m && !isBroken(z)); }
 export function proxOf(z, p) {
   if (IDXK[z.sym]) return Math.max(0, Math.min(100, (1 - zDist(z, p) / (IDX_RADIUS[z.sym] / 100)) * 100));
   return prox(z, p);

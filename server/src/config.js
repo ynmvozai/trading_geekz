@@ -1,12 +1,12 @@
 // Configuración fija (portada del panel v2.4) y variables de entorno.
 import path from "node:path";
 
-export const VERSION = "v4.1-server · 11 oct 2026";
+export const VERSION = "v4.3-server · 12 oct 2026";
 
 export const SYMS = {
   BTC: { stream: "btcusdt", label: "BTCUSDT", dec: 1, min: 3000000, max: 6000000, ch: "crypto" },
   SOL: { stream: "solusdt", label: "SOLUSDT", dec: 2, min: 1000000, max: 6000000, ch: "crypto" },
-  XAU: { stream: "xauusdt", label: "XAUUSDT", dec: 2, min: 3000000, max: 6000000, ch: "oro" },
+  XAU: { stream: "xauusdt", label: "XAUUSDT", dec: 2, min: 1500000, max: 6000000, ch: "oro" }, // v4.3: la orden de oro más grande vista fue $1.89M (ninguna ≥ $2M)
 };
 export const NAMES = { BTC: "Bitcoin", SOL: "Solana", XAU: "Oro" };
 export const ORDER = ["BTC", "SOL", "XAU"];
@@ -59,7 +59,7 @@ export function mask(s) {
 }
 
 // v4.0: montos importantes por rangos (USD). Nivel 1 🐳 Mega ballena · 2 🐳🐳 Ballena gigante · 3 🚨 Orden histórica.
-export const MEGA = { BTC: [15e6, 40e6, 100e6], SOL: [5e6, 15e6, 40e6], XAU: [15e6, 40e6, 100e6] };
+export const MEGA = { BTC: [15e6, 40e6, 100e6], SOL: [5e6, 15e6, 40e6], XAU: [5e6, 15e6, 40e6] };
 export const MEGA_WIN_MS = 60000;            // suma de órdenes del mismo lado en 60 s
 export const LIQ = { BTC: 5e6, SOL: 2e6, XAU: 2e6 }; // liquidaciones sumadas en 5 min
 export const LIQ_WIN_MS = 300000;
