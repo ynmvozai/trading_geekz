@@ -155,3 +155,8 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 ## v4.6 · Fase 1 corregida (12 oct 2026)
 - La Fase 1 tomaba 1 día cada 7 desde un sábado: los 53 días fueron sábados (sin sesión NY y solo fin de semana). Ahora toma 1 día cada 6 (rota por todos los días de la semana, ~61 días) y guarda `dias_por_semana`. Se repite sola una vez tras el despliegue (kv `estudioV46`).
 - Resultados v4.4 que siguen válidos: Fase 2 (velas de 1 minuto de todo el año) y Fase 3 (fechas cada 9 días).
+
+## v4.7 · Estudio sin mirar al futuro + oro a $3M (12 oct 2026)
+- Error corregido en `detectZones`: las zonas se activaban al ABRIR la vela que las confirma (FVG: vela i+1; OB: vela i+3). En la simulación eso permitía entrar en el extremo de esa misma vela. Ahora `t0` = cierre de esa vela. Los resultados de la Fase 2 de la v4.4 (FVG 79–85 %) quedan inválidos; la Fase 2 se repite sola una vez (kv `estudioV47`). Prueba unitaria nueva.
+- Aprobado por Yasser (rec. 8, con data de la Fase 1 corregida): mínimo del oro $1.5M → $3M; #mega-ballenas agrega "Tamaño, no dirección" en cada aviso de orden.
+- Pendiente de la Fase 2 corregida: motor de zonas en vivo para #ai-crypto, solo zonas que cumplan la regla, meta 1R, stop por ATR, filtro de tendencia, oro fuera de NY, ajuste del prompt de TITO.
