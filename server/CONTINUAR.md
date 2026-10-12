@@ -169,3 +169,7 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Fase 4: prueba la RUPTURA de las zonas (cierre de vela más allá del borde lejano, stop del otro lado de la zona, meta 1–3R, 3 días máx., comisión), afinado 8 meses / validación 4. Aprueba solo si el R promedio es positivo en ambos periodos (50+ y 30+ operaciones). Corre sola una vez (kv `estudioV49`); también `estudio 4`.
 - Ai Crypto (#ai-crypto) no abre señales nuevas: el estudio corregido no encontró ventaja (llevaba 0 % y −5R). Las abiertas se siguen cerrando.
 - Nombres: solo #agent publica como "TITO 👾🤖" (`BOT_NAME`); los demás webhooks conservan su nombre propio. Apodo del bot en el servidor de vuelta a "TITO".
+
+## v4.10 · TITO a ciegas ampliado y nueva vara (12 oct 2026)
+- Aprobado por Yasser: la Fase 3 pasa a 60 mañanas por mercado (Bitcoin y Solana), una cada 6 días (~12 meses, ~120 consultas a Anthropic). Corre sola una vez tras el despliegue (kv `estudioV410`).
+- Vara para aprobar cualquier regla o agente (aprobada por Yasser): R promedio POSITIVO en los 4 meses de validación con 50+ operaciones, comisión incluida. El % de acierto se reporta, pero ya no es el criterio.
