@@ -88,7 +88,7 @@ test("historial: TP1 luego TP2, SL, niveles inválidos, 48 h", () => {
   R.recordAlert({ t: t - 49 * 3600000, sym: "BTC", kind: "orden_en_zona", z: { ...ZB, lo: 100003 }, entry: 100200 });
   R.expire(t);
   const txt = R.resultsText(30);
-  assert.match(txt, /\*\*Total\*\* · 3 resueltas · TP1 67% · TP2 67% · SL 33%/);
+  assert.match(txt, /\*\*Total\*\* · 2 resueltas · TP1 50% · TP2 50% · SL 50%/); // v4.3: la compra dentro de zona de venta ya no cuenta
   assert.match(txt, /1 sin resolver/);
 });
 
@@ -214,4 +214,27 @@ test("v4.0: mega ballenas por rangos, liquidaciones y wallets", async () => {
     transaction: { message: { accountKeys: [{ pubkey: w1 }] } } };
   const rs = WL.parseRpcTx(rtx, w1, 150);
   assert.equal(rs.length, 1); assert.equal(rs[0].side, "buy"); assert.equal(rs[0].usd, 300); assert.equal(rs[0].qty, 5000);
+});
+
+test("v4.3: zonas rotas, lado correcto, stop mínimo y termómetro de sesgo", async () => {
+  const ZN = await import("../src/zones.js"), R = await import("../src/results.js"), BI = await import("../src/bias.js");
+  setZones([{ ...ZB, lo: 100000, hi: 100500, sl: 101000 }, { sym: "BTC", name: "OB compra", grade: "A", side: "buy", lo: 95000, hi: 95500, sl: 94500, tp1: 97000, tp2: 98000 }], "t");
+  // Lado correcto: con el precio ARRIBA de una zona de venta, no cuenta como "cerca".
+  assert.notEqual(ZN.nearZone("BTC", 100700).i, 0);              // la de venta queda fuera; solo aparece la de compra (lejos)
+  assert.equal(ZN.nearZone("BTC", 99800).i, 0);
+  // Zona rota: el precio pasa el stop (101,000) → muere y deja de estar "en zona".
+  assert.equal(ZN.checkBroken("BTC", 100900).length, 0);
+  assert.equal(ZN.checkBroken("BTC", 101050).length, 1);
+  assert.equal(ZN.checkBroken("BTC", 101100).length, 0);           // no avisa dos veces
+  assert.equal(ZN.isBroken(ZN.Z.list[0]), true);
+  assert.equal(ZN.zoneAt("BTC", 100200), -1);
+  // Stop mínimo: sin ATR usa respaldo 0.15 % en BTC → stop a $50 de la entrada no cuenta.
+  const tight = R.recordAlert({ t: Date.now(), sym: "BTC", kind: "orden_en_zona", z: { ...ZB, lo: 100020, sl: 100250 }, entry: 100200 });
+  assert.equal(tight.status, "stop muy cerca");
+  // Termómetro: subida sostenida → compradores.
+  const up = Array.from({ length: 60 }, (_, i) => ["t", 100 + i, 101 + i, 99 + i, 100.5 + i]);
+  up[59][4] = 200;
+  const r = BI.scoreOf("SOL", up, up);
+  assert.ok(r.score >= 2, "score " + r.score); assert.equal(r.label, "COMPRADORES");
+  assert.ok(BI.atr14(up) > 0);
 });
