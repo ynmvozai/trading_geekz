@@ -308,14 +308,15 @@ async function askZones(sym, K4, K1, KD) {
   const j = await r.json(), txt = (j.content || []).map((c) => c.text || "").join("");
   return parseAiZones(txt).arr || [];
 }
-export async function fase3(dias = 20) {
+// v4.10: por defecto 60 mañanas por mercado, una cada 6 días (≈ 12 meses). Vara: R promedio positivo con 50+ operaciones.
+export async function fase3(manianas = 60, paso = 6) {
   const res = { fase: 3, generado: Date.now(), tito: {} };
   if (!ENV.anthropicKey) { res.tito = { error: "falta ANTHROPIC_API_KEY" }; return res; }
   const end = Math.floor(Date.now() / DAY) * DAY - 2 * DAY;
   for (const sym of ["BTC", "SOL"]) {
     const tr = [];
-    for (let n = 0; n < dias / 2; n++) {
-      const d0 = end - n * 9 * DAY + 12 * H + 15 * 60000;                    // ~8:15 AM hora de NY, cada 9 días hacia atrás
+    for (let n = 0; n < manianas; n++) {
+      const d0 = end - n * paso * DAY + 12 * H + 15 * 60000;                 // ~8:15 AM hora de NY, cada `paso` días hacia atrás
       EST.progreso = "Fase 3 · TITO a ciegas · " + NAMES[sym] + " · " + new Date(d0).toISOString().slice(0, 10);
       try {
         // v4.8: solo velas CERRADAS antes de d0 (antes entraban la vela de 1H, la de 4H y la diaria en curso, con su futuro).
@@ -352,7 +353,7 @@ export async function runEstudio(fases, notify) {
   try {
     for (const f of fases) {
       EST.fase = "Fase " + f;
-      await notify("🔬 Estudio · arrancó la Fase " + f + (f === 1 ? " (ballenas, 12 meses, 1 día por semana)" : f === 2 ? " (zonas + reglas, 12 meses de velas de 1 minuto)" : f === 4 ? " (ruptura de zona, 12 meses de velas de 1 minuto)" : " (TITO a ciegas, 20 días)") + ". Te aviso al terminar.");
+      await notify("🔬 Estudio · arrancó la Fase " + f + (f === 1 ? " (ballenas, 12 meses, 1 día por semana)" : f === 2 ? " (zonas + reglas, 12 meses de velas de 1 minuto)" : f === 4 ? " (ruptura de zona, 12 meses de velas de 1 minuto)" : " (TITO a ciegas, 60 mañanas por mercado, ~120 consultas a Anthropic)") + ". Te aviso al terminar.");
       const r = f === 1 ? await fase1() : f === 2 ? await fase2() : f === 4 ? await fase4() : await fase3();
       kvSet("estudio" + f, r);
       await notify("✅ Estudio · Fase " + f + " lista en " + Math.round((Date.now() - EST.inicio) / 60000) + " min.\n" + resumen(f, r));
@@ -365,5 +366,5 @@ function resumen(f, r) {
   if (f === 2) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m || !m.mejor) return "• " + NAMES[s] + ": " + ((m && m.error) || "sin combinación con 40+ operaciones"); const b = m.mejor; return "• " + NAMES[s] + ": mejor regla " + b.reglas.tf + " · stop " + b.reglas.k + "×ATR · meta " + b.reglas.R + "R · " + b.reglas.confirm + (b.reglas.tend ? " · con tendencia" : "") + " → validación " + b.validacion.acierto + "% acierto, " + b.validacion.R_prom + "R por operación (" + b.validacion.n + " ops)"; }).join("\n");
   if (f === 4) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m || !m.mejor) return "• " + NAMES[s] + ": " + ((m && m.error) || "sin combinación con 50+ operaciones"); const b = m.mejor_validada || m.mejor, q = b.reglas;
     return "• " + NAMES[s] + ": " + (m.mejor_validada ? "✅ " : "❌ ") + q.tf + " · stop " + q.k + "×ATR · meta " + q.R + "R" + (q.tend ? " · con tendencia" : "") + " → afinado " + b.entrenamiento.R_prom + "R · validación " + b.validacion.acierto + "% acierto, " + b.validacion.R_prom + "R por operación (" + b.validacion.n + " ops)" + (m.mejor_validada ? "" : " · ninguna positiva en ambos periodos"); }).join("\n");
-  return Object.entries(r.tito || {}).map(([s, v]) => "• TITO " + (NAMES[s] || s) + ": " + (v.error || (v.todas.n + " zonas tocadas · " + v.todas.acierto + "% acierto · " + v.todas.R_prom + "R por operación"))).join("\n");
+  return Object.entries(r.tito || {}).map(([s, v]) => "• TITO " + (NAMES[s] || s) + ": " + (v.error || ((v.todas.n >= 50 && v.todas.R_prom > 0 ? "✅ " : "❌ ") + v.todas.n + " zonas tocadas · " + v.todas.acierto + "% acierto · " + v.todas.R_prom + "R por operación" + (v.todas.n < 50 ? " (menos de 50: muestra corta)" : "")))).join("\n") + "\n-# Vara: R promedio positivo con 50+ operaciones.";
 }

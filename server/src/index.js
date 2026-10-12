@@ -82,6 +82,8 @@ else if (!kvGet("estudioV47", false)) { kvSet("estudioV47", Date.now()); setTime
 else if (!kvGet("estudioV48", false)) { kvSet("estudioV48", Date.now()); setTimeout(() => runEstudio([3], agent), 90000); }
 // v4.9: Fase 4 (ruptura de zona), una vez.
 else if (!kvGet("estudioV49", false)) { kvSet("estudioV49", Date.now()); setTimeout(() => runEstudio([4], agent), 90000); }
+// v4.10: TITO a ciegas ampliado (60 mañanas por mercado), una vez.
+else if (!kvGet("estudioV410", false)) { kvSet("estudioV410", Date.now()); setTimeout(() => runEstudio([3], agent), 90000); }
 
 // ---------- Bot de Discord (#agent) ----------
 botStart(onAgentMessage);
