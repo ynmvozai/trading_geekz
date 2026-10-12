@@ -164,3 +164,8 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 ## v4.8 · Fase 3 sin mirar al futuro (12 oct 2026)
 - Fase 2 corregida (v4.7): sin la entrada imposible, NINGUNA combinación llega a 68 % en entrenamiento y todas pierden en validación (mejores: BTC −0.42R, SOL −0.16R, oro −0.19R por operación). Las metas de 3R aciertan 5–16 %: el precio tiende a atravesar las zonas mecánicas. El motor de zonas (rec. 1–6) NO se despliega; su código queda guardado fuera del repo para cuando haya una regla con ventaja real.
 - Fase 3: a TITO se le pasaban la vela de 1H, la de 4H y la diaria todavía abiertas (con hasta ~12 h de futuro). Ahora solo velas cerradas antes de las 8:15 AM NY, y se descuenta la comisión. Se repite sola una vez (kv `estudioV48`).
+
+## v4.9 · Fase 4 (ruptura de zona), Ai Crypto en pausa y nombres (12 oct 2026)
+- Fase 4: prueba la RUPTURA de las zonas (cierre de vela más allá del borde lejano, stop del otro lado de la zona, meta 1–3R, 3 días máx., comisión), afinado 8 meses / validación 4. Aprueba solo si el R promedio es positivo en ambos periodos (50+ y 30+ operaciones). Corre sola una vez (kv `estudioV49`); también `estudio 4`.
+- Ai Crypto (#ai-crypto) no abre señales nuevas: el estudio corregido no encontró ventaja (llevaba 0 % y −5R). Las abiertas se siguen cerrando.
+- Nombres: solo #agent publica como "TITO 👾🤖" (`BOT_NAME`); los demás webhooks conservan su nombre propio. Apodo del bot en el servidor de vuelta a "TITO".
