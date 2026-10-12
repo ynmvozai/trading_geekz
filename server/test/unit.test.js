@@ -299,3 +299,15 @@ test("v4.5: el sesgo solo cambia si se confirma en 2 lecturas seguidas", async (
   assert.equal(confirmLabel(P, "SOL", "NEUTRAL", "VENDEDORES"), "VENDEDORES"); // 2ª seguida: confirmado
   assert.equal(confirmLabel(P, "BTC", undefined, "COMPRADORES"), "COMPRADORES"); // primera vez: directo
 });
+
+test("v4.7: una zona FVG existe recién cuando cierra la vela que la confirma", async () => {
+  const E = await import("../src/estudio.js");
+  const H = 3600000, K = [];
+  for (let i = 0; i < 30; i++) K.push([i * H, 100, 101, 99, 100]);
+  K.push([30 * H, 100, 101, 99.5, 100.8], [31 * H, 100.8, 106, 100.8, 105.5], [32 * H, 105.5, 107, 104, 106.5], [33 * H, 106.5, 107, 105.5, 106]);
+  for (let i = 34; i < 40; i++) K.push([i * H, 106, 107, 105.5, 106]);
+  const f = E.detectZones(K, "1H").find((z) => z.tipo === "FVG" && z.side === "buy" && z.lo === 101);
+  assert.ok(f, "debe detectar el FVG de compra 101–104");
+  assert.equal(f.hi, 104);
+  assert.equal(f.t0, 33 * H, "se activa al cierre de la vela de las 32 h (o sea a las 33 h), nunca antes");
+});
