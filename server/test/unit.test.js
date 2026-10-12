@@ -257,3 +257,45 @@ test("v4.4: estudio · zonas algorítmicas y simulación con velas de 1 minuto",
   const r = E.simZone(M, { ...ob }, { k: 0.25, R: 1, confirm: "toque" });
   assert.ok(r && r.win === true, "debe ganar: " + JSON.stringify(r));
 });
+
+test("v4.5: macro fundamental · lectura de FRED, régimen y datos nuevos", async () => {
+  const F = await import("../src/fundamental.js");
+  assert.deepEqual(F.parseFred("observation_date,UNRATE\n2026-08-01,4.3\n2026-09-01,.\n2026-10-01,4.2\n"), [["2026-08-01", 4.3], ["2026-10-01", 4.2]]);
+  // Serie mensual: índice que sube 0.25% por mes (≈3% anual) y luego se frena (≈1.2% anualizado los últimos 3 meses).
+  const mon = (n, f) => Array.from({ length: n }, (_, i) => { const d = new Date(Date.UTC(2023, 9 + i, 1)).toISOString().slice(0, 10); return [d, f(i)]; });
+  let v = 100; const core = mon(36, (i) => (v *= i >= 33 ? 1.001 : 1.0025));
+  const S = {
+    CPILFESL: core, CPIAUCSL: core, PCEPILFE: core, UNRATE: mon(36, () => 4.2), SAHMREALTIME: mon(36, () => 0),
+    PAYEMS: mon(36, (i) => 150000 + i * 150), M2SL: mon(36, (i) => 20000 * 1.004 ** i),
+  };
+  const R = F.analyze(S, {});
+  assert.equal(R.inflacion.tendencia, "bajando");
+  assert.equal(R.empleo.riesgo_recesion, "BAJO");
+  assert.equal(R.regimen, "GOLDILOCKS");
+  const R2 = F.analyze({ ...S, SAHMREALTIME: mon(36, () => 0.6) }, {});
+  assert.equal(R2.empleo.riesgo_recesion, "ALTO");
+  assert.equal(R2.regimen, "DESACELERACIÓN");
+  // Mercado en consolidación: sube y luego rango muy estrecho.
+  const cl = []; for (let i = 0; i < 300; i++) cl.push(i < 250 ? 100 + i * 0.2 + (i % 2 ? 3 : -3) : 150 + (i % 2 ? 0.3 : -0.3));
+  assert.equal(F.marketRegime(cl).estado, "consolidación");
+  assert.equal(F.marketRegime(cl.slice(0, 100)).estado, "sin dato");
+  // Datos nuevos: la primera vez solo memoriza; luego avisa una sola vez.
+  const seen = {};
+  assert.deepEqual(F.newDataTexts(S, seen), []);
+  const S2 = { ...S, UNRATE: [...S.UNRATE, ["2026-10-01", 4.4]] };
+  const t = F.newDataTexts(S2, seen);
+  assert.equal(t.length, 1); assert.match(t[0], /Desempleo de oct 2026: 4\.4% \(antes 4\.2%\)/);
+  assert.deepEqual(F.newDataTexts(S2, seen), []);
+  const txt = F.panoramaText(R);
+  assert.match(txt, /^🌎 Panorama macro/); assert.match(txt, /Goldilocks/); assert.match(txt, /S&P 500: sin dato/);
+});
+
+test("v4.5: el sesgo solo cambia si se confirma en 2 lecturas seguidas", async () => {
+  const { confirmLabel } = await import("../src/bias.js");
+  const P = {};
+  assert.equal(confirmLabel(P, "SOL", "NEUTRAL", "VENDEDORES"), "NEUTRAL");   // 1ª lectura: pendiente
+  assert.equal(confirmLabel(P, "SOL", "NEUTRAL", "NEUTRAL"), "NEUTRAL");      // volvió: se cancela
+  assert.equal(confirmLabel(P, "SOL", "NEUTRAL", "VENDEDORES"), "NEUTRAL");
+  assert.equal(confirmLabel(P, "SOL", "NEUTRAL", "VENDEDORES"), "VENDEDORES"); // 2ª seguida: confirmado
+  assert.equal(confirmLabel(P, "BTC", undefined, "COMPRADORES"), "COMPRADORES"); // primera vez: directo
+});
