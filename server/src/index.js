@@ -14,6 +14,7 @@ import { startSentiment } from "./sentiment.js";
 import { startMacro } from "./macro.js";
 import { startMega, onLiq } from "./mega.js";
 import { startBias, onBiasChange } from "./bias.js";
+import { startFund } from "./fundamental.js";
 import { runEstudio } from "./estudio.js";
 import { hookOf } from "./alerts.js";
 import { sesMirror } from "./sesionny.js";
@@ -67,8 +68,10 @@ binanceStart({
 });
 startMega();
 startWallets();
-onBiasChange((sym, txt) => { const hk = hookOf(sym); if (hk) post(hk, txt).catch(() => {}); sesMirror(txt); agent(txt); });
+// v4.5: el cambio de sesgo va solo al canal de su mercado (y a #sesion-ny en horario NY), ya no a #agent.
+onBiasChange((sym, txt) => { const hk = hookOf(sym); if (hk) post(hk, txt).catch(() => {}); sesMirror(txt); });
 startBias();
+startFund();
 // v4.4: el estudio (fases 1, 2 y 3) arranca solo una vez después de esta actualización; luego se repite con el comando "estudio".
 if (!kvGet("estudioV44", false)) { kvSet("estudioV44", Date.now()); setTimeout(() => runEstudio([1, 2, 3], agent), 90000); }
 

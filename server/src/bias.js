@@ -13,7 +13,8 @@ import { Z } from "./zones.js";
 import { kvGet, kvSet } from "./store.js";
 import { usd, log } from "./util.js";
 
-export const B = {}; // sym → { score, label, reasons[], atr, atrPct, t }
+export const B = {}; // sym → { score, label (confirmado), raw (lectura de ahora), reasons[], atr, atrPct, t }
+const PEND = {};    // sym → { label, n } cambio pendiente de confirmar
 const LABEL = (s) => (s >= 2 ? "COMPRADORES" : s <= -2 ? "VENDEDORES" : "NEUTRAL");
 const ema = (arr, n) => { const k = 2 / (n + 1); let e = arr[0]; for (let i = 1; i < arr.length; i++) e = arr[i] * k + e * (1 - k); return e; };
 
@@ -54,6 +55,15 @@ export function scoreOf(sym, h1, h4, now = Date.now()) {
 }
 const fmt = (v, sym) => (sym === "BTC" ? Math.round(v).toLocaleString("en-US") : (+v).toLocaleString("en-US", { maximumFractionDigits: 2 }));
 
+// v4.5: devuelve la etiqueta confirmada. Un cambio necesita 2 lecturas seguidas iguales (pend guarda la pendiente).
+export function confirmLabel(pend, sym, prev, raw) {
+  const cur = prev || raw;
+  if (raw === cur) { delete pend[sym]; return cur; }
+  if (pend[sym] && pend[sym].label === raw) { pend[sym].n++; if (pend[sym].n >= 2) { delete pend[sym]; return raw; } return cur; }
+  pend[sym] = { label: raw, n: 1 };
+  return cur;
+}
+
 // Stop mínimo = la mitad del movimiento normal de una hora (0.5 × ATR 1H). Sin dato, respaldo fijo.
 const FALLBACK = { BTC: 0.0015, SOL: 0.0035, XAU: 0.001 };
 export function minStop(sym, price) { const b = B[sym]; return b && b.atr ? 0.5 * b.atr : price * (FALLBACK[sym] || 0.002); }
@@ -69,10 +79,11 @@ export async function refreshBias() {
       const [h1, h4] = await Promise.all([kl(SYMS[sym].label, "1h", 60), kl(SYMS[sym].label, "4h", 60)]);
       if (!Array.isArray(h1)) continue;
       const r = scoreOf(sym, h1, h4), a = atr14(h1), lastP = h1[h1.length - 1][4];
-      B[sym] = { ...r, atr: a, atrPct: a && lastP ? (a / lastP) * 100 : null, t: Date.now() };
-      const prev = (kvGet("biasLabel", {}) || {})[sym];
-      if (prev && prev !== r.label && notify) notify(sym, changeText(sym, prev));
-      const m = kvGet("biasLabel", {}) || {}; m[sym] = r.label; kvSet("biasLabel", m);
+      // v4.5: un cambio de control solo cuenta si se mantiene en 2 lecturas seguidas (30 min). Evita el ida y vuelta.
+      const prev = (kvGet("biasLabel", {}) || {})[sym], label = confirmLabel(PEND, sym, prev, r.label);
+      B[sym] = { ...r, raw: r.label, label, atr: a, atrPct: a && lastP ? (a / lastP) * 100 : null, t: Date.now() };
+      if (prev && prev !== label && notify) notify(sym, changeText(sym, prev));
+      const m = kvGet("biasLabel", {}) || {}; m[sym] = label; kvSet("biasLabel", m);
     } catch (e) { log("Sesgo", sym, e.message); }
   }
 }
@@ -84,7 +95,7 @@ export function changeText(sym, prev) {
 }
 export function biasText() {
   return ["🧭 Termómetro de sesgo (−4 vendedores · +4 compradores)", ...ORDER.map((s) => { const b = B[s]; if (!b) return "⚪ " + (NAMES[s] || s) + " · sin dato todavía";
-    return (b.label === "COMPRADORES" ? "🟢" : b.label === "VENDEDORES" ? "🔴" : "⚪") + " " + (NAMES[s] || s) + " · " + b.label + " (" + (b.score > 0 ? "+" : "") + b.score + ")" + (b.atrPct ? " · movimiento normal por hora " + b.atrPct.toFixed(2) + "%" : "") + (b.reasons.length ? "\n   " + b.reasons.join("\n   ") : ""); }),
+    return (b.label === "COMPRADORES" ? "🟢" : b.label === "VENDEDORES" ? "🔴" : "⚪") + " " + (NAMES[s] || s) + " · " + b.label + " (" + (b.score > 0 ? "+" : "") + b.score + ")" + (b.raw && b.raw !== b.label ? " · posible cambio a " + b.raw + " (se confirma si sigue en 15 min)" : "") + (b.atrPct ? " · movimiento normal por hora " + b.atrPct.toFixed(2) + "%" : "") + (b.reasons.length ? "\n   " + b.reasons.join("\n   ") : ""); }),
     "-# Se recalcula cada 15 min con velas reales de Binance."].join("\n");
 }
 export function startBias() { refreshBias(); setInterval(refreshBias, 15 * 60000); }

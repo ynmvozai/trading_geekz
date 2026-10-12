@@ -16,6 +16,7 @@ import { SENT, sentData } from "./sentiment.js";
 import { CAL, IDX, idxLine, onTv, tvSecret, tvIpOk, TV } from "./macro.js";
 import { sesEstado } from "./sesionny.js";
 import { megaEstado } from "./mega.js";
+import { fundEstado } from "./fundamental.js";
 import { B } from "./bias.js";
 import { estudioData } from "./estudio.js";
 import { walletEstado, walletSecret, onHelius } from "./wallets.js";
@@ -67,6 +68,7 @@ export function estadoText() {
   L.push(sesEstado());
   L.push((Object.keys(B).length ? "✅" : "❌") + " Sesgo (order flow): " + (Object.keys(B).length ? ORDER.map((k) => (NAMES[k] || k) + " " + (B[k] ? B[k].label.toLowerCase() + " " + (B[k].score > 0 ? "+" : "") + B[k].score : "—")).join(" · ") : "calculando…") + " · zonas rotas: " + Object.keys(Z.broken || {}).length);
   L.push(megaEstado());
+  L.push(fundEstado());
   L.push(walletEstado());
   L.push("Discord: " + hookStats.sent + " mensajes enviados" + (hookStats.failed ? " · " + hookStats.failed + " fallidos" : ""));
   return L.join("\n");
