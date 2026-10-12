@@ -127,3 +127,13 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Compras sueltas encendidas por defecto (`walletRule().solos = true`): un mensaje agrupado por vuelta "🟢 Cooker compró $X · $1.2K · 4:32 PM · cap $850K". Nombre, liquidez y cap de DexScreener (público, sin clave).
 - Con `HELIUS_API_KEY` el webhook manda al instante y el sondeo se apaga solo.
 - Pendiente (Yasser, en la Mac mini): clave de Helius en Railway, elegir regla del auditor (A estricta 1,000–5,000%/año x 3 años · B respaldo ≥300%/año), cargar wallets. Después: construir `wallet auditar <dirección>` (PnL por año desde la blockchain).
+
+## v4.3 · Filtros de acierto + termómetro de sesgo (12 oct 2026)
+- Diagnóstico con data real (`/senales`, 37 señales 10–12 oct): 5 ganadas / 30 perdidas. 26 entraron en zonas YA rotas (el precio había pasado su stop), 24 con stop a menos de medio ATR 1H, 16 con orden en contra de la zona, 16 "cerca" desde el lado equivocado. Con las 4 reglas solo pasaban 3 (1 ganada).
+- a) Zonas rotas (`zones.js`): si el precio pasa el stop (o ±0.3 % del borde sin stop) la zona muere: no alerta, no cuenta, no sale en #sesion-ny; aviso "❌ … se rompió la zona" al canal del mercado. Guardado en kv `zbroken` / `zbrokenLog` (48 h).
+- b) "Cerca" solo por el lado correcto: debajo de una zona de venta, encima de una de compra (`nearZone`).
+- c) Solo cuenta como señal si la orden empuja a favor de la zona; si no, el aviso sale con "Solo informativa".
+- d) Stop mínimo = 0.5 × ATR 14 de 1H (Binance, en vivo). Respaldo sin dato: BTC 0.15 %, SOL 0.35 %, oro 0.10 %. Estado "stop muy cerca" en `recordAlert`; Ai Crypto tampoco abre.
+- e) `src/bias.js` termómetro −4…+4 cada 15 min: estructura 1H (rompe máx./mín. de 24 h), tendencia 4H (media 20 vs 50), neto de ballenas 4 h (> 2× mínimo), zonas rotas 12 h. ≥ +2 COMPRADORES, ≤ −2 VENDEDORES. Al cambiar avisa en el canal del mercado, #sesion-ny y #agent. Señales contra el sesgo no cuentan. Comando `sesgo`. TITO lo recibe en `sesgo_order_flow` y no usa zonas ROTA.
+- Oro: mínimo de alerta $3M → $1.5M (la mayor orden vista fue $1.89M) y mega ballena $5M/$15M/$40M.
+- Tarea de la nube "Trading zones check — daily AM" (7:48) APAGADA el 12 oct (duplicaba el mapa del servidor).
