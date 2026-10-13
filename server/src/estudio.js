@@ -133,7 +133,7 @@ export async function fase1(days = 365, step = 6) {
 // Detecta order blocks (última vela contraria antes de un impulso que rompe estructura) y FVG (hueco de 3 velas).
 // v4.7: cada zona existe recién cuando CIERRA la vela que la confirma (antes se activaba al abrir: entradas imposibles en vivo).
 export function detectZones(K, tf) {
-  const A = atrArr(K), Z = [], TF = tf === "4H" ? 4 * H : H;
+  const A = atrArr(K), Z = [], TF = tf === "4H" ? 4 * H : tf === "1D" ? DAY : H;
   for (let i = 12; i < K.length - 3; i++) {
     const a = A[i]; if (!a) continue;
     // FVG
@@ -146,7 +146,7 @@ export function detectZones(K, tf) {
     if (K[i][4] > K[i][1] && K[i + 1][1] - K[i + 1][4] > 0.5 * a && imp.some((k) => k[4] < prevLo) && rng > 1.5 * a) Z.push({ tf, tipo: "OB", side: "sell", lo: K[i][3], hi: K[i][2], t0: K[i + 3][0] + TF, a });
   }
   // Grado A si un OB se cruza con un FVG del mismo lado; si no, B.
-  Z.forEach((z) => { z.grado = Z.some((w) => w !== z && w.side === z.side && w.tipo !== z.tipo && Math.abs(w.t0 - z.t0) < 6 * (tf === "4H" ? 4 * H : H) && w.lo < z.hi && w.hi > z.lo) ? "A" : "B"; });
+  Z.forEach((z) => { z.grado = Z.some((w) => w !== z && w.side === z.side && w.tipo !== z.tipo && Math.abs(w.t0 - z.t0) < 6 * TF && w.lo < z.hi && w.hi > z.lo) ? "A" : "B"; });
   return Z;
 }
 // Simula una zona: primera llegada por el lado correcto, entrada, stop, meta. Devuelve null si no hubo entrada.
@@ -298,6 +298,212 @@ export async function fase4(days = 365) {
   return res;
 }
 
+// ---------- Fase 5 · Sesiones NY (v4.11) ----------
+// Regla fijada con Yasser ANTES de ver resultados (12 oct 2026). No se ajusta después de ver la data.
+//  Ventanas (hora de NY, L–V): apertura = estudio previo 8:00–9:30, disparo 9:30–10:30 · cierre = estudio previo 14:00–15:00, disparo 15:00–16:00.
+//  Zonas de sesión: OB/FVG de 1H (vigente 7 días) y 4H (14 días). Una zona muere cuando una vela de 1 min cierra más allá de su borde lejano.
+//  Disparo con velas de 5 min (hechas con las de 1 min):
+//   1) una vela toca la zona;
+//   2) se forma un FVG de 5 min a favor que se completa entre 5 y 15 min después del cierre de la vela del toque, y la vela del medio
+//      (impulso) cierra más allá del swing (HH/LL) más reciente = BOS;
+//   3) confirmación: en las 3 velas siguientes, una vela que supera el extremo de la anterior, cierra más allá y tiene MÁS volumen que ella.
+//  Entrada al cierre de la confirmación. Stop: borde lejano de la zona o el extremo barrido desde el toque (el más lejano).
+//  Meta principal 2R (se reportan 1R y 3R). Máximo 4 h. Comisión incluida. Una operación por ventana.
+//  Órdenes grandes = ráfagas de 250 ms ≥ percentil 99 de los 30 días anteriores (sin el día en curso).
+//  Acumulación = desde el inicio del estudio previo hasta la entrada, solo con precio dentro de la zona.
+//  REGLA COMPLETA = disparo + órdenes grandes netas a favor. Delta = compras − ventas (todo) dentro de la zona en la acumulación.
+//  A++ = al inicio del estudio previo, el precio está dentro o a ≤ 0.5 % de una zona 1D/4H vigente (position).
+//  Afinado = primeros 8 meses · validación = últimos 4. Vara: R promedio positivo con 50+ operaciones en validación.
+export const SES_WIN = [{ k: "apertura", pre: 480, ini: 570, fin: 630 }, { k: "cierre", pre: 840, ini: 900, fin: 960 }];
+const ZLIFE = { "1H": 7 * DAY, "4H": 14 * DAY, "1D": 30 * DAY };
+// Minuto `mins` de NY en la fecha cuyo 00:00 UTC es dayUtc → instante UTC (maneja horario de verano).
+export function etToUtc(dayUtc, mins) {
+  for (const off of [4, 5]) { const t = dayUtc + (mins + off * 60) * 60000, e = etHour(t); if (e.h * 60 + e.m === mins) return t; }
+  return null;
+}
+async function minutesV(sym, from, to) {
+  const k = await klinesRange(sym, "1m", from, to), n = k.length;
+  const M = { t: new Float64Array(n), o: new Float64Array(n), h: new Float64Array(n), l: new Float64Array(n), c: new Float64Array(n), v: new Float64Array(n), n };
+  k.forEach((r, i) => { M.t[i] = r[0]; M.o[i] = r[1]; M.h[i] = r[2]; M.l[i] = r[3]; M.c[i] = r[4]; M.v[i] = r[5]; });
+  return M;
+}
+// Velas de 5 min alineadas al reloj a partir de las de 1 min (con volumen en USD).
+export function fiveMin(M) {
+  const T = [], O = [], Hh = [], L = [], C = [], V = []; let cur = -1;
+  for (let i = 0; i < M.n; i++) {
+    const b = Math.floor(M.t[i] / 300000) * 300000;
+    if (b !== cur) { cur = b; T.push(b); O.push(M.o[i]); Hh.push(M.h[i]); L.push(M.l[i]); C.push(M.c[i]); V.push(M.v[i]); }
+    else { const j = T.length - 1; if (M.h[i] > Hh[j]) Hh[j] = M.h[i]; if (M.l[i] < L[j]) L[j] = M.l[i]; C[j] = M.c[i]; V[j] += M.v[i]; }
+  }
+  const n = T.length, F = { t: Float64Array.from(T), o: Float64Array.from(O), h: Float64Array.from(Hh), l: Float64Array.from(L), c: Float64Array.from(C), v: Float64Array.from(V), n };
+  // Swing (fractal de 2 velas a cada lado) más reciente YA confirmado antes de abrir la vela k.
+  F.sh = new Float64Array(n).fill(NaN); F.sl = new Float64Array(n).fill(NaN);
+  let sh = NaN, sl = NaN;
+  for (let k = 0; k < n; k++) {
+    const s = k - 3;
+    if (s >= 2) {
+      if (F.h[s] > F.h[s - 1] && F.h[s] > F.h[s - 2] && F.h[s] > F.h[s + 1] && F.h[s] > F.h[s + 2]) sh = F.h[s];
+      if (F.l[s] < F.l[s - 1] && F.l[s] < F.l[s - 2] && F.l[s] < F.l[s + 1] && F.l[s] < F.l[s + 2]) sl = F.l[s];
+    }
+    F.sh[k] = sh; F.sl[k] = sl;
+  }
+  return F;
+}
+function zoneLife(M, z) {
+  const far = z.side === "buy" ? z.lo : z.hi, tEnd = z.t0 + ZLIFE[z.tf];
+  z.end = tEnd;
+  for (let i = Math.max(0, idxAt(M, z.t0)); i < M.n && M.t[i] < tEnd; i++) if (M.t[i] >= z.t0 && (z.side === "buy" ? M.c[i] < far : M.c[i] > far)) { z.end = M.t[i] + 60000; break; }
+}
+// Busca la primera señal de la ventana [iniT, finT). Devuelve null si no hubo.
+export function sessionSignal(F, zones, iniT, finT) {
+  const P = 300000, cont = (a, b) => b < F.n && F.t[b] - F.t[a] === (b - a) * P;
+  const k1 = idxAt(F, iniT); if (k1 < 0) return null;
+  const vivas = zones.filter((z) => z.t0 <= finT && z.end > iniT);
+  let best = null;
+  for (let k0 = F.t[k1] < iniT ? k1 + 1 : k1; k0 < F.n && F.t[k0] + P <= finT; k0++) {
+    if (best && F.t[k0] >= best.tE) break;
+    for (const z of vivas) {
+      if (!(z.t0 <= F.t[k0] && z.end > F.t[k0])) continue;
+      if (!(F.l[k0] <= z.hi && F.h[k0] >= z.lo)) continue;                 // 1) toca la zona
+      const dir = z.side === "buy" ? 1 : -1;
+      for (let j = k0 - 1; j <= k0 + 1; j++) {                             // 2) FVG que termina 5–15 min después del toque
+        if (j < 3 || !cont(j, j + 2)) continue;
+        const a = j, b = j + 1, c = j + 2;
+        const fvg = dir === 1 ? F.l[c] > F.h[a] : F.h[c] < F.l[a];
+        const bos = dir === 1 ? F.c[b] > F.sh[b] : F.c[b] < F.sl[b];        // NaN → false
+        if (!fvg || !bos) continue;
+        for (let m = c + 1; m <= c + 3; m++) {                              // 3) confirmación con más volumen
+          if (!cont(c, m) || F.t[m] + P > finT) break;
+          const ok = dir === 1 ? F.h[m] > F.h[m - 1] && F.c[m] > F.h[m - 1] : F.l[m] < F.l[m - 1] && F.c[m] < F.l[m - 1];
+          if (!ok || !(F.v[m] > F.v[m - 1])) continue;
+          const tE = F.t[m] + P;
+          if (!best || tE < best.tE) {
+            let ext = dir === 1 ? z.lo : z.hi;
+            for (let x = k0; x <= m; x++) ext = dir === 1 ? Math.min(ext, F.l[x]) : Math.max(ext, F.h[x]);
+            best = { tE, e: F.c[m], sl: ext, dir, z, tToque: F.t[k0] };
+          }
+          break;
+        }
+      }
+    }
+  }
+  return best;
+}
+function simSes(M, s, R) {
+  const risk = Math.abs(s.e - s.sl); if (!(risk > 0) || (s.dir === 1 ? s.sl >= s.e : s.sl <= s.e)) return null;
+  const tp = s.e + s.dir * R * risk, costR = (FEE_RT * s.e) / risk;
+  let j = idxAt(M, s.tE); if (j < 0) return null; if (M.t[j] < s.tE) j++;
+  for (; j < M.n && M.t[j] < s.tE + 4 * H; j++) {
+    if (s.dir === 1 ? M.l[j] <= s.sl : M.h[j] >= s.sl) return { r: -1 - costR, win: false };
+    if (s.dir === 1 ? M.h[j] >= tp : M.l[j] <= tp) return { r: R - costR, win: true };
+  }
+  const jl = Math.min(M.n - 1, j - 1);
+  return { r: (s.dir * (M.c[jl] - s.e)) / risk - costR, win: false, tiempo: true };
+}
+// Histograma logarítmico de tamaños de ráfaga (para el percentil 99 de 30 días sin guardar millones de valores).
+const HB = 40, binOf = (usd) => Math.max(0, Math.min(479, Math.floor(Math.log10(Math.max(1, usd)) * HB)));
+export function p99(hists) {
+  let tot = 0; for (const h of hists) for (let i = 0; i < 480; i++) tot += h[i];
+  if (!tot) return null;
+  let acc = 0; const lim = tot * 0.01;
+  for (let i = 479; i >= 0; i--) { for (const h of hists) acc += h[i]; if (acc >= lim) return Math.pow(10, i / HB); }
+  return null;
+}
+async function dayTrades(sym, day, onTrade) {
+  const d = new Date(day).toISOString().slice(0, 10), label = SYMS[sym].label;
+  const url = (process.env.BINANCE_DATA || "https://data.binance.vision") + "/data/futures/um/daily/aggTrades/" + label + "/" + label + "-aggTrades-" + d + ".zip";
+  const r = await fetch(url, { signal: AbortSignal.timeout(600000) });
+  if (r.status === 404) return false;
+  if (!r.ok) throw new Error("HTTP " + r.status + " " + d);
+  const inflate = zlib.createInflateRaw({ finishFlush: zlib.constants.Z_SYNC_FLUSH });
+  const rl = readline.createInterface({ input: Readable.fromWeb(r.body).pipe(zipStrip()).pipe(inflate), crlfDelay: Infinity });
+  let n = 0;
+  try {
+    for await (const line of rl) {
+      const c = line.charCodeAt(0); if (c < 48 || c > 57) continue;
+      const f = line.split(","); onTrade(+f[1], +f[2], +f[5], f[6] === "true" ? -1 : 1);
+      if (++n % 200000 === 0) await sleep(0);
+    }
+  } catch (e) { if (!n) throw e; }
+  return n > 0;
+}
+export async function fase5(days = 365, markets = ["BTC"]) {
+  const res = { fase: 5, generado: Date.now(), periodo_dias: days, regla: "Sesiones NY: zona 1H/4H + FVG 5m con BOS + confirmación con más volumen; regla completa = + órdenes grandes (p99 30 días) netas a favor en la acumulación", mercados: {} };
+  const end = Math.floor(Date.now() / DAY) * DAY - DAY, start = end - days * DAY, cut = start + Math.round(days * 8 / 12) * DAY;
+  for (const sym of markets) {
+    EST.progreso = "Fase 5 · " + NAMES[sym] + " · velas 1H/4H/1D";
+    let K1, K4, KD, M;
+    try { K1 = await klinesRange(sym, "1h", start - 30 * DAY, end + DAY); K4 = await klinesRange(sym, "4h", start - 60 * DAY, end + DAY); KD = await klinesRange(sym, "1d", start - 120 * DAY, end + DAY); }
+    catch (e) { res.mercados[sym] = { error: "sin datos: " + e.message }; continue; }
+    EST.progreso = "Fase 5 · " + NAMES[sym] + " · velas de 1 minuto (puede tardar)";
+    try { M = await minutesV(sym, start - 31 * DAY, end + DAY); } catch (e) { res.mercados[sym] = { error: "sin velas 1m: " + e.message }; continue; }
+    if (M.n < 1000) { res.mercados[sym] = { error: "muy poca historia" }; continue; }
+    const F = fiveMin(M), trend = trendFn(K4);
+    const Z1 = detectZones(K1, "1H"), Z4 = detectZones(K4, "4H"), ZD = detectZones(KD, "1D");
+    for (const z of [...Z1, ...Z4, ...ZD]) zoneLife(M, z);
+    const ZS = [...Z1, ...Z4], ZP = [...Z4, ...ZD];
+    // 1) Señales (solo velas; no mira el futuro: cada zona existe desde el cierre de la vela que la confirma).
+    const sig = []; let ventanas = 0;
+    for (let d = start; d < end; d += DAY) {
+      for (const W of SES_WIN) {
+        const preT = etToUtc(d, W.pre), iniT = etToUtc(d, W.ini), finT = etToUtc(d, W.fin);
+        if (preT == null || ["Sat", "Sun"].includes(etHour(preT).wd)) continue;
+        ventanas++;
+        const ip = idxAt(M, preT - 60000); if (ip < 0) continue;
+        const px = M.c[ip];
+        const aplus = ZP.some((z) => z.t0 <= preT && z.end > preT && (px >= z.lo && px <= z.hi ? 0 : Math.min(Math.abs(px - z.lo), Math.abs(px - z.hi)) / px) <= 0.005);
+        const s = sessionSignal(F, ZS, iniT, finT); if (!s) continue;
+        const out = { 1: simSes(M, s, 1), 2: simSes(M, s, 2), 3: simSes(M, s, 3) }; if (!out[2]) continue;
+        sig.push({ t: s.tE, dia: d, ses: W.k, dir: s.dir, tf: s.z.tf, tipo: s.z.tipo, lo: s.z.lo, hi: s.z.hi, preT, e: s.e, sl: s.sl, aplus, tend: trend(s.tE) === s.dir, out, delta: null, big: null });
+      }
+      if ((d / DAY) % 20 === 0) await sleep(0);
+    }
+    // 2) Órdenes grandes y delta con las operaciones reales (data.binance.vision), día por día, en orden.
+    const hist = new Map(); let bajados = 0, sinDato = 0;
+    for (let d = start - 30 * DAY; d < end; d += DAY) {
+      const wd = new Date(d).getUTCDay(); if (wd === 0 || wd === 6) continue;
+      const delDia = sig.filter((x) => x.dia === d);
+      EST.progreso = "Fase 5 · " + NAMES[sym] + " · operaciones del " + new Date(d).toISOString().slice(0, 10) + " (" + bajados + " días listos, " + sig.length + " señales)";
+      const prev = []; for (let q = d - 30 * DAY; q < d; q += DAY) if (hist.has(q)) prev.push(hist.get(q));
+      const thr = prev.length >= 5 ? p99(prev) : null;
+      const h = new Float64Array(480), cur = { 1: null, "-1": null }, inZ = delDia.map(() => []);
+      delDia.forEach((x) => { x.delta = 0; });
+      const close = (b) => { if (!b) return; h[binOf(b.usd)]++; const px = b.usd / b.q; delDia.forEach((x, i) => { if (b.first >= x.preT && b.first < x.t && px >= x.lo && px <= x.hi) inZ[i].push(b); }); };
+      let ok;
+      try {
+        ok = await dayTrades(sym, d, (p, q, T, side) => {
+          const n = p * q, b = cur[side];
+          if (b && T - b.first <= BURST_MS) { b.usd += n; b.q += q; } else { close(b); cur[side] = { side, first: T, usd: n, q }; }
+          for (const x of delDia) if (T >= x.preT && T < x.t && p >= x.lo && p <= x.hi) x.delta += side * n;
+        });
+      } catch (e) { log("estudio fase5", e.message); ok = false; }
+      close(cur[1]); close(cur["-1"]);
+      if (!ok) { sinDato++; delDia.forEach((x) => { x.delta = null; }); continue; }
+      bajados++; hist.set(d, h);
+      delDia.forEach((x, i) => {
+        if (thr == null) return;
+        const g = inZ[i].filter((b) => b.usd >= thr), net = g.reduce((s, b) => s + b.side * b.usd, 0);
+        x.big = { n: g.length, neto: Math.round(net), umbral: Math.round(thr) };
+      });
+      for (const q of [...hist.keys()]) if (q < d - 31 * DAY) hist.delete(q);
+    }
+    // 3) Resultados
+    const conR = (arr, R) => arr.filter((x) => x.out[R]).map((x) => ({ t: x.t, r: x.out[R].r, win: x.out[R].win }));
+    const bigFav = (x) => x.big && x.big.n > 0 && Math.sign(x.big.neto) === x.dir, deltaFav = (x) => x.delta != null && Math.sign(x.delta) === x.dir;
+    const grupos = { base: () => true, completa: bigFav, delta_a_favor: deltaFav, completa_y_delta: (x) => bigFav(x) && deltaFav(x), grandes_en_contra: (x) => x.big && x.big.n > 0 && Math.sign(x.big.neto) === -x.dir,
+      A_plus: (x) => x.aplus, sin_A_plus: (x) => !x.aplus, completa_A_plus: (x) => bigFav(x) && x.aplus, con_tendencia: (x) => x.tend, apertura: (x) => x.ses === "apertura", cierre: (x) => x.ses === "cierre", compras: (x) => x.dir === 1, ventas: (x) => x.dir === -1 };
+    const tabla = {};
+    for (const [g, f] of Object.entries(grupos)) { const a = sig.filter(f); tabla[g] = Object.fromEntries([1, 2, 3].map((R) => [R + "R", { entrenamiento: stats(conR(a.filter((x) => x.t < cut), R)), validacion: stats(conR(a.filter((x) => x.t >= cut), R)) }])); }
+    const v = tabla.completa["2R"].validacion, semanas = (end - start) / (7 * DAY);
+    res.mercados[sym] = { corte_validacion: new Date(cut).toISOString().slice(0, 10), ventanas, dias_con_operaciones: bajados, dias_sin_dato: sinDato,
+      zonas: { "1H": Z1.length, "4H": Z4.length, "1D": ZD.length }, senales: sig.length, senales_por_semana: +(sig.length / semanas).toFixed(2),
+      completa_por_semana: +(sig.filter(bigFav).length / semanas).toFixed(2), pasa: v.n >= 50 && v.R_prom > 0, tabla,
+      ultimas: sig.slice(-40).map((x) => ({ fecha: new Date(x.t).toISOString().slice(0, 16), ses: x.ses, dir: x.dir === 1 ? "compra" : "venta", zona: x.tf + " " + x.tipo, A_plus: x.aplus, grandes: x.big, delta: x.delta == null ? null : Math.round(x.delta), R2: +x.out[2].r.toFixed(2) })) };
+    M = null;
+  }
+  return res;
+}
+
 // ---------- Fase 3 · TITO a ciegas (20 días) ----------
 async function askZones(sym, K4, K1, KD) {
   const q = "Eres analista de order blocks y fair value gaps 1H/4H. Con SOLO estas velas reales (formato [hora UTC, apertura, máximo, mínimo, cierre]) marca hasta 3 zonas vigentes de " + sym +
@@ -346,15 +552,15 @@ export async function fase3(manianas = 60, paso = 6) {
 }
 
 // ---------- Orquestador ----------
-export function estudioData() { return { estado: EST, fase1: kvGet("estudio1", null), fase2: kvGet("estudio2", null), fase3: kvGet("estudio3", null), fase4: kvGet("estudio4", null) }; }
+export function estudioData() { return { estado: EST, fase1: kvGet("estudio1", null), fase2: kvGet("estudio2", null), fase3: kvGet("estudio3", null), fase4: kvGet("estudio4", null), fase5: kvGet("estudio5", null) }; }
 export async function runEstudio(fases, notify) {
   if (EST.running) return notify("⏳ El estudio ya está corriendo: " + EST.progreso);
   EST.running = true; EST.inicio = Date.now(); EST.error = "";
   try {
     for (const f of fases) {
       EST.fase = "Fase " + f;
-      await notify("🔬 Estudio · arrancó la Fase " + f + (f === 1 ? " (ballenas, 12 meses, 1 día por semana)" : f === 2 ? " (zonas + reglas, 12 meses de velas de 1 minuto)" : f === 4 ? " (ruptura de zona, 12 meses de velas de 1 minuto)" : " (TITO a ciegas, 60 mañanas por mercado, ~120 consultas a Anthropic)") + ". Te aviso al terminar.");
-      const r = f === 1 ? await fase1() : f === 2 ? await fase2() : f === 4 ? await fase4() : await fase3();
+      await notify("🔬 Estudio · arrancó la Fase " + f + (f === 1 ? " (ballenas, 12 meses, 1 día por semana)" : f === 2 ? " (zonas + reglas, 12 meses de velas de 1 minuto)" : f === 4 ? " (ruptura de zona, 12 meses de velas de 1 minuto)" : f === 5 ? " (sesiones NY de Bitcoin: zona + FVG/BOS + volumen + órdenes grandes, 12 meses; descarga las operaciones reales día por día, puede tardar 1–2 h)" : " (TITO a ciegas, 60 mañanas por mercado, ~120 consultas a Anthropic)") + ". Te aviso al terminar.");
+      const r = f === 1 ? await fase1() : f === 2 ? await fase2() : f === 4 ? await fase4() : f === 5 ? await fase5() : await fase3();
       kvSet("estudio" + f, r);
       await notify("✅ Estudio · Fase " + f + " lista en " + Math.round((Date.now() - EST.inicio) / 60000) + " min.\n" + resumen(f, r));
     }
@@ -366,5 +572,7 @@ function resumen(f, r) {
   if (f === 2) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m || !m.mejor) return "• " + NAMES[s] + ": " + ((m && m.error) || "sin combinación con 40+ operaciones"); const b = m.mejor; return "• " + NAMES[s] + ": mejor regla " + b.reglas.tf + " · stop " + b.reglas.k + "×ATR · meta " + b.reglas.R + "R · " + b.reglas.confirm + (b.reglas.tend ? " · con tendencia" : "") + " → validación " + b.validacion.acierto + "% acierto, " + b.validacion.R_prom + "R por operación (" + b.validacion.n + " ops)"; }).join("\n");
   if (f === 4) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m || !m.mejor) return "• " + NAMES[s] + ": " + ((m && m.error) || "sin combinación con 50+ operaciones"); const b = m.mejor_validada || m.mejor, q = b.reglas;
     return "• " + NAMES[s] + ": " + (m.mejor_validada ? "✅ " : "❌ ") + q.tf + " · stop " + q.k + "×ATR · meta " + q.R + "R" + (q.tend ? " · con tendencia" : "") + " → afinado " + b.entrenamiento.R_prom + "R · validación " + b.validacion.acierto + "% acierto, " + b.validacion.R_prom + "R por operación (" + b.validacion.n + " ops)" + (m.mejor_validada ? "" : " · ninguna positiva en ambos periodos"); }).join("\n");
+  if (f === 5) return Object.entries(r.mercados || {}).map(([s, m]) => { if (m.error) return "• " + NAMES[s] + ": " + m.error; const t = m.tabla, l = (g) => { const v = t[g]["2R"].validacion; return v.n ? v.acierto + "% · " + v.R_prom + "R (" + v.n + " ops)" : "sin operaciones"; };
+    return "• " + NAMES[s] + ": " + (m.pasa ? "✅ " : "❌ ") + "regla completa 2R en validación → " + l("completa") + "\n  señales por semana: " + m.senales_por_semana + " (completa: " + m.completa_por_semana + ")\n  solo disparo: " + l("base") + " · delta a favor: " + l("delta_a_favor") + " · A++: " + l("A_plus") + " · sin A++: " + l("sin_A_plus"); }).join("\n") + "\n-# Vara: R promedio positivo con 50+ operaciones en los 4 meses de validación, comisión incluida.";
   return Object.entries(r.tito || {}).map(([s, v]) => "• TITO " + (NAMES[s] || s) + ": " + (v.error || ((v.todas.n >= 50 && v.todas.R_prom > 0 ? "✅ " : "❌ ") + v.todas.n + " zonas tocadas · " + v.todas.acierto + "% acierto · " + v.todas.R_prom + "R por operación" + (v.todas.n < 50 ? " (menos de 50: muestra corta)" : "")))).join("\n") + "\n-# Vara: R promedio positivo con 50+ operaciones.";
 }
