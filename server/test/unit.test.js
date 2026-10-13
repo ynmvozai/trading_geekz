@@ -312,3 +312,9 @@ test("v4.7: una zona FVG existe recién cuando cierra la vela que la confirma", 
   assert.equal(f.hi, 104);
   assert.equal(f.t0, 33 * H, "se activa al cierre de la vela de las 32 h (o sea a las 33 h), nunca antes");
 });
+
+test("v4.23: #mega-ballenas ignora el oro", async () => {
+  const { onBurst, onLiq } = await import("../src/mega.js");
+  assert.equal(onBurst({ sym: "XAU", side: "buy", usd: 9e9, first: Date.now() }, 4200), null);
+  assert.equal(onLiq("XAU", "long", 9e9, 4200), null);
+});

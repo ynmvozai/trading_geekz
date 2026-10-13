@@ -30,7 +30,7 @@ test("lee JSON y acepta DEMANDA/sube", () => {
 });
 
 test("rechaza símbolo, dirección o zona inválidos", () => {
-  assert.equal(parseVg(SAMPLE.replace("DJ30", "BTC")).ok, false);
+  assert.equal(parseVg(SAMPLE.replace("DJ30", "EURUSD")).ok, false);
   assert.equal(parseVg(SAMPLE.replace("OFERTA", "algo")).ok, false);
   assert.equal(parseVg(SAMPLE.replace("51998.35 – 52300.90", "52300.90 – 52300.90")).ok, false);
 });
@@ -89,4 +89,18 @@ test("v4.22: base entre el futuro y el precio de la alerta", () => {
   IDX.YM = { price: 52402, t: t0 + 120000 };                         // ajustado 52.301,25 → falla
   vgTick(t0 + 120000);
   assert.equal(kvGet("vgq", []).find((x) => x.id === a.id).status, "falla");
+});
+
+test("v4.23: VG QUANT de BTC, SOL y oro usa el precio de Binance", async () => {
+  const { S } = await import("../src/market.js");
+  const t0 = Date.now();
+  S.BTC.price = 82260; S.BTC.lastRecv = t0;
+  const p = parseVg("🚨 **VG QUANT** · BTCUSDT.P 60 · precio entró en DEMANDA (se espera que SUBA) · zona 82000 – 82300 · probabilidad 70% · sesión NY · precio 82250");
+  assert.equal(p.ok, true); assert.equal(p.alert.sym, "BTC"); assert.equal(p.alert.tf, "60");
+  const a = recordVg(p.alert, t0).rec;
+  assert.ok(Math.abs(a.basis - 10) < 1e-9);
+  S.BTC.price = 82620; S.BTC.lastRecv = t0 + 60000;                  // ajustado 82.610 ≥ 82.300 + 300 → acierta
+  vgTick(t0 + 60000);
+  assert.equal(kvGet("vgq", []).find((x) => x.id === a.id).status, "acierta");
+  assert.equal(parseVg("🚨 VG QUANT · XAUUSD 240 · precio entró en OFERTA · zona 4205 – 4222.58 · precio 4206").alert.sym, "XAU");
 });
