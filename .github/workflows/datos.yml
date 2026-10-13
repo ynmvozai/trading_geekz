@@ -1,0 +1,18 @@
+name: datos-backtest
+on:
+  push:
+    branches: [datos]
+    paths: [datos/**, .github/workflows/datos.yml]
+  workflow_dispatch:
+jobs:
+  bajar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 datos/duka.py 2023-10-01 2026-10-12
+      - uses: actions/upload-artifact@v4
+        with:
+          name: velas-1m
+          path: "*.csv.gz"
+          retention-days: 14
