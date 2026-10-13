@@ -3,7 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { openStore, kvGet } from "../src/store.js";
 openStore(":memory:");
-const { parseVg, recordVg, vgTick } = await import("../src/vgquant.js");
+const { parseVg, recordVg, vgTick, vgDelete } = await import("../src/vgquant.js");
 const { IDX } = await import("../src/macro.js");
 
 const SAMPLE = "🚨 **VG QUANT** · DJ30 240 · precio entró en OFERTA (se espera que BAJE) · zona 51998.35 – 52300.90 · probabilidad 78% · sesión Asia · precio 51999.25";
@@ -68,4 +68,12 @@ test("v4.16: modo prueba lee sin registrar; mensaje ilegible se reenvía igual",
   const r = onVg("🚨 VG QUANT · Zona 1 · mensaje con otro formato");
   assert.equal(r.ok, true); assert.equal(r.reenviado, true); assert.equal(r.seguimiento, false);
   assert.equal((kvGet("vgq", []) || []).length, antes);
+});
+
+test("v4.17: vg borrar quita solo ese registro", () => {
+  const r = recordVg({ ...parseVg(SAMPLE).alert, lo: 1000, hi: 1100, price: 1050 }, Date.UTC(2026, 9, 13, 20));
+  const antes = kvGet("vgq", []).length;
+  assert.equal(vgDelete(r.id), true);
+  assert.equal(kvGet("vgq", []).length, antes - 1);
+  assert.equal(vgDelete("no-existe"), false);
 });
