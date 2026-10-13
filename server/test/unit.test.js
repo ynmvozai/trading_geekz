@@ -34,7 +34,8 @@ test("agregación de 250 ms y umbral mínimo", () => {
   assert.equal(got[0].zone, 0);
   assert.equal(got[0].side, "buy");
   const msg = buildMessage(got[0]);
-  assert.match(msg.content, /^🐋 Bitcoin: ballena COMPRÓ \$3\.51M (en \d+ órdenes )?· 100,200\nDentro de zona de VENTA\n⚠️ Ojo: empuja en contra/);
+  assert.match(msg.content, /^ℹ️ INFO · 🐋 Bitcoin: ballena COMPRÓ \$3\.51M (en \d+ órdenes )?· 100,200\nDentro de zona de VENTA\n⚠️ Ojo: empuja en contra/);
+  assert.match(msg.content, /Información, no señal de entrada/);   // v4.22
   assert.doesNotMatch(msg.content.split("\n")[0], /\*|_/);
 });
 

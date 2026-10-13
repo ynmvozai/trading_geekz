@@ -77,3 +77,16 @@ test("v4.17: vg borrar quita solo ese registro", () => {
   assert.equal(kvGet("vgq", []).length, antes - 1);
   assert.equal(vgDelete("no-existe"), false);
 });
+
+test("v4.22: base entre el futuro y el precio de la alerta", () => {
+  const t0 = Date.UTC(2026, 9, 14, 12);
+  IDX.YM = { price: 52100, t: t0 };                                  // futuro 100,75 arriba del precio de la alerta
+  const a = recordVg({ ...parseVg(SAMPLE).alert, lo: 51998.35, hi: 52300.9 }, t0).rec;
+  assert.ok(Math.abs(a.basis - 100.75) < 1e-9);
+  IDX.YM = { price: 52401, t: t0 + 60000 };                          // ajustado 52.300,25 < 52.300,9 → sigue abierta
+  vgTick(t0 + 60000);
+  assert.equal(kvGet("vgq", []).find((x) => x.id === a.id).status, "abierta");
+  IDX.YM = { price: 52402, t: t0 + 120000 };                         // ajustado 52.301,25 → falla
+  vgTick(t0 + 120000);
+  assert.equal(kvGet("vgq", []).find((x) => x.id === a.id).status, "falla");
+});
