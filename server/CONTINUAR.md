@@ -173,3 +173,11 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 ## v4.10 · TITO a ciegas ampliado y nueva vara (12 oct 2026)
 - Aprobado por Yasser: la Fase 3 pasa a 60 mañanas por mercado (Bitcoin y Solana), una cada 6 días (~12 meses, ~120 consultas a Anthropic). Corre sola una vez tras el despliegue (kv `estudioV410`).
 - Vara para aprobar cualquier regla o agente (aprobada por Yasser): R promedio POSITIVO en los 4 meses de validación con 50+ operaciones, comisión incluida. El % de acierto se reporta, pero ya no es el criterio.
+
+## v4.11 · Fase 5: sesiones NY con órdenes grandes (12 oct 2026)
+- Regla definida con Yasser ANTES de ver resultados (ver comentario en `src/estudio.js`, Fase 5). No se ajusta después de ver la data.
+- Ventanas NY: apertura (estudio previo 8:00–9:30, disparo 9:30–10:30) y cierre (14:00–15:00, 15:00–16:00), hora de NY, L–V.
+- Disparo: toque de zona 1H/4H → FVG de 5 min con BOS (swing más reciente) 5–15 min después → confirmación que supera la vela anterior con más volumen. Stop en el borde lejano o el extremo barrido; meta 2R (también 1R y 3R); máx. 4 h; comisión incluida.
+- Regla completa = + órdenes grandes (ráfagas de 250 ms ≥ percentil 99 de 30 días) netas a favor dentro de la zona en la acumulación. También se mide delta y A++ (precio dentro o a ≤ 0.5 % de zona 1D/4H al inicio del estudio previo).
+- Solo Bitcoin en esta corrida (datos de Binance). Índices y oro esperan fuente de datos. Position trading: pendientes días máximos, meta y mínimo de operaciones.
+- Corre sola una vez tras el despliegue (kv `estudioV411`); comando `estudio 5` para repetir.
