@@ -229,3 +229,8 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Fase 7 (12 meses, 1.5–1.8 mil toques por mercado): ~50 % de los toques que reaccionan pasan antes el borde lejano. Margen para no salir en ~80 % de las reacciones: BTC +0,5 %, SOL +1,0 %, oro +0,3 % más allá del borde lejano.
 - Aprobado por Yasser: el tamaño de posición y la línea de stop de las alertas (cripto y oro) usan ese stop medido en lugar del stop de la zona (`src/risk.js`, `nivelesMedidos`). Muestra R:R a la meta 1 con comisión. El seguimiento de señales (results.js) todavía usa el stop de la zona.
 - Fase 8 (`estudio 8`, se lanza a mano): entrada en el borde, stop medido, metas 1/1,5/2/3R, 48 h, comisión 0,1 %; mejor meta en los primeros 8 meses, juzgada en los últimos 4. Vara: R > 0 con 50+ operaciones en validación.
+
+## v4.22 · Zonas como información y base de VG QUANT (13 oct 2026)
+- Fase 8 (12 meses; oro 10): entrada en el borde + stop medido + metas 1/1,5/2/3R → todas negativas en afinado y validación (BTC −0,10 a −0,13R, SOL −0,06 a −0,14R, oro −0,18 a −0,22R). Ninguna zona tiene ventaja por sí sola.
+- Decisión de Yasser (recomendaciones): (1) las alertas de zona y de ballena salen como "ℹ️ INFO" con pie "Información, no señal de entrada"; (2) medir VG QUANT cuando haya 50+ resueltas; (3) medir sus propias operaciones (#diario-de-trades está vacío: falta la fuente).
+- VG QUANT: se guarda la base = futuro (CNBC) − precio de la alerta al llegar; el seguimiento compara con futuro − base. Sin precio en la alerta o sin feed fresco → "sin base".
