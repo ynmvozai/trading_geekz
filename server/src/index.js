@@ -94,6 +94,8 @@ else if (!kvGet("estudioV410", false)) { kvSet("estudioV410", Date.now()); setTi
 else if (!kvGet("estudioV411", false)) { kvSet("estudioV411", Date.now()); setTimeout(() => runEstudio([5], agent), 90000); }
 // v4.13: Fase 6 (validación independiente de la regla candidata), una vez.
 else if (!kvGet("estudioV413", false)) { kvSet("estudioV413", Date.now()); setTimeout(() => runEstudio([6], agent), 90000); }
+// v4.20: Fase 7 (cuánto entra el precio en la zona antes de reaccionar), una vez.
+else if (!kvGet("estudioV420", false)) { kvSet("estudioV420", Date.now()); setTimeout(() => runEstudio([7], agent), 90000); }
 
 // ---------- Bot de Discord (#agent) ----------
 botStart(onAgentMessage);

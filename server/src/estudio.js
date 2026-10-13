@@ -727,16 +727,91 @@ export async function fase3(manianas = 60, paso = 6) {
   return res;
 }
 
+// ---------- Fase 7 · Penetración en la zona antes de reaccionar (v4.20) ----------
+// Pedido de Yasser (13 oct 2026): olvidar el stop de cada zona y medir cuánto margen hace falta. Regla de medición FIJA:
+//  Zonas OB/FVG de 1H (vida 7 días) y 4H (14 días), mismas que el resto del estudio. Un toque por zona: el primero.
+//  Toque válido: al confirmarse la zona el precio está del lado correcto (compra: por encima; venta: por debajo) y luego llega al borde.
+//  Entrada = borde cercano (compra: borde superior; venta: borde inferior). Ancho W = hi − lo.
+//  Reacción = el precio se aleja a favor de la entrada al menos U = max(W, 0,5 × ATR 1H) dentro de 48 h.
+//  Penetración = lo más lejos que fue el precio en contra de la entrada ANTES de reaccionar (o en 48 h si no reaccionó).
+//  Se reporta en % del precio, en dólares, en anchos de zona, en ATR 1H y lo que pasó del borde lejano.
+//  Prueba de stops: stop = borde lejano + b % del precio; % de toques que SÍ reaccionaban y que ese stop habría sacado antes.
+export const BUF7 = [0, 0.001, 0.002, 0.003, 0.005, 0.01];
+export function penetracion(M, K1, zones, now = Infinity) {
+  const A1 = atrArr(K1), out = [];
+  const atrAt = (t) => { let lo = 0, hi = K1.length - 1, i = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (K1[m][0] + H <= t) { i = m; lo = m + 1; } else hi = m - 1; } for (let j = i; j >= 0; j--) if (A1[j]) return A1[j]; return null; };
+  for (const z of zones) {
+    const life = ZLIFE[z.tf] || 7 * DAY, buy = z.side === "buy", W = z.hi - z.lo, E = buy ? z.hi : z.lo;
+    if (!(W > 0)) continue;
+    let i = idxAt(M, z.t0); if (i < 0) continue; if (M.t[i] < z.t0) i++;
+    if (i >= M.n) continue;
+    if (buy ? M.c[i] <= E : M.c[i] >= E) continue;                       // nació tocada o del lado equivocado
+    let k = -1;
+    for (let j = i; j < M.n && M.t[j] < z.t0 + life; j++) if (buy ? M.l[j] <= E : M.h[j] >= E) { k = j; break; }
+    if (k < 0) continue;
+    const atr = atrAt(M.t[k]); if (!atr) continue;
+    const U = Math.max(W, 0.5 * atr), end = M.t[k] + 2 * DAY;
+    if (end > now) continue;                                              // ventana de 48 h incompleta
+    let worst = E, react = false, tR = null;
+    for (let j = k; j < M.n && M.t[j] < end; j++) {
+      if (buy) { if (M.l[j] < worst) worst = M.l[j]; if (M.h[j] >= E + U && j > k) { react = true; tR = M.t[j]; break; } }
+      else { if (M.h[j] > worst) worst = M.h[j]; if (M.l[j] <= E - U && j > k) { react = true; tR = M.t[j]; break; } }
+    }
+    const pen = Math.abs(E - worst);
+    out.push({ tf: z.tf, tipo: z.tipo, side: z.side, t: M.t[k], E, W, atr, pen, penPct: pen / E, penW: pen / W, penAtr: pen / atr, farPct: Math.max(0, pen - W) / E, wPct: W / E, react, mins: react ? (tR - M.t[k]) / 60000 : null });
+  }
+  return out;
+}
+const pctl = (a, q) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(q * (s.length - 1) + 0.5))]; };
+const r4 = (x, d = 3) => (x == null ? null : +x.toFixed(d));
+export function resumenPen(T) {
+  const R = T.filter((x) => x.react), qs = [0.5, 0.75, 0.8, 0.9, 0.95];
+  const dist = (f, d = 3) => Object.fromEntries([["prom", r4(R.length ? R.reduce((s, x) => s + f(x), 0) / R.length : null, d)], ...qs.map((q) => ["p" + Math.round(q * 100), r4(pctl(R.map(f), q), d)])]);
+  const stops = BUF7.map((b) => {
+    const out = R.filter((x) => x.farPct > b).length;                       // la reacción llegó DESPUÉS de pasar este stop
+    return { margen_pct_mas_alla_del_borde: +(b * 100).toFixed(1), te_sacaba_antes_de_reaccionar_pct: R.length ? +((out / R.length) * 100).toFixed(1) : null };
+  });
+  return {
+    toques: T.length, reaccionan: R.length, reaccionan_pct: T.length ? +((R.length / T.length) * 100).toFixed(1) : null,
+    minutos_hasta_reaccion_mediana: r4(pctl(R.map((x) => x.mins), 0.5), 0),
+    ancho_zona_pct: dist((x) => x.wPct * 100),
+    entra_pct_del_precio: dist((x) => x.penPct * 100),
+    entra_en_anchos_de_zona: dist((x) => x.penW, 2),
+    entra_en_ATR1H: dist((x) => x.penAtr, 2),
+    pasa_borde_lejano_pct: dist((x) => x.farPct * 100),
+    entra_en_dolares: dist((x) => x.pen, 2),
+    stops,
+  };
+}
+export async function fase7(days = 365) {
+  const res = { fase: 7, generado: Date.now(), periodo_dias: days, regla: "Toque de zona 1H/4H (primero por zona) · entrada en el borde · reacción = se aleja a favor max(1 ancho, 0,5 ATR 1H) en 48 h · penetración = lo más lejos en contra antes de reaccionar", mercados: {} };
+  const end = Math.floor(Date.now() / DAY) * DAY, start = end - days * DAY;
+  for (const sym of MARKETS) {
+    EST.progreso = "Fase 7 · " + NAMES[sym] + " · velas 1H/4H";
+    let K1, K4, M;
+    try { K1 = await klinesRange(sym, "1h", start - 30 * DAY, end); K4 = await klinesRange(sym, "4h", start - 60 * DAY, end); }
+    catch (e) { res.mercados[sym] = { error: "sin datos: " + e.message }; continue; }
+    EST.progreso = "Fase 7 · " + NAMES[sym] + " · velas de 1 minuto (puede tardar)";
+    try { M = await minutes(sym, start, end); } catch (e) { res.mercados[sym] = { error: "sin velas 1m: " + e.message }; continue; }
+    if (M.n < 10000) { res.mercados[sym] = { error: "muy poca historia (" + M.n + " velas de 1 min)" }; continue; }
+    const Z = [...detectZones(K1, "1H"), ...detectZones(K4, "4H")].filter((z) => z.t0 >= start);
+    const T = penetracion(M, K1, Z, end);
+    res.mercados[sym] = { desde: new Date(M.t[0]).toISOString().slice(0, 10), todas: resumenPen(T), "1H": resumenPen(T.filter((x) => x.tf === "1H")), "4H": resumenPen(T.filter((x) => x.tf === "4H")), OB: resumenPen(T.filter((x) => x.tipo === "OB")), FVG: resumenPen(T.filter((x) => x.tipo === "FVG")) };
+    M = null; await sleep(0);
+  }
+  return res;
+}
+
 // ---------- Orquestador ----------
-export function estudioData() { return { estado: EST, fase1: kvGet("estudio1", null), fase2: kvGet("estudio2", null), fase3: kvGet("estudio3", null), fase4: kvGet("estudio4", null), fase5: kvGet("estudio5", null), fase6: kvGet("estudio6", null) }; }
+export function estudioData() { return { estado: EST, fase1: kvGet("estudio1", null), fase2: kvGet("estudio2", null), fase3: kvGet("estudio3", null), fase4: kvGet("estudio4", null), fase5: kvGet("estudio5", null), fase6: kvGet("estudio6", null), fase7: kvGet("estudio7", null) }; }
 export async function runEstudio(fases, notify) {
   if (EST.running) return notify("⏳ El estudio ya está corriendo: " + EST.progreso);
   EST.running = true; EST.inicio = Date.now(); EST.error = "";
   try {
     for (const f of fases) {
       EST.fase = "Fase " + f;
-      await notify("🔬 Estudio · arrancó la Fase " + f + (f === 1 ? " (ballenas, 12 meses, 1 día por semana)" : f === 2 ? " (zonas + reglas, 12 meses de velas de 1 minuto)" : f === 4 ? " (ruptura de zona, 12 meses de velas de 1 minuto)" : f === 6 ? " (validación independiente de la regla candidata: SOL últimos 12 meses y BTC de hace 13 a 24 meses)" : f === 5 ? " (sesiones NY de Bitcoin: zona + FVG/BOS + volumen + órdenes grandes, 12 meses; descarga las operaciones reales día por día, puede tardar 1–2 h)" : " (TITO a ciegas, 60 mañanas por mercado, ~120 consultas a Anthropic)") + ". Te aviso al terminar.");
-      const r = f === 1 ? await fase1() : f === 2 ? await fase2() : f === 4 ? await fase4() : f === 5 ? await fase5() : f === 6 ? await fase6() : await fase3();
+      await notify("🔬 Estudio · arrancó la Fase " + f + (f === 1 ? " (ballenas, 12 meses, 1 día por semana)" : f === 2 ? " (zonas + reglas, 12 meses de velas de 1 minuto)" : f === 4 ? " (ruptura de zona, 12 meses de velas de 1 minuto)" : f === 7 ? " (cuánto entra el precio en la zona antes de reaccionar: BTC, SOL y oro, 12 meses de velas de 1 minuto)" : f === 6 ? " (validación independiente de la regla candidata: SOL últimos 12 meses y BTC de hace 13 a 24 meses)" : f === 5 ? " (sesiones NY de Bitcoin: zona + FVG/BOS + volumen + órdenes grandes, 12 meses; descarga las operaciones reales día por día, puede tardar 1–2 h)" : " (TITO a ciegas, 60 mañanas por mercado, ~120 consultas a Anthropic)") + ". Te aviso al terminar.");
+      const r = f === 1 ? await fase1() : f === 2 ? await fase2() : f === 4 ? await fase4() : f === 5 ? await fase5() : f === 6 ? await fase6() : f === 7 ? await fase7() : await fase3();
       kvSet("estudio" + f, r);
       await notify("✅ Estudio · Fase " + f + " lista en " + Math.round((Date.now() - EST.inicio) / 60000) + " min.\n" + resumen(f, r));
     }
@@ -744,6 +819,8 @@ export async function runEstudio(fases, notify) {
   finally { EST.running = false; EST.progreso = "terminado"; }
 }
 function resumen(f, r) {
+  if (f === 7) return Object.entries(r.mercados || {}).map(([s, m]) => { if (m.error) return "• " + NAMES[s] + ": " + m.error; const t = m.todas, st = (b) => (t.stops.find((x) => x.margen_pct_mas_alla_del_borde === b) || {}).te_sacaba_antes_de_reaccionar_pct;
+    return "• " + NAMES[s] + ": " + t.toques + " toques · reaccionan " + t.reaccionan_pct + "% · antes de reaccionar entra " + t.entra_pct_del_precio.p50 + "% (mediana) / " + t.entra_pct_del_precio.p80 + "% (80 %) / " + t.entra_pct_del_precio.p90 + "% (90 %)\n  pasa el borde lejano: mediana " + t.pasa_borde_lejano_pct.p50 + "% · 80 % " + t.pasa_borde_lejano_pct.p80 + "% · 90 % " + t.pasa_borde_lejano_pct.p90 + "%\n  stop en el borde lejano te sacaba antes de reaccionar " + st(0) + "% de las veces · +0,2 % → " + st(0.2) + "% · +0,5 % → " + st(0.5) + "%"; }).join("\n") + "\n-# Solo medición: no es una regla de entrada. Detalle completo en el panel del estudio.";
   if (f === 1) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m) return ""; const t = m.por_tamano || {}; return "• " + NAMES[s] + ": " + m.ordenes + " órdenes en " + m.dias_analizados + " días · " + m.nota_recomendacion; }).join("\n");
   if (f === 2) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m || !m.mejor) return "• " + NAMES[s] + ": " + ((m && m.error) || "sin combinación con 40+ operaciones"); const b = m.mejor; return "• " + NAMES[s] + ": mejor regla " + b.reglas.tf + " · stop " + b.reglas.k + "×ATR · meta " + b.reglas.R + "R · " + b.reglas.confirm + (b.reglas.tend ? " · con tendencia" : "") + " → validación " + b.validacion.acierto + "% acierto, " + b.validacion.R_prom + "R por operación (" + b.validacion.n + " ops)"; }).join("\n");
   if (f === 4) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m || !m.mejor) return "• " + NAMES[s] + ": " + ((m && m.error) || "sin combinación con 50+ operaciones"); const b = m.mejor_validada || m.mejor, q = b.reglas;
