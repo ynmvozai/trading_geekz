@@ -9,6 +9,7 @@ import { tokenCheck } from "./tokencheck.js";
 import { resultsText } from "./results.js";
 import { estadoText } from "./health.js";
 import { vgSummary, vgSecret } from "./vgquant.js";
+import { c15Summary } from "./confirm15.js";
 import { DAILY_Q, ZONES_Q } from "./prompts.js";
 import { kvGet, kvSet } from "./store.js";
 import { usd, px, hhmmss, sideEs, prParts, log } from "./util.js";
@@ -64,6 +65,7 @@ export function quickAnswer(text) {
 function ayuda() {
   return "Hot Zone " + VERSION + " · Comandos:\n" +
     "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados** · **sentimiento** · **calendario** · **plan ny** · **radar** · **probar sesion**\n" +
+    "**vg registro** · **confirmacion registro** (solo consulta) · **vg url**\n" +
     "**pausar alertas** · **reanudar alertas** · **cargar zonas** [JSON o enlace del panel] · **borrar zona** [n] · **actualiza zonas** · **reiniciar**\n" +
     "**check** [dirección del token] · **mapa diario apagar/encender** · **plan ny apagar/encender**\n" +
     "**macro** · **macro apagar/encender** · **probar macro** · **sesgo** · **estudio** [1 2 3 4 5 6] · **estudio estado** · **wallets** · **wallet agregar** [dirección] [nombre] · **wallet quitar** [nombre] · **wallet regla** [mín] [horas] · **wallet solos on/off** · **probar mega**\n" +
@@ -97,8 +99,9 @@ export async function onAgentMessage(msg) {
   if (/^plan ny (encender|prender|on)$/.test(ql)) { kvSet("sessionOff", false); return agent("Plan de sesión NY automático encendido: lunes a viernes, 8:15 AM hora de Nueva York."); }
   if (/^(plan ny|plan de (la )?sesi[oó]n|sesi[oó]n ny|plan nueva york)$/.test(ql)) return runSession(true);
   if (/^(calendario|noticias)\b/.test(ql)) { await refreshCal(); return agent(calText(7)); }
-  if (/^vg url$/.test(ql)) return agent("📺 **Webhook de VG QUANT** (no lo compartas)\n" + (ENV.serverUrl || "https://<tu-servidor>") + "/vgq/" + vgSecret() + "\nFormato del mensaje: JSON (ver instrucciones en el canal).");
+  if (/^vg url$/.test(ql)) return agent("📺 **Webhook de VG QUANT** (no lo compartas)\n" + (ENV.serverUrl || "https://<tu-servidor>") + "/vgq/" + vgSecret() + "\nPégala como Webhook URL en la alerta de VG QUANT en TradingView. Consulta con **vg registro**.");
   if (/^vg (registro|estado)$/.test(ql)) return agent(vgSummary());
+  if (/^confirmaci[oó]n (registro|estado)$/.test(ql)) return agent(c15Summary());
   if (/^tv url$/.test(ql)) return agent("📺 **Webhook de TradingView para índices** (no lo compartas)\n" + (ENV.serverUrl || "https://<tu-servidor>") + "/tv/" + tvSecret() +
     "\nMensaje de la alerta (5 min, \"Once per bar close\"):\n`{\"s\":\"{{ticker}}\",\"o\":{{open}},\"h\":{{high}},\"l\":{{low}},\"c\":{{close}},\"t\":\"{{time}}\"}`\nRecibidos hasta ahora: " + TV.n);
   if (/^radar$/.test(ql)) return agent(boardText("📡 Radar ahora", Date.now() - 3600000, null));

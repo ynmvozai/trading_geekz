@@ -22,6 +22,7 @@ import { startWallets } from "./wallets.js";
 import { sessionTick } from "./sesion.js";
 import { sesTick } from "./sesionny.js";
 import { startVg } from "./vgquant.js";
+import { startC15 } from "./confirm15.js";
 
 log("Hot Zone", VERSION, "arrancando · datos en", ENV.dataDir);
 log("Variables:", Object.entries(ENV.hooks).map(([k, v]) => k + "=" + mask(v)).join(" "), "bot=" + mask(ENV.botToken), "anthropic=" + mask(ENV.anthropicKey));
@@ -35,6 +36,7 @@ startHttp();
 startSentiment();
 startMacro();
 startVg();
+startC15();
 
 // ---------- Binance ----------
 let blockedWarned = false;
