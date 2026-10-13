@@ -58,3 +58,14 @@ test("duplicado dentro de 60 min no se registra dos veces", () => {
   assert.equal(r2.dup, true);
   assert.equal(r2.id, r1.id);
 });
+
+test("v4.16: modo prueba lee sin registrar; mensaje ilegible se reenvía igual", async () => {
+  const { onVg } = await import("../src/vgquant.js");
+  const antes = (kvGet("vgq", []) || []).length;
+  const t = onVg(JSON.stringify({ test: true, sym: "DJ30", tf: "240", dir: "OFERTA", lo: 1, hi: 2 }));
+  assert.equal(t.prueba, true); assert.equal(t.ok, true); assert.equal(t.leido.sym, "YM");
+  assert.equal((kvGet("vgq", []) || []).length, antes);
+  const r = onVg("🚨 VG QUANT · Zona 1 · mensaje con otro formato");
+  assert.equal(r.ok, true); assert.equal(r.reenviado, true); assert.equal(r.seguimiento, false);
+  assert.equal((kvGet("vgq", []) || []).length, antes);
+});
