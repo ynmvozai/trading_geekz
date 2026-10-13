@@ -1,4 +1,4 @@
-// v4.15 · Confirmación de 15 min tras el toque de zona · SOLO BTC, SOL y oro · solo mide y registra (no publica nada).
+// v4.15 · Confirmación de 15 min tras el toque de zona · SOLO BTC, SOL y oro · mide y registra; desde v4.16 publica solo las confirmadas.
 // Regla FIJA, aprobada por Yasser antes de ver datos (13 oct 2026):
 //   Toque: el precio entra a una zona viva. k = vela de 5 min que contiene el toque.
 //   Ventana: las 3 velas de 5 min siguientes (k+1, k+2, k+3) = 15 min.
@@ -7,6 +7,8 @@
 //   3) Volumen: la vela k+3 tiene más volumen (USD) que el promedio de las 12 velas de 5 min antes del toque.
 //   4) Órdenes grandes (≥ ⅓ del mínimo de alerta) dentro de la zona (±0,1 %) entre el toque y el cierre de k+3: netas a favor.
 //   Confirmada = 1 y 2 y 3 y 4. Se guarda cuál faltó.
+// v4.16 (Yasser): cada CONFIRMADA se publica en su canal (#cryptoman o #oro-índice) y su resultado en #resultados.
+//   Las no confirmadas solo se registran. No reemplaza las alertas de órdenes existentes.
 // Resultado (para TODOS los toques, confirmados o no, para poder comparar): desde el cierre de k+3,
 //   compra acierta si el precio sube 1 ancho de zona sobre el borde superior; falla si baja del borde inferior.
 //   Venta: espejo. Sin resolver a las 24 h.
@@ -16,7 +18,10 @@ import { liveZones, zkey } from "./zones.js";
 import { S, feed, on } from "./market.js";
 import { klinesRaw } from "./binance.js";
 import { fiveMin } from "./estudio.js";
-import { log } from "./util.js";
+import { log, px } from "./util.js";
+import { postLong, resPost } from "./discord.js";
+import { hookOf, A } from "./alerts.js";
+import { NAMES } from "./config.js";
 
 const P = 300000, H24 = 24 * 3600000, COOLDOWN = 60 * 60000, MAX = 500, PAD = 0.001;
 export const C15 = { n: 0, err: "" };
@@ -79,7 +84,7 @@ export function onPrice(sym, p, T = Date.now()) {
     if (a.sym !== sym || a.status !== "midiendo" || T < a.t_eval) continue;
     a.max = Math.max(a.max ?? p, p); a.min = Math.min(a.min ?? p, p);
     const r = outcome(a.side, a.lo, a.hi, p);
-    if (r) { a.status = r; a.t_end = T; a.end_price = p; dirty = true; meas = null; }
+    if (r) { a.status = r; a.t_end = T; a.end_price = p; dirty = true; meas = null; c15Result(a); }
   }
   if (dirty) save();
 }
@@ -91,7 +96,7 @@ export async function c15Tick(now = Date.now()) {
   try {
     const arr = list(); let dirty = false;
     for (const a of arr) {
-      if (a.status === "midiendo" && now - a.t_eval > H24) { a.status = "sin resolver"; a.t_end = now; dirty = true; continue; }
+      if (a.status === "midiendo" && now - a.t_eval > H24) { a.status = "sin resolver"; a.t_end = now; dirty = true; c15Result(a); continue; }
       if (a.status !== "esperando") continue;
       const kOpen = Math.floor(a.t / P) * P;
       if (now < kOpen + 4 * P + 30000) continue;                       // k+3 todavía abierta
@@ -105,12 +110,32 @@ export async function c15Tick(now = Date.now()) {
         if (!e.ok) { a.status = "sin datos"; a.error = e.error; dirty = true; continue; }
         Object.assign(a, { fvg: e.fvg, bos: e.bos, vol: e.vol, ords: e.ords, confirmada: e.confirmada, buy: Math.round(e.buy), sell: Math.round(e.sell), close: e.close, t_eval: e.tEnd, status: "midiendo" });
         const r0 = outcome(a.side, a.lo, a.hi, S[a.sym].price ?? e.close);
-        if (r0) { a.status = r0; a.t_end = now; a.end_price = S[a.sym].price ?? e.close; }
+        if (a.confirmada) c15Post(a);
+        if (r0) { a.status = r0; a.t_end = now; a.end_price = S[a.sym].price ?? e.close; c15Result(a); }
         dirty = true;
       } catch (err) { C15.err = err.message; log("c15", a.sym, err.message); }
     }
     if (dirty) { save(); meas = null; }
   } finally { busy = false; }
+}
+
+// ---------- Publicación (solo confirmadas) ----------
+const SIDE = (s) => (s === "buy" ? "🟢 compra" : "🔴 venta");
+const usdM = (x) => "$" + (x / 1e6).toFixed(1) + "M";
+function c15Post(a) {
+  const hk = hookOf(a.sym); if (!hk || A.paused) return;
+  const w = a.hi - a.lo, meta = a.side === "buy" ? a.hi + w : a.lo - w, inv = a.side === "buy" ? a.lo : a.hi;
+  postLong(hk, "📐 **Confirmación 15 min · " + NAMES[a.sym] + "** · " + SIDE(a.side) + (a.name ? " · " + a.name : "") +
+    "\nZona " + px(a.lo, a.sym) + " – " + px(a.hi, a.sym) + " · cierre " + px(a.close, a.sym) +
+    "\n✅ FVG 5m · ✅ BOS · ✅ volumen sobre promedio · ✅ órdenes grandes netas a favor (compras " + usdM(a.buy) + " / ventas " + usdM(a.sell) + ")" +
+    "\nMedición: acierta en " + px(meta, a.sym) + " · falla si cierra pasado " + px(inv, a.sym) + " · 24 h" +
+    "\n-# Regla fija en medición, no validada todavía. La decisión es tuya.").catch((e) => { C15.err = e.message; });
+}
+function c15Result(a) {
+  if (!a.confirmada) return;                                   // las no confirmadas solo se registran
+  const st = a.status === "acierta" ? "✅ Acertó" : a.status === "falla" ? "❌ Falló" : "⏳ Sin resolver a 24 h";
+  resPost("📐 **Confirmación 15 min · " + NAMES[a.sym] + "** · " + SIDE(a.side) + " · zona " + px(a.lo, a.sym) + " – " + px(a.hi, a.sym) + " · " + st +
+    (a.end_price != null ? " · precio " + px(a.end_price, a.sym) : "") + "\n-# Medición con regla fija. No es señal validada.").catch((e) => { C15.err = e.message; });
 }
 
 // ---------- Resumen (comando "confirmacion registro" en #agent) ----------

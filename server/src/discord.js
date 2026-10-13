@@ -81,6 +81,8 @@ export async function botPost(channelId, txt) {
   }
 }
 // #indices-zonas: webhook si existe; si no, el bot.
+// v4.16: #resultados: webhook si existe; si no, el bot.
+export const resPost = (txt) => (ENV.hooks.resultados ? postLong(ENV.hooks.resultados, txt) : botPost(ENV.resultadosChannelId, txt));
 export const idxPost = (txt) => (ENV.hooks.indices ? postLong(ENV.hooks.indices, txt) : botPost(ENV.indicesChannelId, txt));
 
 export const agent = (txt) => (ENV.hooks.agent ? postLong(ENV.hooks.agent, txt).catch(() => {}) : Promise.resolve());

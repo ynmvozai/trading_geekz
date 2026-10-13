@@ -1,10 +1,12 @@
 // v4.14 · Alertas de VG QUANT (TradingView) por webhook propio → registro y seguimiento de la zona.
-// Solo mide y registra en silencio (nada se publica solo; se consulta con "vg registro" en #agent): no opera, no cambia zonas ni alertas existentes. La regla de resultado está fijada aquí, antes de ver datos.
+// v4.16: TradingView manda la alerta AQUÍ (un solo webhook por alerta); el servidor la reenvía a #indices-zonas tal cual,
+// la registra y publica el resultado en #resultados. Si no la entiende, igual la reenvía (no se pierde ninguna). No opera, no cambia zonas ni alertas existentes. La regla de resultado está fijada aquí, antes de ver datos.
 // Regla (fija): zona de OFERTA ("baja"): acierta si el precio cae 1 ancho de zona por debajo de su borde inferior;
 // falla si cierra por encima del borde superior. Zona de DEMANDA ("sube"): espejo. Sin resolver a las 24 h.
 import { kvGet, kvSet } from "./store.js";
 import { IDX, tvSym } from "./macro.js";
 import { log } from "./util.js";
+import { idxPost, resPost } from "./discord.js";
 
 const MAX = 300;
 const H24 = 24 * 3600000;
@@ -82,11 +84,19 @@ export function vgTick(now = Date.now()) {
       let res = null;
       if (a.dir === "baja") { if (p > a.hi) res = "falla"; else if (p <= a.lo - a.width) res = "acierta"; }
       else { if (p < a.lo) res = "falla"; else if (p >= a.hi + a.width) res = "acierta"; }
-      if (res) { a.status = res; a.t_end = now; a.end_price = p; continue; }
+      if (res) { a.status = res; a.t_end = now; a.end_price = p; vgResult(a); continue; }
     }
-    if (now - a.t > H24) { a.status = "sin resolver"; a.t_end = now; changed = true; }
+    if (now - a.t > H24) { a.status = "sin resolver"; a.t_end = now; changed = true; vgResult(a); }
   }
   if (changed) save(arr);
+}
+
+const DIRTXT = (d) => (d === "baja" ? "oferta (esperaba bajada)" : "demanda (esperaba subida)");
+const MK = (s) => (s === "YM" ? "DJ30" : "NQ");
+function vgResult(a) {
+  const st = a.status === "acierta" ? "✅ Acertó" : a.status === "falla" ? "❌ Falló (cerró fuera de la zona)" : "⏳ Sin resolver a 24 h";
+  resPost("📊 **VG QUANT · " + MK(a.sym) + " " + (a.tf || "") + "** · " + DIRTXT(a.dir) + "\nZona " + fmt(a.lo) + " – " + fmt(a.hi) + " · " + st +
+    "\nPrecio final " + fmt(a.end_price) + " · máx " + fmt(a.max) + " · mín " + fmt(a.min) + "\n-# Medición con regla fija (1 ancho de zona, 24 h). No es señal validada.").catch((e) => { VG.err = "resultados: " + e.message; });
 }
 
 export function vgSummary() {
@@ -110,8 +120,16 @@ export function vgSecret() {
   return s;
 }
 export function onVg(body) {
-  const p = parseVg(body);
-  if (!p.ok) { VG.err = p.error; return { ok: false, error: p.error }; }
+  const raw = String(body || "").trim();
+  let test = false; try { test = !!JSON.parse(raw).test; } catch {}
+  const p = parseVg(raw);
+  if (test) return { ok: p.ok, prueba: true, leido: p.ok ? p.alert : null, error: p.error };   // prueba: no registra ni publica
+  const fwd = (extra) => idxPost(raw.slice(0, 1800) + extra).catch((e) => { VG.err = "indices-zonas: " + e.message; });
+  if (!p.ok) { VG.err = p.error; fwd("\n-# ⚠️ No pude leer este mensaje para el seguimiento (" + p.error + ")."); return { ok: true, reenviado: true, seguimiento: false, error: p.error }; }
   const r = recordVg(p.alert);
-  return { ok: true, id: r.id, dup: !!r.dup };
+  if (r.dup) return { ok: true, id: r.id, dup: true };
+  const a = p.alert, w = a.hi - a.lo;
+  const meta = a.dir === "baja" ? "acierta si baja a " + fmt(a.lo - w) + " · falla si cierra sobre " + fmt(a.hi) : "acierta si sube a " + fmt(a.hi + w) + " · falla si cierra bajo " + fmt(a.lo);
+  fwd("\n-# 📊 Seguimiento activo 24 h: " + meta + ". Resultado en #resultados.");
+  return { ok: true, id: r.id };
 }
