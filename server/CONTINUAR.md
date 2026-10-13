@@ -219,3 +219,8 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Decisión de Yasser: riesgo fijo $100 por operación, cuenta $3,000. Comandos `riesgo` / `riesgo 100` / `cuenta 3000` en #agent (cambiar = solo dueño). Guardado en kv `riskCfg`.
 - `src/risk.js`: entrada = borde de la zona (venta: inferior; compra: superior), o el cierre confirmado en la confirmación de 15 min. Cantidad = riesgo ÷ distancia al stop; tamaño, apalancamiento, comisión 0,1 % ida y vuelta y pérdida real si toca el stop.
 - Candado: stop < 0,3 % o > 10x → "No operable con $100". Se muestra en alertas de ballena a favor de la zona, avisos de zona (#cryptoman, #oro-índice, #sesion-ny) y confirmaciones de 15 min. Índices: sin tamaño (depende del bróker).
+
+## v4.20 · Fase 7: cuánto entra el precio en la zona antes de reaccionar (13 oct 2026)
+- Pedido de Yasser: olvidar el stop de cada zona y medir el margen necesario. Regla de medición fija en `src/estudio.js` (Fase 7): zonas 1H/4H, primer toque por zona, entrada en el borde, reacción = se aleja a favor max(1 ancho, 0,5 ATR 1H) en 48 h; penetración antes de reaccionar en %, $, anchos, ATR y más allá del borde lejano; prueba de stops borde lejano + 0/0,1/0,2/0,3/0,5/1 %.
+- BTC, SOL y oro, 12 meses de velas de 1 min de Binance. Corre sola una vez (kv `estudioV420`); repetir con `estudio 7`. Índices: sin historial de 1 min (CNBC), fuera de esta fase.
+- Es medición: el stop nuevo se define con Yasser después de ver los números.
