@@ -42,3 +42,22 @@ test("señal de sesión: toque, FVG con BOS y confirmación con más volumen", (
   F.v[8] = 5;                    // sin más volumen: no hay señal
   assert.equal(sessionSignal(F, [z], iniT, iniT + 12 * P), null);
 });
+
+test("v4.13: regla candidata (toque → FVG después del toque → BOS) y stop en la vela del toque", async () => {
+  const { setupSignal, confirmOf } = await import("../src/estudio.js");
+  const iniT = Date.UTC(2026, 6, 15, 13, 30), n = 16;
+  const F = { t: new Float64Array(n), o: new Float64Array(n), h: new Float64Array(n).fill(110), l: new Float64Array(n).fill(105), c: new Float64Array(n).fill(107), v: new Float64Array(n).fill(10), n };
+  for (let i = 0; i < n; i++) F.t[i] = iniT + (i - 4) * P;
+  F.sh = new Float64Array(n).fill(108); F.sl = new Float64Array(n).fill(99);
+  const set = (k, h, l, c, v) => { F.h[k] = h; F.l[k] = l; F.c[k] = c; F.v[k] = v; };
+  set(5, 106, 101, 104, 10);   // toque (k)
+  set(6, 106.5, 103, 106, 10); // k+1
+  set(7, 113, 105, 112, 30);   // k+2: BOS sobre 108
+  set(8, 114, 107, 113, 12);   // k+3: mínimo 107 > máximo 106.5 de k+1 → FVG
+  set(9, 118, 112, 117, 20);   // confirmación con más volumen
+  const z = { tf: "1H", tipo: "OB", side: "buy", lo: 100, hi: 102, t0: iniT - DAY, end: iniT + DAY };
+  const s = setupSignal(F, [z], iniT, iniT + 12 * P, new Set());
+  assert.ok(s); assert.equal(s.k, 5); assert.equal(s.e, 113); assert.equal(s.sl, 101); assert.equal(s.tE, F.t[8] + P);
+  const c = confirmOf(F, s, iniT + 12 * P); assert.ok(c); assert.equal(c.e, 117);
+  assert.equal(setupSignal(F, [z], iniT, iniT + 12 * P, new Set([z])), null);   // zona consumida
+});
