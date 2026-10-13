@@ -214,3 +214,8 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Pedido de Yasser: un solo canal con el sentimiento de cada par en una lista. Canal creado en ALERTAS (id 1559553092368998470, `SENTIMIENTO_CHANNEL_ID`).
 - `src/sentcanal.js`: un mensaje vivo por día que el bot edita cada 15 min (día nuevo = mensaje nuevo). BTC/SOL/oro: % cuentas en largo y traders grandes L/C (Binance 1h) + funding + Fear & Greed que aplica. Dow/Nasdaq: solo F&G de CNN (no hay dato gratis por par; se dice).
 - Lectura contraria de la multitud: ≥65 % largos (o ≥60 % con funding ≥0,03 %) = cargada en largos; ≤35 % (o ≤40 % con funding ≤−0,01 %) = cargada en cortos. Contexto, no entrada.
+
+## v4.19 · Tamaño de posición en las alertas (13 oct 2026)
+- Decisión de Yasser: riesgo fijo $100 por operación, cuenta $3,000. Comandos `riesgo` / `riesgo 100` / `cuenta 3000` en #agent (cambiar = solo dueño). Guardado en kv `riskCfg`.
+- `src/risk.js`: entrada = borde de la zona (venta: inferior; compra: superior), o el cierre confirmado en la confirmación de 15 min. Cantidad = riesgo ÷ distancia al stop; tamaño, apalancamiento, comisión 0,1 % ida y vuelta y pérdida real si toca el stop.
+- Candado: stop < 0,3 % o > 10x → "No operable con $100". Se muestra en alertas de ballena a favor de la zona, avisos de zona (#cryptoman, #oro-índice, #sesion-ny) y confirmaciones de 15 min. Índices: sin tamaño (depende del bróker).
