@@ -8,7 +8,7 @@ import { aiAsk } from "./tito.js";
 import { tokenCheck } from "./tokencheck.js";
 import { resultsText } from "./results.js";
 import { estadoText } from "./health.js";
-import { vgSummary, vgSecret } from "./vgquant.js";
+import { vgSummary, vgSecret, vgDelete } from "./vgquant.js";
 import { c15Summary } from "./confirm15.js";
 import { DAILY_Q, ZONES_Q } from "./prompts.js";
 import { kvGet, kvSet } from "./store.js";
@@ -72,7 +72,7 @@ function ayuda() {
     "Mercados: btc, sol, oro. Cualquier otra pregunta la contesta TITO con Ai.";
 }
 
-const ADMIN_RE = /^(estudio(?! estado)|diagnostico estudio|pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|macro (apagar|encender|on|off)|plan ny (apagar|encender|on|off)|tv url|vg url|wallet (agregar|añadir|quitar|borrar|regla|solos))/;
+const ADMIN_RE = /^(estudio(?! estado)|diagnostico estudio|pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|macro (apagar|encender|on|off)|plan ny (apagar|encender|on|off)|tv url|vg url|vg borrar|wallet (agregar|añadir|quitar|borrar|regla|solos))/;
 
 export async function onAgentMessage(msg) {
   const q = (msg.content || "").trim();
@@ -101,6 +101,7 @@ export async function onAgentMessage(msg) {
   if (/^(calendario|noticias)\b/.test(ql)) { await refreshCal(); return agent(calText(7)); }
   if (/^vg url$/.test(ql)) return agent("📺 **Webhook de VG QUANT** (no lo compartas)\n" + (ENV.serverUrl || "https://<tu-servidor>") + "/vgq/" + vgSecret() + "\nPégala como Webhook URL en la alerta de VG QUANT en TradingView. Consulta con **vg registro**.");
   if (/^vg (registro|estado)$/.test(ql)) return agent(vgSummary());
+  { const m = ql.match(/^vg borrar (\S+)$/); if (m) return agent(vgDelete(m[1]) ? "🗑️ Registro " + m[1] + " borrado de VG QUANT." : "No encontré el registro " + m[1] + "."); }
   if (/^confirmaci[oó]n (registro|estado)$/.test(ql)) return agent(c15Summary());
   if (/^tv url$/.test(ql)) return agent("📺 **Webhook de TradingView para índices** (no lo compartas)\n" + (ENV.serverUrl || "https://<tu-servidor>") + "/tv/" + tvSecret() +
     "\nMensaje de la alerta (5 min, \"Once per bar close\"):\n`{\"s\":\"{{ticker}}\",\"o\":{{open}},\"h\":{{high}},\"l\":{{low}},\"c\":{{close}},\"t\":\"{{time}}\"}`\nRecibidos hasta ahora: " + TV.n);

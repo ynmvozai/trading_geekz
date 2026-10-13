@@ -99,13 +99,20 @@ function vgResult(a) {
     "\nPrecio final " + fmt(a.end_price) + " · máx " + fmt(a.max) + " · mín " + fmt(a.min) + "\n-# Medición con regla fija (1 ancho de zona, 24 h). No es señal validada.").catch((e) => { VG.err = "resultados: " + e.message; });
 }
 
+// v4.17: borrar un registro (p. ej. una prueba que entró como real). Devuelve true si existía.
+export function vgDelete(id) {
+  const arr = list(), i = arr.findIndex((a) => a.id === id);
+  if (i < 0) return false;
+  arr.splice(i, 1); save(arr); return true;
+}
+
 export function vgSummary() {
   const arr = list();
   const done = arr.filter((a) => a.status === "acierta" || a.status === "falla");
   const ac = done.filter((a) => a.status === "acierta").length;
   const open = arr.filter((a) => a.status === "abierta").length;
   const pct = done.length ? Math.round((ac / done.length) * 100) + "%" : "—";
-  const last = arr.slice(-5).reverse().map((a) => "· " + new Date(a.t).toISOString().slice(0, 16).replace("T", " ") + " UTC " + a.sym + " " + (a.dir === "baja" ? "oferta" : "demanda") + " " + fmt(a.lo) + "–" + fmt(a.hi) + " → " + a.status).join("\n");
+  const last = arr.slice(-5).reverse().map((a) => "· " + new Date(a.t).toISOString().slice(0, 16).replace("T", " ") + " UTC · " + a.id + " · " + a.sym + " " + (a.dir === "baja" ? "oferta" : "demanda") + " " + fmt(a.lo) + "–" + fmt(a.hi) + " → " + a.status).join("\n");
   return "📊 **VG QUANT · registro**\nRecibidas: " + arr.length + " · abiertas: " + open + " · resueltas: " + done.length + " · acierto: " + pct + " (" + ac + "/" + done.length + ")\n" + (last || "Aún no ha llegado ninguna.");
 }
 
