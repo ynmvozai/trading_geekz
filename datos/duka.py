@@ -6,7 +6,7 @@ def get(sym, d):
     url = f"https://datafeed.dukascopy.com/datafeed/{sym}/{d.year}/{d.month-1:02d}/{d.day:02d}/BID_candles_min_1.bi5"
     for i in range(4):
         try:
-            r = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=30).read()
+            r = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=15).read()
             if not r: return d, []
             raw = lzma.decompress(r)
             out = []
@@ -20,6 +20,16 @@ def get(sym, d):
         except Exception:
             time.sleep(2 + i * 3)
     print("FALLO", sym, d, flush=True); return d, None
+t0 = time.time()
+for sym in SYMS:
+    d = dt.date(2025, 5, 2); _, r = get(sym, d)
+    print("prueba", sym, d, "velas", None if r is None else len(r), "primera", r[:1] if r else r, round(time.time() - t0, 1), "s", flush=True)
+done = [0]
+_get = get
+def get(sym, d):
+    out = _get(sym, d); done[0] += 1
+    if done[0] % 100 == 0: print("progreso", done[0], round(time.time() - t0), "s", flush=True)
+    return out
 for sym, (lo, hi) in SYMS.items():
     days = [start + dt.timedelta(n) for n in range((end - start).days + 1)]
     days = [d for d in days if d.weekday() != 5]
