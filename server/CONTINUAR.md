@@ -200,3 +200,9 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Resultado para TODOS los toques (confirmados o no, para comparar): 1 ancho de zona a favor = acierta; cruzar el borde lejano = falla; 24 h = sin resolver.
 - Registro silencioso en kv `c15` (máx. 500). Un toque por zona cada 60 min. Nada se publica; se consulta con `confirmacion registro` en #agent.
 - DJ30/NQ: solo VG QUANT (v4.14), sin volumen ni órdenes (decisión de Yasser).
+
+## v4.16 · Un canal por señal (13 oct 2026)
+- Decisión de Yasser: cada señal en su canal; #agent solo responde cuando él pregunta y recopila todo para decidir. Las alertas de órdenes de BTC/SOL/oro en #cryptoman y #oro-índice NO se tocan.
+- VG QUANT: TradingView permite un solo webhook por alerta; ahora la alerta va al servidor (`/vgq/<secreto>`), que la reenvía TAL CUAL a #indices-zonas (+ línea de seguimiento) y publica el resultado en #resultados. Si no entiende el mensaje, igual lo reenvía. JSON con `"test":true` = prueba sin registrar ni publicar.
+- Confirmación 15 min: las CONFIRMADAS se publican en #cryptoman (BTC/SOL) u #oro-índice (oro) y su resultado en #resultados. Las no confirmadas solo se registran. Respeta "pausar alertas".
+- Pendiente (Yasser): canal de sentimiento no existe todavía; faltan otras cosas que él recordará.
