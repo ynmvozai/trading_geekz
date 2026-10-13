@@ -69,7 +69,7 @@ function ayuda() {
     "Mercados: btc, sol, oro. Cualquier otra pregunta la contesta TITO con Ai.";
 }
 
-const ADMIN_RE = /^(estudio(?! estado)|pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|macro (apagar|encender|on|off)|plan ny (apagar|encender|on|off)|tv url|wallet (agregar|añadir|quitar|borrar|regla|solos))/;
+const ADMIN_RE = /^(estudio(?! estado)|diagnostico estudio|pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|macro (apagar|encender|on|off)|plan ny (apagar|encender|on|off)|tv url|wallet (agregar|añadir|quitar|borrar|regla|solos))/;
 
 export async function onAgentMessage(msg) {
   const q = (msg.content || "").trim();
@@ -116,6 +116,7 @@ export async function onAgentMessage(msg) {
   if (/^probar macro$/.test(ql)) { await refreshFund(); await fundSend(panoramaText()); return agent(FUND.lastErr ? "❌ #macro-fundamental: " + FUND.lastErr + "\nSi dice 403: en Discord → Editar canal → Permisos → agrega al bot con \"Enviar mensajes\"." : "✅ #macro-fundamental: panorama enviado"); }
   // v4.4 · estudio de mercado hacia el pasado (backtest)
   if (/^estudio estado$/.test(ql)) return agent(EST.running ? "🔬 Estudio corriendo · " + EST.fase + " · " + EST.progreso + " · " + Math.round((Date.now() - EST.inicio) / 60000) + " min" : "🔬 Estudio sin correr ahora." + (EST.error ? " Último error: " + EST.error : ""));
+  if (/^diagnostico estudio$/.test(ql)) { agent("🔬 Diagnóstico de sesiones (solo lectura) arrancó con BTC. Te aviso al terminar."); import("./estudio.js").then(({ diagFase5 }) => diagFase5(365, "BTC")).then((r) => agent("🔬 Diagnóstico listo\n```json\n" + JSON.stringify(r, null, 1) + "\n```")).catch((e) => agent("⚠️ Diagnóstico falló: " + e.message)); return; }
   { const m = /^estudio(?: ([1-5](?:[ ,]*[1-5])*))?$/.exec(ql); if (m) { const f = m[1] ? [...new Set(m[1].match(/[1-5]/g).map(Number))].sort() : [1, 2, 3]; runEstudio(f, agent); return; } }
   if (/^wallets?$/.test(ql)) return agent(walletsText());
   { const m = /^wallet (?:agregar|añadir) ([1-9A-HJ-NP-Za-km-z]{32,44})(?: (.+))?$/i.exec(q.trim()); if (m) return agent(addWallet(m[1], m[2])); }

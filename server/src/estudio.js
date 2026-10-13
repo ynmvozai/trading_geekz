@@ -504,6 +504,75 @@ export async function fase5(days = 365, markets = ["BTC"]) {
   return res;
 }
 
+// ---------- Diagnóstico v4.12 · solo lectura: dónde cae cada candidato (no cambia reglas, no toca alertas) ----------
+// Cuenta, por ventana de sesión, cuántas pasan cada etapa. Compara la regla actual (FVG desde 1 vela antes del toque)
+// con la regla escrita (FVG que empieza entre 5 y 15 min después del toque).
+export async function diagFase5(days = 365, sym = "BTC") {
+  const end = Math.floor(Date.now() / DAY) * DAY - DAY, start = end - days * DAY;
+  const K1 = await klinesRange(sym, "1h", start - 30 * DAY, end + DAY), K4 = await klinesRange(sym, "4h", start - 60 * DAY, end + DAY);
+  EST.progreso = "Diagnóstico · " + NAMES[sym] + " · velas de 1 minuto";
+  const M = await minutesV(sym, start - 31 * DAY, end + DAY);
+  const F = fiveMin(M), P = 300000;
+  const Z1 = detectZones(K1, "1H"), Z4 = detectZones(K4, "4H");
+  for (const z of [...Z1, ...Z4]) zoneLife(M, z);
+  const ZS = [...Z1, ...Z4];
+  const cont = (a, b) => b < F.n && F.t[b] - F.t[a] === (b - a) * P;
+  const fvgAt = (j, dir) => dir === 1 ? F.l[j + 2] > F.h[j] : F.h[j + 2] < F.l[j];
+  const c = { ventanas: 0, con_zona_viva: 0, con_toque: 0, fvg_regla_actual: 0, fvg_regla_escrita: 0, bos_con_fvg_escrito: 0, bos_con_fvg_actual: 0, confirmacion_precio_con_fvg_actual: 0, confirmacion_con_volumen_con_fvg_actual: 0, senal_del_codigo: 0, zonas_distintas_tocadas: 0 };
+  const zonasVistas = new Set(), tocadasPorVentana = [];
+  for (let d = start; d < end; d += DAY) {
+    for (const W of SES_WIN) {
+      const preT = etToUtc(d, W.pre), iniT = etToUtc(d, W.ini), finT = etToUtc(d, W.fin);
+      if (preT == null || ["Sat", "Sun"].includes(etHour(preT).wd)) continue;
+      c.ventanas++;
+      const vivas = ZS.filter((z) => z.t0 <= finT && z.end > iniT);
+      if (vivas.length) c.con_zona_viva++;
+      const k1 = idxAt(F, iniT); if (k1 < 0) continue;
+      let flags = { toque: false, fvgA: false, fvgE: false, bosE: false, bosA: false, conP: false, conV: false };
+      const tocadas = new Set();
+      for (let k = F.t[k1] < iniT ? k1 + 1 : k1; k < F.n && F.t[k] + P <= finT; k++) {
+        for (const z of vivas) {
+          if (!(z.t0 <= F.t[k] && z.end > F.t[k])) continue;
+          if (!(F.l[k] <= z.hi && F.h[k] >= z.lo)) continue;
+          const dir = z.side === "buy" ? 1 : -1, key = z.tf + z.tipo + z.side + z.lo + "|" + z.t0;
+          flags.toque = true; tocadas.add(key); zonasVistas.add(key);
+          // regla actual: FVG con inicio en k-1, k, k+1
+          for (let j = k - 1; j <= k + 1; j++) {
+            if (j < 3 || !cont(j, j + 2) || !fvgAt(j, dir)) continue;
+            flags.fvgA = true;
+            const bos = dir === 1 ? F.c[j + 1] > F.sh[j + 1] : F.c[j + 1] < F.sl[j + 1];
+            if (bos) flags.bosA = true;
+            for (let m = j + 3; m <= j + 5; m++) {
+              if (!cont(j + 2, m)) break;
+              const okP = dir === 1 ? F.h[m] > F.h[m - 1] && F.c[m] > F.h[m - 1] : F.l[m] < F.l[m - 1] && F.c[m] < F.l[m - 1];
+              if (okP) { flags.conP = true; if (F.v[m] > F.v[m - 1]) { flags.conV = true; break; } }
+            }
+          }
+          // regla escrita: el FVG empieza en la vela siguiente al toque (dentro de 5–15 min después del cierre del toque)
+          if (cont(k + 1, k + 3) && fvgAt(k + 1, dir)) {
+            flags.fvgE = true;
+            const bos = dir === 1 ? F.c[k + 2] > F.sh[k + 2] : F.c[k + 2] < F.sl[k + 2];
+            if (bos) flags.bosE = true;
+          }
+        }
+      }
+      if (flags.toque) c.con_toque++;
+      if (flags.fvgA) c.fvg_regla_actual++;
+      if (flags.fvgE) c.fvg_regla_escrita++;
+      if (flags.bosE) c.bos_con_fvg_escrito++;
+      if (flags.bosA) c.bos_con_fvg_actual++;
+      if (flags.conP) c.confirmacion_precio_con_fvg_actual++;
+      if (flags.conV) c.confirmacion_con_volumen_con_fvg_actual++;
+      if (sessionSignal(F, ZS, iniT, finT)) c.senal_del_codigo++;
+      tocadasPorVentana.push(tocadas.size);
+    }
+  }
+  c.zonas_distintas_tocadas = zonasVistas.size;
+  const multi = tocadasPorVentana.filter((x) => x > 1).length;
+  const semanas = (end - start) / (7 * DAY);
+  return { fase: "diagnóstico", generado: Date.now(), sym, periodo_dias: days, embudo: c, ventanas_con_mas_de_una_zona_tocada: multi, señales_por_semana_codigo: +(c.senal_del_codigo / semanas).toFixed(2), nota: "Solo lectura. Regla actual = FVG desde una vela antes del toque; regla escrita = FVG desde la vela siguiente. No modifica reglas ni alertas." };
+}
+
 // ---------- Fase 3 · TITO a ciegas (20 días) ----------
 async function askZones(sym, K4, K1, KD) {
   const q = "Eres analista de order blocks y fair value gaps 1H/4H. Con SOLO estas velas reales (formato [hora UTC, apertura, máximo, mínimo, cierre]) marca hasta 3 zonas vigentes de " + sym +
