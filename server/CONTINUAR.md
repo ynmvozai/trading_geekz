@@ -192,5 +192,11 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Registro silencioso en kv `vgq` (máx. 300): nada se publica solo en ningún canal. Se consulta con `vg registro` en #agent.
 - Regla de resultado FIJA (escrita antes de ver datos): oferta acierta si el precio baja 1 ancho de zona bajo el borde inferior, falla si cierra sobre el borde superior; demanda es el espejo; sin resolver a las 24 h. Precio: feed de TradingView de DJ30/NQ, revisado cada minuto.
 - Solo mide: no opera ni cambia alertas existentes. Es medición, no señal validada.
-- PENDIENTE (segundo cambio): confirmación de 15 min tras el toque (FVG 5m a favor + BOS + vela con más volumen + órdenes grandes netas) SOLO para BTC, SOL y oro, solo medir y registrar, sin avisos. DJ30/NQ se quedan solo con VG QUANT, sin volumen ni órdenes.
 - Regla de #agent (Yasser): es para consultar, no para avisos continuos.
+
+## v4.15 · Confirmación de 15 min tras el toque · BTC, SOL y oro (13 oct 2026)
+- `src/confirm15.js`. Regla FIJA aprobada por Yasser antes de ver datos (comentario al inicio del archivo): toque de zona viva → velas 5m k+1..k+3: FVG a favor, BOS al cierre de k+2 (swing de `fiveMin`), volumen de k+3 > promedio de las 12 velas previas, órdenes grandes (≥ ⅓ del mínimo de alerta) netas a favor dentro de la zona (±0,1 %). Confirmada = las 4.
+- Velas de 5m con volumen en USD desde Binance (klines); órdenes del feed de ráfagas en vivo.
+- Resultado para TODOS los toques (confirmados o no, para comparar): 1 ancho de zona a favor = acierta; cruzar el borde lejano = falla; 24 h = sin resolver.
+- Registro silencioso en kv `c15` (máx. 500). Un toque por zona cada 60 min. Nada se publica; se consulta con `confirmacion registro` en #agent.
+- DJ30/NQ: solo VG QUANT (v4.14), sin volumen ni órdenes (decisión de Yasser).
