@@ -181,3 +181,8 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Regla completa = + órdenes grandes (ráfagas de 250 ms ≥ percentil 99 de 30 días) netas a favor dentro de la zona en la acumulación. También se mide delta y A++ (precio dentro o a ≤ 0.5 % de zona 1D/4H al inicio del estudio previo).
 - Solo Bitcoin en esta corrida (datos de Binance). Índices y oro esperan fuente de datos. Position trading: pendientes días máximos, meta y mínimo de operaciones.
 - Corre sola una vez tras el despliegue (kv `estudioV411`); comando `estudio 5` para repetir.
+
+## v4.12–v4.13 · Diagnóstico y validación independiente (12 oct 2026)
+- v4.12: comando `diagnostico estudio` (solo lectura). En 12 meses de BTC: toque 378 de 520 ventanas, FVG+BOS ~2 por semana, el volumen quita ~25 % de las confirmaciones; la caída a 28 señales viene de exigir todo en el mismo candidato.
+- v4.13: Fase 6, regla candidata CONGELADA con Yasser antes de correr: toque de zona 1H/4H → FVG 5m que empieza después del toque → BOS; entrada al cierre del FVG; stop en el extremo de la vela del toque; 2R (1R/3R reportados); máx. 4 h; costes 0.14 %; una operación por ventana; zona consumida tras su operación. Confirmación con volumen solo como filtro aparte.
+- Datos no usados antes para esta regla: SOL últimos 12 meses y BTC de hace 13 a 24 meses. Vara: combinado 50+ operaciones con R promedio > 0, cada mercado mostrado aparte. Corre sola una vez (kv `estudioV413`).
