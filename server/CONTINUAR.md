@@ -249,3 +249,6 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Regla suya (diario GFF 100K, oct 2024: "DEBO VOLVER A 2 SOLO TRADES"): aviso al pasar de 2 operaciones en el día. En ese diario: días con plan seguido +7,7 % (11 de 12 en positivo); días sin plan −2,8 %.
 - Las señales de Ai Crypto (en pausa) salen al final de `diario` para comparar. Cuando una regla pase la vara, Ai Crypto anotará sus operaciones con el mismo formato.
 - #agent: ya no publica "Sistema encendido" ni "Buenos días" (van al log). Mapa del día 7:48 AM → #sesion-ny. Aviso de noticias fuera de sesión → #macro-fundamental. En #agent solo quedan respuestas y avisos de fallo.
+
+## v4.25 · Alertas de precio en el webhook de VG QUANT (13 oct 2026)
+- La alerta de precio "DJ30 Crossing 51,998.29" de Yasser también apunta a /vgq. Él la quiere (ahí ve ventas), así que no se toca: el servidor ignora en silencio los mensajes "Crossing / Greater Than / Less Than" en vez de reenviarlos a #indices-zonas como ilegibles.
