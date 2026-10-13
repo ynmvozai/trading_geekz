@@ -234,3 +234,11 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Fase 8 (12 meses; oro 10): entrada en el borde + stop medido + metas 1/1,5/2/3R → todas negativas en afinado y validación (BTC −0,10 a −0,13R, SOL −0,06 a −0,14R, oro −0,18 a −0,22R). Ninguna zona tiene ventaja por sí sola.
 - Decisión de Yasser (recomendaciones): (1) las alertas de zona y de ballena salen como "ℹ️ INFO" con pie "Información, no señal de entrada"; (2) medir VG QUANT cuando haya 50+ resueltas; (3) medir sus propias operaciones (#diario-de-trades está vacío: falta la fuente).
 - VG QUANT: se guarda la base = futuro (CNBC) − precio de la alerta al llegar; el seguimiento compara con futuro − base. Sin precio en la alerta o sin feed fresco → "sin base".
+
+## v4.23 · Reparto de canales según Yasser (13 oct 2026)
+- #cryptoman: vacío (reservado para sus ganancias/pérdidas personales). Ya no recibe nada del servidor.
+- #oro-índice: solo órdenes en vivo de oro (alertas de ballena/zona de XAU) con las reglas.
+- #indices-zonas: zonas de VG QUANT (DJ30, NQ/USTEC, BTC, SOL y oro) reenviadas desde TradingView (/vgq/<secreto>). Para BTC/SOL/oro hay que crear la alerta de VG QUANT en esos gráficos con el mismo webhook.
+- #sesion-ny: todas sus reglas (alertas de BTC/SOL/oro, confirmaciones de 15 min, cambios de sesgo, plan diario 8:15 ET, avisos de zona de los 5 mercados), solo lunes–viernes 9:00–17:30 hora PR (`inWindow`). Fuera de horario BTC/SOL no se publican (se registran igual).
+- #resultados: resultados medidos (VG QUANT, confirmaciones 15 min); a futuro: contexto para un agente automático.
+- #mega-ballenas: solo BTC y SOL (`MEGA_SYMS`). #macro-fundamental y #sentimiento sin cambios.
