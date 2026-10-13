@@ -4,6 +4,8 @@ on:
     branches: [datos]
     paths: [datos/**, .github/workflows/datos.yml]
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   prueba:
     runs-on: ubuntu-latest
@@ -11,15 +13,14 @@ jobs:
     steps:
       - run: |
           for u in https://datafeed.dukascopy.com/datafeed/USA30IDXUSD/2025/04/02/BID_candles_min_1.bi5 https://datafeed.dukascopy.com/datafeed/USATECHIDXUSD/2025/04/02/BID_candles_min_1.bi5; do
-            curl -s -m 20 -A "Mozilla/5.0" -o /tmp/x -w "%{http_code} %{size_download} %{time_total}\n" "$u"; done
+            echo "::notice::$(curl -s -m 20 -A 'Mozilla/5.0' -o /tmp/x -w '%{http_code} %{size_download} %{time_total}' "$u") $u"; done
   bajar:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
-      - run: python3 datos/duka.py 2023-10-01 2026-10-12
-      - uses: actions/upload-artifact@v4
-        with:
-          name: velas-1m
-          path: "*.csv.gz"
-          retention-days: 14
+      - run: python3 datos/duka.py 2023-10-01 2026-10-12 2>&1 | tee log.txt; grep -E "prueba|velas|FALLO" log.txt | head -20 | while read l; do echo "::notice::$l"; done
+      - run: |
+          mkdir -p velas && mv *.csv.gz velas/
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git add velas && git commit -m "velas 1m Dukascopy" && git push
