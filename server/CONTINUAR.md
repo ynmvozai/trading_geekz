@@ -186,3 +186,11 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - v4.12: comando `diagnostico estudio` (solo lectura). En 12 meses de BTC: toque 378 de 520 ventanas, FVG+BOS ~2 por semana, el volumen quita ~25 % de las confirmaciones; la caída a 28 señales viene de exigir todo en el mismo candidato.
 - v4.13: Fase 6, regla candidata CONGELADA con Yasser antes de correr: toque de zona 1H/4H → FVG 5m que empieza después del toque → BOS; entrada al cierre del FVG; stop en el extremo de la vela del toque; 2R (1R/3R reportados); máx. 4 h; costes 0.14 %; una operación por ventana; zona consumida tras su operación. Confirmación con volumen solo como filtro aparte.
 - Datos no usados antes para esta regla: SOL últimos 12 meses y BTC de hace 13 a 24 meses. Vara: combinado 50+ operaciones con R promedio > 0, cada mercado mostrado aparte. Corre sola una vez (kv `estudioV413`).
+
+## v4.14 · Seguimiento de VG QUANT (DJ30 y NQ) (13 oct 2026)
+- Ruta nueva `POST /vgq/<secreto>` (el secreto sale con `vg url` en #agent). Acepta el texto del mensaje de Discord de VG QUANT o un JSON {sym, tf, dir, lo, hi, prob, session, price}.
+- Registro silencioso en kv `vgq` (máx. 300): nada se publica solo en ningún canal. Se consulta con `vg registro` en #agent.
+- Regla de resultado FIJA (escrita antes de ver datos): oferta acierta si el precio baja 1 ancho de zona bajo el borde inferior, falla si cierra sobre el borde superior; demanda es el espejo; sin resolver a las 24 h. Precio: feed de TradingView de DJ30/NQ, revisado cada minuto.
+- Solo mide: no opera ni cambia alertas existentes. Es medición, no señal validada.
+- PENDIENTE (segundo cambio): confirmación de 15 min tras el toque (FVG 5m a favor + BOS + vela con más volumen + órdenes grandes netas) SOLO para BTC, SOL y oro, solo medir y registrar, sin avisos. DJ30/NQ se quedan solo con VG QUANT, sin volumen ni órdenes.
+- Regla de #agent (Yasser): es para consultar, no para avisos continuos.
