@@ -72,17 +72,20 @@ function brokenPost(z, stop, p) {
   sesMirror(txt);
 }
 
+// v4.22 · Decisión de Yasser (13 oct 2026): las alertas de zona son INFORMACIÓN, no señal de entrada.
+// En 12 meses de datos (estudio, Fases 2–8) entrar en el borde de las zonas no mostró ventaja después de comisión.
+export const INFO_FOOT = "-# ℹ️ Información, no señal de entrada: en 12 meses de datos las zonas no mostraron ventaja.";
 export function buildMessage(o) {
   const y = o.sym, inZ = o.zone >= 0, z = inZ ? Z.list[o.zone] : o.near ? Z.list[o.near.i] : null;
   const name = NAMES[y] || y, f = (v) => pf(v, y);
-  const L = ["🐋 " + name + ": ballena " + (o.side === "buy" ? "COMPRÓ " : "VENDIÓ ") + usd(o.count >= 2 ? o.total : o.usd) + (o.count >= 2 ? " en " + o.count + " órdenes" : "") + " · " + f(o.price)];
+  const L = ["ℹ️ INFO · 🐋 " + name + ": ballena " + (o.side === "buy" ? "COMPRÓ " : "VENDIÓ ") + usd(o.count >= 2 ? o.total : o.usd) + (o.count >= 2 ? " en " + o.count + " órdenes" : "") + " · " + f(o.price)];
   if (z) {
     const where = inZ ? "Dentro de zona de " + lado(z.side) : "Cerca de zona de " + lado(z.side) + " (" + proxNear(y, o.near.d).toFixed(0) + "%)";
     L.push(o.side === z.side ? where + " → " + empuje(o.side, z.side) : where + "\n" + empuje(o.side, z.side));
     const n = nivelesMedidos(y, z, f) || niveles(z, f); if (n) L.push(n);   // v4.21: stop medido
     if (o.side === z.side) { const sz = sizeLine(y, z, f); if (sz) L.push(sz); }   // v4.19: tamaño solo si la orden empuja a favor
     const a = animo(z.side, y); if (a) L.push(a);
-    if (o.noCuenta) L.push("-# Solo informativa: no cuenta como señal (" + o.noCuenta + ").");
+    L.push(INFO_FOOT + (o.noCuenta ? " · " + o.noCuenta + "." : ""));   // v4.22: todas son información
   }
   return { content: L.join("\n") };
 }
@@ -120,11 +123,12 @@ export function watchAll() {
 }
 export function zoneAlert(z, p) {
   const v = prox(z, p), name = NAMES[z.sym] || z.sym, f = (x) => pf(x, z.sym), L = [];
-  if (v >= 100) { L.push(flecha(z.side) + " " + name + " entró a zona de " + lado(z.side) + " · " + px(p, z.sym)); L.push(espera(z.side) + " · zona " + rango(z, f)); }
-  else { L.push(flecha(z.side) + " " + name + " cerca de zona de " + lado(z.side) + " · " + px(p, z.sym)); L.push("Falta poco (" + v.toFixed(0) + "%) · zona " + rango(z, f)); }
+  if (v >= 100) { L.push("ℹ️ INFO · " + flecha(z.side) + " " + name + " entró a zona de " + lado(z.side) + " · " + px(p, z.sym)); L.push(espera(z.side) + " · zona " + rango(z, f)); }
+  else { L.push("ℹ️ INFO · " + flecha(z.side) + " " + name + " cerca de zona de " + lado(z.side) + " · " + px(p, z.sym)); L.push("Falta poco (" + v.toFixed(0) + "%) · zona " + rango(z, f)); }
   const n = nivelesMedidos(z.sym, z, f) || niveles(z, f); if (n) L.push(n);   // v4.21: stop medido
   const sz = sizeLine(z.sym, z, f); if (sz) L.push(sz);   // v4.19
   const a = animo(z.side, z.sym); if (a) L.push(a);
+  L.push(INFO_FOOT);
   return L.join("\n");
 }
 export function watchTick() {

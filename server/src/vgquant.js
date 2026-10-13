@@ -65,7 +65,11 @@ export function recordVg(a, now = Date.now()) {
   const dup = arr.find((x) => x.sym === a.sym && x.lo === a.lo && x.hi === a.hi && x.dir === a.dir && now - x.t < DEDUPE);
   if (dup) return { ok: true, dup: true, id: dup.id };
   const w = a.hi - a.lo;
-  const rec = { id: now.toString(36) + Math.random().toString(36).slice(2, 5), t: now, ...a, width: w, status: "abierta", min: a.price ?? null, max: a.price ?? null, last: a.price ?? null, t_end: null, end_price: null };
+  // v4.22 · Base: las zonas de VG QUANT vienen en precio de DJ30/USTEC del bróker; el seguimiento usa futuros (CNBC).
+  // base = futuro − precio de la alerta en el momento de llegar. Se mide con precio ajustado = futuro − base.
+  const ref = vgRef(a.sym), fresh = IDX[a.sym] && now - IDX[a.sym].t < STALE;
+  const basis = a.price > 0 && ref != null && fresh ? ref - a.price : null;
+  const rec = { id: now.toString(36) + Math.random().toString(36).slice(2, 5), t: now, ...a, width: w, basis, status: "abierta", min: a.price ?? null, max: a.price ?? null, last: a.price ?? null, t_end: null, end_price: null };
   arr.push(rec); save(arr); VG.n++; VG.err = "";
   return { ok: true, id: rec.id, rec };
 }
@@ -77,7 +81,7 @@ export function vgTick(now = Date.now()) {
   const arr = list(); let changed = false;
   for (const a of arr) {
     if (a.status !== "abierta") continue;
-    const p = vgRef(a.sym);
+    const raw = vgRef(a.sym), p = raw == null ? null : raw - (a.basis || 0);   // v4.22: precio ajustado por base
     const fresh = IDX[a.sym] && now - IDX[a.sym].t < STALE;
     if (p != null && fresh) {
       a.last = p; a.min = a.min == null ? p : Math.min(a.min, p); a.max = a.max == null ? p : Math.max(a.max, p); changed = true;
@@ -96,7 +100,7 @@ const MK = (s) => (s === "YM" ? "DJ30" : "NQ");
 function vgResult(a) {
   const st = a.status === "acierta" ? "✅ Acertó" : a.status === "falla" ? "❌ Falló (cerró fuera de la zona)" : "⏳ Sin resolver a 24 h";
   resPost("📊 **VG QUANT · " + MK(a.sym) + " " + (a.tf || "") + "** · " + DIRTXT(a.dir) + "\nZona " + fmt(a.lo) + " – " + fmt(a.hi) + " · " + st +
-    "\nPrecio final " + fmt(a.end_price) + " · máx " + fmt(a.max) + " · mín " + fmt(a.min) + "\n-# Medición con regla fija (1 ancho de zona, 24 h). No es señal validada.").catch((e) => { VG.err = "resultados: " + e.message; });
+    "\nPrecio final " + fmt(a.end_price) + " · máx " + fmt(a.max) + " · mín " + fmt(a.min) + " (en precio de la alerta" + (a.basis != null ? ", base " + fmt(a.basis) + ")" : "; ⚠️ sin base: puede no ser confiable)") + "\n-# Medición con regla fija (1 ancho de zona, 24 h). No es señal validada.").catch((e) => { VG.err = "resultados: " + e.message; });
 }
 
 // v4.17: borrar un registro (p. ej. una prueba que entró como real). Devuelve true si existía.
@@ -112,7 +116,7 @@ export function vgSummary() {
   const ac = done.filter((a) => a.status === "acierta").length;
   const open = arr.filter((a) => a.status === "abierta").length;
   const pct = done.length ? Math.round((ac / done.length) * 100) + "%" : "—";
-  const last = arr.slice(-5).reverse().map((a) => "· " + new Date(a.t).toISOString().slice(0, 16).replace("T", " ") + " UTC · " + a.id + " · " + a.sym + " " + (a.dir === "baja" ? "oferta" : "demanda") + " " + fmt(a.lo) + "–" + fmt(a.hi) + " → " + a.status).join("\n");
+  const last = arr.slice(-5).reverse().map((a) => "· " + new Date(a.t).toISOString().slice(0, 16).replace("T", " ") + " UTC · " + a.id + " · " + a.sym + " " + (a.dir === "baja" ? "oferta" : "demanda") + " " + fmt(a.lo) + "–" + fmt(a.hi) + " → " + a.status + (a.basis != null ? " · base " + fmt(a.basis) : " · sin base")).join("\n");
   return "📊 **VG QUANT · registro**\nRecibidas: " + arr.length + " · abiertas: " + open + " · resueltas: " + done.length + " · acierto: " + pct + " (" + ac + "/" + done.length + ")\n" + (last || "Aún no ha llegado ninguna.");
 }
 
