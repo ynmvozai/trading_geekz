@@ -104,3 +104,9 @@ test("v4.23: VG QUANT de BTC, SOL y oro usa el precio de Binance", async () => {
   assert.equal(kvGet("vgq", []).find((x) => x.id === a.id).status, "acierta");
   assert.equal(parseVg("🚨 VG QUANT · XAUUSD 240 · precio entró en OFERTA · zona 4205 – 4222.58 · precio 4206").alert.sym, "XAU");
 });
+
+test("v4.25: ignora las alertas de precio que comparten el webhook", async () => {
+  const { onVg } = await import("../src/vgquant.js");
+  const r = onVg("DJ30 Crossing 51,998.29");
+  assert.equal(r.ignorado, true);
+});
