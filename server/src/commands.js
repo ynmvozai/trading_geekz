@@ -65,7 +65,7 @@ function ayuda() {
     "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados** · **sentimiento** · **calendario** · **plan ny** · **radar** · **probar sesion**\n" +
     "**pausar alertas** · **reanudar alertas** · **cargar zonas** [JSON o enlace del panel] · **borrar zona** [n] · **actualiza zonas** · **reiniciar**\n" +
     "**check** [dirección del token] · **mapa diario apagar/encender** · **plan ny apagar/encender**\n" +
-    "**macro** · **macro apagar/encender** · **probar macro** · **sesgo** · **estudio** [1 2 3 4 5] · **estudio estado** · **wallets** · **wallet agregar** [dirección] [nombre] · **wallet quitar** [nombre] · **wallet regla** [mín] [horas] · **wallet solos on/off** · **probar mega**\n" +
+    "**macro** · **macro apagar/encender** · **probar macro** · **sesgo** · **estudio** [1 2 3 4 5 6] · **estudio estado** · **wallets** · **wallet agregar** [dirección] [nombre] · **wallet quitar** [nombre] · **wallet regla** [mín] [horas] · **wallet solos on/off** · **probar mega**\n" +
     "Mercados: btc, sol, oro. Cualquier otra pregunta la contesta TITO con Ai.";
 }
 
@@ -117,7 +117,7 @@ export async function onAgentMessage(msg) {
   // v4.4 · estudio de mercado hacia el pasado (backtest)
   if (/^estudio estado$/.test(ql)) return agent(EST.running ? "🔬 Estudio corriendo · " + EST.fase + " · " + EST.progreso + " · " + Math.round((Date.now() - EST.inicio) / 60000) + " min" : "🔬 Estudio sin correr ahora." + (EST.error ? " Último error: " + EST.error : ""));
   if (/^diagnostico estudio$/.test(ql)) { agent("🔬 Diagnóstico de sesiones (solo lectura) arrancó con BTC. Te aviso al terminar."); import("./estudio.js").then(({ diagFase5 }) => diagFase5(365, "BTC")).then((r) => agent("🔬 Diagnóstico listo\n```json\n" + JSON.stringify(r, null, 1) + "\n```")).catch((e) => agent("⚠️ Diagnóstico falló: " + e.message)); return; }
-  { const m = /^estudio(?: ([1-5](?:[ ,]*[1-5])*))?$/.exec(ql); if (m) { const f = m[1] ? [...new Set(m[1].match(/[1-5]/g).map(Number))].sort() : [1, 2, 3]; runEstudio(f, agent); return; } }
+  { const m = /^estudio(?: ([1-6](?:[ ,]*[1-6])*))?$/.exec(ql); if (m) { const f = m[1] ? [...new Set(m[1].match(/[1-6]/g).map(Number))].sort() : [1, 2, 3]; runEstudio(f, agent); return; } }
   if (/^wallets?$/.test(ql)) return agent(walletsText());
   { const m = /^wallet (?:agregar|añadir) ([1-9A-HJ-NP-Za-km-z]{32,44})(?: (.+))?$/i.exec(q.trim()); if (m) return agent(addWallet(m[1], m[2])); }
   { const m = /^wallet (?:quitar|borrar) (.+)$/i.exec(q.trim()); if (m) return agent(removeWallet(m[1].trim())); }

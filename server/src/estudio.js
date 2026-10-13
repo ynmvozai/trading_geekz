@@ -573,6 +573,113 @@ export async function diagFase5(days = 365, sym = "BTC") {
   return { fase: "diagnóstico", generado: Date.now(), sym, periodo_dias: days, embudo: c, ventanas_con_mas_de_una_zona_tocada: multi, señales_por_semana_codigo: +(c.senal_del_codigo / semanas).toFixed(2), nota: "Solo lectura. Regla actual = FVG desde una vela antes del toque; regla escrita = FVG desde la vela siguiente. No modifica reglas ni alertas." };
 }
 
+// ---------- Fase 6 · Validación independiente de la regla candidata (v4.13) ----------
+// Regla CONGELADA con Yasser el 12 oct 2026, antes de ver resultados (después del diagnóstico de solo lectura, que no miró resultados):
+//  Ventanas NY: disparo 9:30–10:30 y 15:00–16:00 (hora de NY, L–V). Zonas OB/FVG de 1H (7 días) y 4H (14 días) del código.
+//  1) Una vela de 5 min (k) toca una zona viva.  2) FVG a favor con las velas k+1, k+2, k+3 (empieza DESPUÉS del toque).
+//  3) BOS: la vela del medio (k+2) cierra más allá del swing más reciente ya confirmado.
+//  Entrada al cierre de k+3 (debe cerrar dentro de la ventana). Stop: extremo de la vela que tocó/barrió la zona (k).
+//  Meta principal 2R (también se reportan 1R y 3R, definidos antes). Máximo 4 h. Si stop y meta caen en el mismo minuto: stop.
+//  Costes: 0.1 % comisión + 0.04 % deslizamiento, ida y vuelta (0.14 % del precio).
+//  Independencia: una operación por ventana; una zona se consume con su primera operación.
+//  Filtro aparte (no es la regla principal): confirmación = en las 3 velas siguientes, una vela supera el extremo de la anterior,
+//  cierra más allá y con más volumen; entrada al cierre de esa vela, mismo stop.
+//  Datos NO usados antes para resultados de esta regla: SOL últimos 12 meses y BTC de hace 13 a 24 meses.
+//  Vara: R promedio estrictamente positivo con 50+ operaciones (combinado), mostrando cada mercado por separado.
+const COST6 = 0.0014;
+export function setupSignal(F, zones, iniT, finT, used) {
+  const P = 300000, cont = (a, b) => b < F.n && F.t[b] - F.t[a] === (b - a) * P;
+  const k1 = idxAt(F, iniT); if (k1 < 0) return null;
+  const vivas = zones.filter((z) => z.t0 <= finT && z.end > iniT && !(used && used.has(z)));
+  for (let k = F.t[k1] < iniT ? k1 + 1 : k1; k + 3 < F.n && F.t[k + 3] + P <= finT; k++) {
+    if (!cont(k, k + 3)) continue;
+    for (const z of vivas) {
+      if (!(z.t0 <= F.t[k] && z.end > F.t[k])) continue;
+      if (!(F.l[k] <= z.hi && F.h[k] >= z.lo)) continue;
+      const dir = z.side === "buy" ? 1 : -1;
+      const fvg = dir === 1 ? F.l[k + 3] > F.h[k + 1] : F.h[k + 3] < F.l[k + 1];
+      const bos = dir === 1 ? F.c[k + 2] > F.sh[k + 2] : F.c[k + 2] < F.sl[k + 2];
+      if (!fvg || !bos) continue;
+      const e = F.c[k + 3], sl = dir === 1 ? F.l[k] : F.h[k];
+      if (!(dir * (e - sl) > 0)) continue;
+      return { tE: F.t[k + 3] + P, e, sl, dir, z, k };
+    }
+  }
+  return null;
+}
+export function confirmOf(F, s, finT) {
+  const P = 300000, d = s.dir;
+  for (let m = s.k + 4; m <= s.k + 6 && m < F.n; m++) {
+    if (F.t[m] - F.t[s.k + 3] !== (m - s.k - 3) * P || F.t[m] + P > finT) break;
+    const ok = d === 1 ? F.h[m] > F.h[m - 1] && F.c[m] > F.h[m - 1] : F.l[m] < F.l[m - 1] && F.c[m] < F.l[m - 1];
+    if (ok && F.v[m] > F.v[m - 1] && d * (F.c[m] - s.sl) > 0) return { ...s, tE: F.t[m] + P, e: F.c[m] };
+  }
+  return null;
+}
+function simCost(M, s, R, cost) {
+  const risk = Math.abs(s.e - s.sl); if (!(risk > 0)) return null;
+  const tp = s.e + s.dir * R * risk, costR = (cost * s.e) / risk;
+  let j = idxAt(M, s.tE); if (j < 0) return null; if (M.t[j] < s.tE) j++;
+  for (; j < M.n && M.t[j] < s.tE + 4 * H; j++) {
+    if (s.dir === 1 ? M.l[j] <= s.sl : M.h[j] >= s.sl) return { r: -1 - costR, win: false };
+    if (s.dir === 1 ? M.h[j] >= tp : M.l[j] <= tp) return { r: R - costR, win: true };
+  }
+  const jl = Math.min(M.n - 1, j - 1);
+  return { r: (s.dir * (M.c[jl] - s.e)) / risk - costR, win: false, tiempo: true };
+}
+export function statsX(tr) {
+  const b = stats(tr); if (!b.n) return b;
+  const r = tr.map((x) => x.r).sort((a, c) => a - c), n = r.length, m = r.reduce((a, c) => a + c, 0) / n;
+  const sd = n > 1 ? Math.sqrt(r.reduce((a, c) => a + (c - m) ** 2, 0) / (n - 1)) : 0;
+  const g = r.filter((x) => x > 0).reduce((a, c) => a + c, 0), l = -r.filter((x) => x < 0).reduce((a, c) => a + c, 0);
+  return { ...b, mediana_R: +r[n >> 1].toFixed(3), profit_factor: l ? +(g / l).toFixed(2) : null, ic95_R: [+(m - 1.96 * sd / Math.sqrt(n)).toFixed(3), +(m + 1.96 * sd / Math.sqrt(n)).toFixed(3)] };
+}
+export async function fase6() {
+  const res = { fase: 6, generado: Date.now(), regla: "Sesiones NY: toque de zona 1H/4H → FVG 5m que empieza después del toque → BOS; entrada al cierre del FVG; stop en el extremo de la vela del toque; 2R; máx. 4 h", costes: "0.14 % del precio ida y vuelta", mercados: {} };
+  const hoy = Math.floor(Date.now() / DAY) * DAY - DAY;
+  const plan = [{ sym: "SOL", end: hoy, et: "SOL · últimos 12 meses" }, { sym: "BTC", end: hoy - 365 * DAY, et: "BTC · hace 13 a 24 meses" }];
+  const todo = { base: { 1: [], 2: [], 3: [] }, conf: { 1: [], 2: [], 3: [] } };
+  for (const p of plan) {
+    const start = p.end - 365 * DAY;
+    EST.progreso = "Fase 6 · " + p.et + " · velas 1H/4H";
+    let K1, K4, M;
+    try { K1 = await klinesRange(p.sym, "1h", start - 30 * DAY, p.end + DAY); K4 = await klinesRange(p.sym, "4h", start - 60 * DAY, p.end + DAY); }
+    catch (e) { res.mercados[p.et] = { error: "sin datos: " + e.message }; continue; }
+    EST.progreso = "Fase 6 · " + p.et + " · velas de 1 minuto (puede tardar)";
+    try { M = await minutesV(p.sym, start - 31 * DAY, p.end + DAY); } catch (e) { res.mercados[p.et] = { error: "sin velas 1m: " + e.message }; continue; }
+    if (M.n < 1000) { res.mercados[p.et] = { error: "muy poca historia" }; continue; }
+    const F = fiveMin(M), Z1 = detectZones(K1, "1H"), Z4 = detectZones(K4, "4H");
+    for (const z of [...Z1, ...Z4]) zoneLife(M, z);
+    const ZS = [...Z1, ...Z4], used = new Set(), ops = [];
+    let ventanas = 0;
+    for (let d = start; d < p.end; d += DAY) {
+      for (const W of SES_WIN) {
+        const preT = etToUtc(d, W.pre), iniT = etToUtc(d, W.ini), finT = etToUtc(d, W.fin);
+        if (preT == null || ["Sat", "Sun"].includes(etHour(preT).wd)) continue;
+        ventanas++;
+        const s = setupSignal(F, ZS, iniT, finT, used); if (!s) continue;
+        used.add(s.z);
+        const c = confirmOf(F, s, finT);
+        ops.push({ t: s.tE, ses: W.k, dir: s.dir, tf: s.z.tf, base: { 1: simCost(M, s, 1, COST6), 2: simCost(M, s, 2, COST6), 3: simCost(M, s, 3, COST6) }, conf: c ? { 1: simCost(M, c, 1, COST6), 2: simCost(M, c, 2, COST6), 3: simCost(M, c, 3, COST6) } : null });
+      }
+      if ((d / DAY) % 20 === 0) await sleep(0);
+    }
+    const R = (k, n) => ops.filter((o) => o[k] && o[k][n]).map((o) => ({ t: o.t, r: o[k][n].r, win: o[k][n].win, ses: o.ses }));
+    for (const n of [1, 2, 3]) { todo.base[n].push(...R("base", n)); todo.conf[n].push(...R("conf", n)); }
+    const semanas = 365 / 7;
+    res.mercados[p.et] = { ventanas, operaciones: ops.length, por_semana: +(ops.length / semanas).toFixed(2),
+      regla: Object.fromEntries([1, 2, 3].map((n) => [n + "R", statsX(R("base", n))])),
+      con_confirmacion_volumen: Object.fromEntries([1, 2, 3].map((n) => [n + "R", statsX(R("conf", n))])),
+      por_sesion_2R: { apertura: statsX(R("base", 2).filter((x) => x.ses === "apertura")), cierre: statsX(R("base", 2).filter((x) => x.ses === "cierre")) },
+      ultimas: ops.slice(-15).map((o) => ({ fecha: new Date(o.t).toISOString().slice(0, 16), ses: o.ses, dir: o.dir === 1 ? "compra" : "venta", zona: o.tf, R2: o.base[2] ? +o.base[2].r.toFixed(2) : null })) };
+    M = null;
+  }
+  const comb = Object.fromEntries([1, 2, 3].map((n) => [n + "R", statsX(todo.base[n])]));
+  res.combinado = { regla: comb, con_confirmacion_volumen: Object.fromEntries([1, 2, 3].map((n) => [n + "R", statsX(todo.conf[n])])) };
+  res.pasa = comb["2R"].n >= 50 && comb["2R"].R_prom > 0;
+  return res;
+}
+
 // ---------- Fase 3 · TITO a ciegas (20 días) ----------
 async function askZones(sym, K4, K1, KD) {
   const q = "Eres analista de order blocks y fair value gaps 1H/4H. Con SOLO estas velas reales (formato [hora UTC, apertura, máximo, mínimo, cierre]) marca hasta 3 zonas vigentes de " + sym +
@@ -621,15 +728,15 @@ export async function fase3(manianas = 60, paso = 6) {
 }
 
 // ---------- Orquestador ----------
-export function estudioData() { return { estado: EST, fase1: kvGet("estudio1", null), fase2: kvGet("estudio2", null), fase3: kvGet("estudio3", null), fase4: kvGet("estudio4", null), fase5: kvGet("estudio5", null) }; }
+export function estudioData() { return { estado: EST, fase1: kvGet("estudio1", null), fase2: kvGet("estudio2", null), fase3: kvGet("estudio3", null), fase4: kvGet("estudio4", null), fase5: kvGet("estudio5", null), fase6: kvGet("estudio6", null) }; }
 export async function runEstudio(fases, notify) {
   if (EST.running) return notify("⏳ El estudio ya está corriendo: " + EST.progreso);
   EST.running = true; EST.inicio = Date.now(); EST.error = "";
   try {
     for (const f of fases) {
       EST.fase = "Fase " + f;
-      await notify("🔬 Estudio · arrancó la Fase " + f + (f === 1 ? " (ballenas, 12 meses, 1 día por semana)" : f === 2 ? " (zonas + reglas, 12 meses de velas de 1 minuto)" : f === 4 ? " (ruptura de zona, 12 meses de velas de 1 minuto)" : f === 5 ? " (sesiones NY de Bitcoin: zona + FVG/BOS + volumen + órdenes grandes, 12 meses; descarga las operaciones reales día por día, puede tardar 1–2 h)" : " (TITO a ciegas, 60 mañanas por mercado, ~120 consultas a Anthropic)") + ". Te aviso al terminar.");
-      const r = f === 1 ? await fase1() : f === 2 ? await fase2() : f === 4 ? await fase4() : f === 5 ? await fase5() : await fase3();
+      await notify("🔬 Estudio · arrancó la Fase " + f + (f === 1 ? " (ballenas, 12 meses, 1 día por semana)" : f === 2 ? " (zonas + reglas, 12 meses de velas de 1 minuto)" : f === 4 ? " (ruptura de zona, 12 meses de velas de 1 minuto)" : f === 6 ? " (validación independiente de la regla candidata: SOL últimos 12 meses y BTC de hace 13 a 24 meses)" : f === 5 ? " (sesiones NY de Bitcoin: zona + FVG/BOS + volumen + órdenes grandes, 12 meses; descarga las operaciones reales día por día, puede tardar 1–2 h)" : " (TITO a ciegas, 60 mañanas por mercado, ~120 consultas a Anthropic)") + ". Te aviso al terminar.");
+      const r = f === 1 ? await fase1() : f === 2 ? await fase2() : f === 4 ? await fase4() : f === 5 ? await fase5() : f === 6 ? await fase6() : await fase3();
       kvSet("estudio" + f, r);
       await notify("✅ Estudio · Fase " + f + " lista en " + Math.round((Date.now() - EST.inicio) / 60000) + " min.\n" + resumen(f, r));
     }
@@ -641,6 +748,8 @@ function resumen(f, r) {
   if (f === 2) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m || !m.mejor) return "• " + NAMES[s] + ": " + ((m && m.error) || "sin combinación con 40+ operaciones"); const b = m.mejor; return "• " + NAMES[s] + ": mejor regla " + b.reglas.tf + " · stop " + b.reglas.k + "×ATR · meta " + b.reglas.R + "R · " + b.reglas.confirm + (b.reglas.tend ? " · con tendencia" : "") + " → validación " + b.validacion.acierto + "% acierto, " + b.validacion.R_prom + "R por operación (" + b.validacion.n + " ops)"; }).join("\n");
   if (f === 4) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m || !m.mejor) return "• " + NAMES[s] + ": " + ((m && m.error) || "sin combinación con 50+ operaciones"); const b = m.mejor_validada || m.mejor, q = b.reglas;
     return "• " + NAMES[s] + ": " + (m.mejor_validada ? "✅ " : "❌ ") + q.tf + " · stop " + q.k + "×ATR · meta " + q.R + "R" + (q.tend ? " · con tendencia" : "") + " → afinado " + b.entrenamiento.R_prom + "R · validación " + b.validacion.acierto + "% acierto, " + b.validacion.R_prom + "R por operación (" + b.validacion.n + " ops)" + (m.mejor_validada ? "" : " · ninguna positiva en ambos periodos"); }).join("\n");
+  if (f === 6) { const L = (v) => (v && v.n ? v.n + " ops · " + v.acierto + "% · " + v.R_prom + "R (IC95 " + v.ic95_R.join(" a ") + ")" : "sin operaciones");
+    return Object.entries(r.mercados || {}).map(([k, m]) => "• " + k + ": " + (m.error || L(m.regla["2R"]) + " · " + m.por_semana + " por semana")).join("\n") + "\n• Combinado 2R: " + (r.pasa ? "✅ " : "❌ ") + L(r.combinado.regla["2R"]) + "\n  con confirmación de volumen: " + L(r.combinado.con_confirmacion_volumen["2R"]) + "\n-# Regla congelada antes de correr. Vara: R promedio positivo con 50+ operaciones, costes incluidos (0.14 %)."; }
   if (f === 5) return Object.entries(r.mercados || {}).map(([s, m]) => { if (m.error) return "• " + NAMES[s] + ": " + m.error; const t = m.tabla, l = (g) => { const v = t[g]["2R"].validacion; return v.n ? v.acierto + "% · " + v.R_prom + "R (" + v.n + " ops)" : "sin operaciones"; };
     return "• " + NAMES[s] + ": " + (m.pasa ? "✅ " : "❌ ") + "regla completa 2R en validación → " + l("completa") + "\n  señales por semana: " + m.senales_por_semana + " (completa: " + m.completa_por_semana + ")\n  solo disparo: " + l("base") + " · delta a favor: " + l("delta_a_favor") + " · A++: " + l("A_plus") + " · sin A++: " + l("sin_A_plus"); }).join("\n") + "\n-# Vara: R promedio positivo con 50+ operaciones en los 4 meses de validación, comisión incluida.";
   return Object.entries(r.tito || {}).map(([s, v]) => "• TITO " + (NAMES[s] || s) + ": " + (v.error || ((v.todas.n >= 50 && v.todas.R_prom > 0 ? "✅ " : "❌ ") + v.todas.n + " zonas tocadas · " + v.todas.acierto + "% acierto · " + v.todas.R_prom + "R por operación" + (v.todas.n < 50 ? " (menos de 50: muestra corta)" : "")))).join("\n") + "\n-# Vara: R promedio positivo con 50+ operaciones.";

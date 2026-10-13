@@ -86,6 +86,8 @@ else if (!kvGet("estudioV49", false)) { kvSet("estudioV49", Date.now()); setTime
 else if (!kvGet("estudioV410", false)) { kvSet("estudioV410", Date.now()); setTimeout(() => runEstudio([3], agent), 90000); }
 // v4.11: Fase 5 (sesiones NY de Bitcoin con órdenes grandes), una vez.
 else if (!kvGet("estudioV411", false)) { kvSet("estudioV411", Date.now()); setTimeout(() => runEstudio([5], agent), 90000); }
+// v4.13: Fase 6 (validación independiente de la regla candidata), una vez.
+else if (!kvGet("estudioV413", false)) { kvSet("estudioV413", Date.now()); setTimeout(() => runEstudio([6], agent), 90000); }
 
 // ---------- Bot de Discord (#agent) ----------
 botStart(onAgentMessage);
