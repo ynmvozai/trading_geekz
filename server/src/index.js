@@ -23,6 +23,7 @@ import { sessionTick } from "./sesion.js";
 import { sesTick } from "./sesionny.js";
 import { startVg } from "./vgquant.js";
 import { startC15 } from "./confirm15.js";
+import { startSentCanal } from "./sentcanal.js";
 
 log("Hot Zone", VERSION, "arrancando · datos en", ENV.dataDir);
 log("Variables:", Object.entries(ENV.hooks).map(([k, v]) => k + "=" + mask(v)).join(" "), "bot=" + mask(ENV.botToken), "anthropic=" + mask(ENV.anthropicKey));
@@ -37,6 +38,7 @@ startSentiment();
 startMacro();
 startVg();
 startC15();
+startSentCanal();
 
 // ---------- Binance ----------
 let blockedWarned = false;

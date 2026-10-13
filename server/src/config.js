@@ -1,7 +1,7 @@
 // Configuración fija (portada del panel v2.4) y variables de entorno.
 import path from "node:path";
 
-export const VERSION = "v4.17-server · 13 oct 2026";
+export const VERSION = "v4.18-server · 13 oct 2026";
 
 export const SYMS = {
   BTC: { stream: "btcusdt", label: "BTCUSDT", dec: 1, min: 3000000, max: 6000000, ch: "crypto" },
@@ -41,6 +41,7 @@ export const ENV = {
   resultadosChannelId: env.RESULTADOS_CHANNEL_ID || "1558812052053688400",
   indicesChannelId: env.INDICES_CHANNEL_ID || "1557713241722069072",
   sesionChannelId: env.SESION_CHANNEL_ID || "1558528510354788392",
+  sentimientoChannelId: env.SENTIMIENTO_CHANNEL_ID || "1559553092368998470", // v4.18: #sentimiento (lista por par, la publica el bot)
   megaChannelId: env.MEGA_CHANNEL_ID || "1558942738181787748",
   walletChannelId: env.WALLET_CHANNEL_ID || "1558158617411190865",
   macroChannelId: env.MACRO_CHANNEL_ID || "1559305676306518107",
