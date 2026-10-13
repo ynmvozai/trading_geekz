@@ -209,3 +209,8 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 
 ## v4.17 · Borrar un registro de VG QUANT (13 oct 2026)
 - Una prueba enviada antes de que v4.16 terminara de desplegar entró como alerta real (id `mv6og178vyo`). Comando nuevo (solo dueño) `vg borrar <id>` en #agent; `vg registro` ahora muestra el id. Lección: probar la ruta solo después de confirmar la versión en /alive.
+
+## v4.18 · Canal #sentimiento: lista por par (13 oct 2026)
+- Pedido de Yasser: un solo canal con el sentimiento de cada par en una lista. Canal creado en ALERTAS (id 1559553092368998470, `SENTIMIENTO_CHANNEL_ID`).
+- `src/sentcanal.js`: un mensaje vivo por día que el bot edita cada 15 min (día nuevo = mensaje nuevo). BTC/SOL/oro: % cuentas en largo y traders grandes L/C (Binance 1h) + funding + Fear & Greed que aplica. Dow/Nasdaq: solo F&G de CNN (no hay dato gratis por par; se dice).
+- Lectura contraria de la multitud: ≥65 % largos (o ≥60 % con funding ≥0,03 %) = cargada en largos; ≤35 % (o ≤40 % con funding ≤−0,01 %) = cargada en cortos. Contexto, no entrada.
