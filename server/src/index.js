@@ -6,7 +6,9 @@ import * as M from "./market.js";
 import { initAlerts, watchAll, watchTick } from "./alerts.js";
 import { loadResults, checkRange, expire, weeklyText } from "./results.js";
 import { binanceStart, probeBinance, klinesRaw, bn } from "./binance.js";
-import { botStart, agent, post, botPost } from "./discord.js";
+import { botStart, agent, post, botPost, isAdmin } from "./discord.js";
+import { onDiario, startDiario } from "./diario.js";
+import { simStats } from "./alerts.js";
 import { onAgentMessage, dailyTick } from "./commands.js";
 import { startHttp, bootText, BOOT } from "./health.js";
 import { log, prParts } from "./util.js";
@@ -98,7 +100,8 @@ else if (!kvGet("estudioV413", false)) { kvSet("estudioV413", Date.now()); setTi
 else if (!kvGet("estudioV420", false)) { kvSet("estudioV420", Date.now()); setTimeout(() => runEstudio([7], agent), 90000); }
 
 // ---------- Bot de Discord (#agent) ----------
-botStart(onAgentMessage);
+botStart(onAgentMessage, { [ENV.diarioChannelId]: (m) => onDiario(m, isAdmin(m), simStats()) });
+startDiario();
 
 // ---------- Ciclos ----------
 let lastTick = Date.now();
@@ -131,7 +134,7 @@ setInterval(() => {
   expire();
   const pp = prParts();
   // Latido diario 8:00 AM
-  if (pp.hour === 8 && pp.minute < 5 && kvGet("lastBeat") !== pp.date) { kvSet("lastBeat", pp.date); agent(bootText("🟢 Buenos días · sistema vivo")); }
+  if (pp.hour === 8 && pp.minute < 5 && kvGet("lastBeat") !== pp.date) { kvSet("lastBeat", pp.date); log(bootText("Buenos días · sistema vivo")); }   // v4.24: #agent en silencio (solo responde y avisa fallos)
   // Resumen de resultados cada domingo 6:00 PM
   if (pp.weekday === "Sun" && pp.hour === 18 && kvGet("lastWeekly") !== pp.date) {
     kvSet("lastWeekly", pp.date);
@@ -145,7 +148,8 @@ setInterval(() => { try { M.persistMarket(); } catch (e) { log("persist", e.mess
 
 // Mensajes al arrancar
 setTimeout(() => {
-  agent(bootText("🟢 Sistema encendido") + (Z.list.length ? "" : "\n⚠️ No hay zonas cargadas: escribe “actualiza zonas”."));
+  log(bootText("Sistema encendido"));   // v4.24: ya no se publica en #agent
+  if (!Z.list.length) agent("⚠️ No hay zonas cargadas: escribe “actualiza zonas”.");
 }, 20000);
 setTimeout(watchAll, 40000);
 

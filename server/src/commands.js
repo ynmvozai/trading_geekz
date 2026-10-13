@@ -3,7 +3,8 @@ import { ENV, ORDER, NAMES, VERSION, PUBLIC_URL } from "./config.js";
 import { agent, isAdmin, idxPost } from "./discord.js";
 import { S, flow, feed, prices } from "./market.js";
 import { Z, zonesText, sanitizeZones, parseZoneInput, setZones, applyAiZones, shareLink } from "./zones.js";
-import { setPaused, watchText } from "./alerts.js";
+import { setPaused, watchText, simStats } from "./alerts.js";
+import { diarioText } from "./diario.js";
 import { aiAsk } from "./tito.js";
 import { tokenCheck } from "./tokencheck.js";
 import { resultsText } from "./results.js";
@@ -65,7 +66,7 @@ export function quickAnswer(text) {
 
 function ayuda() {
   return "Hot Zone " + VERSION + " · Comandos:\n" +
-    "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados** · **sentimiento** · **calendario** · **plan ny** · **radar** · **probar sesion**\n" +
+    "**estado** · **zonas** · **precio** · **ordenes** · **flujo** · **link** · **vigilancia** · **resultados** · **diario** · **sentimiento** · **calendario** · **plan ny** · **radar** · **probar sesion**\n" +
     "**vg registro** · **confirmacion registro** (solo consulta) · **vg url**\n" +
     "**pausar alertas** · **reanudar alertas** · **cargar zonas** [JSON o enlace del panel] · **borrar zona** [n] · **actualiza zonas** · **reiniciar**\n" +
     "**check** [dirección del token] · **mapa diario apagar/encender** · **plan ny apagar/encender**\n" +
@@ -139,6 +140,7 @@ export async function onAgentMessage(msg) {
     await walletSend("🧪 Prueba de #wallet-tracking\nAquí llegan los avisos cuando 3 o más wallets seguidas compran la misma moneda.");
     return agent([MG.lastErr ? "❌ #mega-ballenas: " + MG.lastErr : "✅ #mega-ballenas: prueba enviada", W.lastErr && !ENV.heliusKey ? "✅ #wallet-tracking: prueba enviada (falta HELIUS_API_KEY para datos reales)" : W.lastErr ? "❌ #wallet-tracking: " + W.lastErr : "✅ #wallet-tracking: prueba enviada"].join("\n"));
   }
+  if (/^diario$/.test(ql)) return agent(diarioText(simStats()));
   if (/^resultados/.test(ql)) { const d = +(/(\d+)/.exec(ql) || [])[1] || 30; return agent(resultsText(Math.min(d, 365))); }
   if (/^reiniciar$/.test(ql)) {
     await agent("🔄 Reiniciando el servidor… Railway lo levanta solo en unos segundos. Escribe **estado** en 1 minuto.");
@@ -202,7 +204,7 @@ export async function runDaily() {
   try {
     const t = await aiAsk(DAILY_Q);
     const r = applyAiZones(t, prices());
-    await agent("🗺️ **Mapa del día**\n" + r.txt + "\n\n" + (r.n ? "✅ Servidor actualizado con " + r.n + " zonas nuevas: las alertas ya usan estas." : "⚠️ No pude actualizar las zonas" + (r.err ? " (" + r.err + ")" : "") + "."));
+    await sesPost("🗺️ **Mapa del día**\n" + r.txt + "\n\n" + (r.n ? "✅ Servidor actualizado con " + r.n + " zonas nuevas: las alertas ya usan estas." : "⚠️ No pude actualizar las zonas" + (r.err ? " (" + r.err + ")" : "") + "."));
   } catch (e) {
     await agent("⚠️ El mapa del día falló: " + e.message);
   }

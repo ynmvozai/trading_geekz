@@ -91,7 +91,9 @@ export const agent = (txt) => (ENV.hooks.agent ? postLong(ENV.hooks.agent, txt).
 // Solo una conexión por proceso. Lee mensajes de #agent y llama onMessage(msg).
 export const bot = { ws: null, connected: false, ready: false, seq: null, sessionId: null, resumeUrl: null, ownerId: null, lastError: "", stop: false };
 
-export function botStart(onMessage) {
+let OTHER = {};   // v4.24: canal → manejador (p. ej. #diario-de-trades)
+export function botStart(onMessage, other = {}) {
+  OTHER = other;
   if (!ENV.botToken) { bot.lastError = "falta DISCORD_BOT_TOKEN"; return; }
   connect(onMessage, false);
 }
@@ -121,8 +123,9 @@ function connect(onMessage, resume) {
       if (m.t === "READY") { bot.sessionId = m.d.session_id; bot.resumeUrl = m.d.resume_gateway_url; bot.ready = true; bot.lastError = ""; log("Bot de Discord conectado como", m.d.user && m.d.user.username); }
       if (m.t === "RESUMED") { bot.ready = true; log("Bot de Discord: sesión reanudada"); }
       if (m.t === "GUILD_CREATE" && m.d && m.d.id === ENV.guildId) bot.ownerId = m.d.owner_id;
-      if (m.t === "MESSAGE_CREATE" && m.d && m.d.channel_id === ENV.agentChannelId && !m.d.webhook_id && !(m.d.author && m.d.author.bot)) {
-        Promise.resolve().then(() => onMessage(m.d)).catch((e) => log("Error en comando:", e.message));
+      if (m.t === "MESSAGE_CREATE" && m.d && !m.d.webhook_id && !(m.d.author && m.d.author.bot)) {
+        const h = m.d.channel_id === ENV.agentChannelId ? onMessage : OTHER[m.d.channel_id];
+        if (h) Promise.resolve().then(() => h(m.d)).catch((e) => log("Error en comando:", e.message));
       }
     }
   });

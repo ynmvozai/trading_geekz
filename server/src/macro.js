@@ -1,7 +1,7 @@
 // Macro: calendario económico de USD (Forex Factory, gratis) e índices (futuros del Dow YM y Nasdaq NQ).
 // Data real; si una fuente falla se dice "sin dato", nunca se rellena.
 import { ENV } from "./config.js";
-import { post, agent, idxPost } from "./discord.js";
+import { post, agent, idxPost, botPost } from "./discord.js";
 import { kvGet, kvSet } from "./store.js";
 import crypto from "node:crypto";
 import { log, etParts } from "./util.js";
@@ -70,7 +70,7 @@ export function calTick(now = Date.now()) {
     kvSet(k, 1);
     const txt = "📰 En 30 min (" + new Date(e.t).toLocaleTimeString("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" }) + "): " + newsEs(e.title) + "\nImpacto alto" + (e.forecast ? " · esperado " + e.forecast : "") + (e.previous ? " (antes " + e.previous + ")" : "") + "\nMejor no abrir entradas hasta ver la reacción.";
     // v3.9: un solo canal. En horario de #sesion-ny va allí; fuera de ese horario, a #agent.
-    import("./sesionny.js").then((SN) => (SN.inWindow(now) ? SN.sesPost(txt) : agent(txt))).catch(() => agent(txt));
+    import("./sesionny.js").then((SN) => (SN.inWindow(now) ? SN.sesPost(txt) : botPost(ENV.macroChannelId, txt))).catch(() => {});   // v4.24: fuera de sesión → #macro-fundamental (antes #agent)
   }
 }
 
