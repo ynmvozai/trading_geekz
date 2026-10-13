@@ -206,3 +206,6 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - VG QUANT: TradingView permite un solo webhook por alerta; ahora la alerta va al servidor (`/vgq/<secreto>`), que la reenvía TAL CUAL a #indices-zonas (+ línea de seguimiento) y publica el resultado en #resultados. Si no entiende el mensaje, igual lo reenvía. JSON con `"test":true` = prueba sin registrar ni publicar.
 - Confirmación 15 min: las CONFIRMADAS se publican en #cryptoman (BTC/SOL) u #oro-índice (oro) y su resultado en #resultados. Las no confirmadas solo se registran. Respeta "pausar alertas".
 - Pendiente (Yasser): canal de sentimiento no existe todavía; faltan otras cosas que él recordará.
+
+## v4.17 · Borrar un registro de VG QUANT (13 oct 2026)
+- Una prueba enviada antes de que v4.16 terminara de desplegar entró como alerta real (id `mv6og178vyo`). Comando nuevo (solo dueño) `vg borrar <id>` en #agent; `vg registro` ahora muestra el id. Lección: probar la ruta solo después de confirmar la versión en /alive.
