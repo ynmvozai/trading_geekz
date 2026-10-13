@@ -22,6 +22,7 @@ import { log, px } from "./util.js";
 import { postLong, resPost } from "./discord.js";
 import { hookOf, A } from "./alerts.js";
 import { NAMES } from "./config.js";
+import { sizeLine } from "./risk.js";
 
 const P = 300000, H24 = 24 * 3600000, COOLDOWN = 60 * 60000, MAX = 500, PAD = 0.001;
 export const C15 = { n: 0, err: "" };
@@ -77,7 +78,7 @@ export function onPrice(sym, p, T = Date.now()) {
     if (p < lo || p > hi) continue;
     const key = zkey(z), arr = list();
     if (arr.some((x) => x.zkey === key && T - x.t < COOLDOWN)) continue;
-    arr.push({ id: T.toString(36) + Math.random().toString(36).slice(2, 5), t: T, sym, zkey: key, name: z.name || "", side: z.side, lo, hi, status: "esperando" });
+    arr.push({ id: T.toString(36) + Math.random().toString(36).slice(2, 5), t: T, sym, zkey: key, name: z.name || "", side: z.side, lo, hi, sl: z.sl || null, status: "esperando" });
     C15.n++; dirty = true;
   }
   for (const a of measNow()) {
@@ -128,6 +129,7 @@ function c15Post(a) {
   postLong(hk, "📐 **Confirmación 15 min · " + NAMES[a.sym] + "** · " + SIDE(a.side) + (a.name ? " · " + a.name : "") +
     "\nZona " + px(a.lo, a.sym) + " – " + px(a.hi, a.sym) + " · cierre " + px(a.close, a.sym) +
     "\n✅ FVG 5m · ✅ BOS · ✅ volumen sobre promedio · ✅ órdenes grandes netas a favor (compras " + usdM(a.buy) + " / ventas " + usdM(a.sell) + ")" +
+    (a.sl ? "\n" + sizeLine(a.sym, { side: a.side, lo: a.lo, hi: a.hi, sl: a.sl }, (x) => px(x, a.sym), a.close) : "") +
     "\nMedición: acierta en " + px(meta, a.sym) + " · falla si cierra pasado " + px(inv, a.sym) + " · 24 h" +
     "\n-# Regla fija en medición, no validada todavía. La decisión es tuya.").catch((e) => { C15.err = e.message; });
 }

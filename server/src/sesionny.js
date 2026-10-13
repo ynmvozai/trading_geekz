@@ -10,6 +10,7 @@ import { etParts } from "./sesion.js";
 import { kvGet, kvSet } from "./store.js";
 import { usd, px, prParts, splitLong, log } from "./util.js";
 import { pf, dot, cerca, lado, ladoMin, flecha, espera, rango, niveles } from "./friendly.js";
+import { sizeLine } from "./risk.js";
 
 export const SES = { sent: 0, failed: 0, lastErr: "" };
 export const MKTS = ["BTC", "SOL", "XAU", "US30", "NQ"];
@@ -165,6 +166,7 @@ export function sesTick(now = Date.now()) {
         if (lvl === 2) { L.push(flecha(z.side) + " " + MNAME[m] + " entró a zona de " + lado(z.side) + " · " + fmt(p, m)); L.push(espera(z.side) + " · zona " + rango(z, f)); }
         else { L.push(flecha(z.side) + " " + MNAME[m] + " cerca de zona de " + lado(z.side) + " · " + fmt(p, m)); L.push("Falta poco (" + v.toFixed(0) + "%) · zona " + rango(z, f)); }
         if (n) L.push(n);
+        if (!IDXK[m]) { const sz = sizeLine(m, z, f); if (sz) L.push(sz); }   // v4.19: tamaño solo cripto y oro
         if (IDXK[m]) L.push("-# Índice: solo zona, sin órdenes en vivo.");
         sesPost(L.join("\n"));
       }

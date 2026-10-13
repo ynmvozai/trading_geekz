@@ -10,6 +10,7 @@ import { resultsText } from "./results.js";
 import { estadoText } from "./health.js";
 import { vgSummary, vgSecret, vgDelete } from "./vgquant.js";
 import { c15Summary } from "./confirm15.js";
+import { riskCfg, setRisk } from "./risk.js";
 import { DAILY_Q, ZONES_Q } from "./prompts.js";
 import { kvGet, kvSet } from "./store.js";
 import { usd, px, hhmmss, sideEs, prParts, log } from "./util.js";
@@ -72,7 +73,7 @@ function ayuda() {
     "Mercados: btc, sol, oro. Cualquier otra pregunta la contesta TITO con Ai.";
 }
 
-const ADMIN_RE = /^(estudio(?! estado)|diagnostico estudio|pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|macro (apagar|encender|on|off)|plan ny (apagar|encender|on|off)|tv url|vg url|vg borrar|wallet (agregar|añadir|quitar|borrar|regla|solos))/;
+const ADMIN_RE = /^(estudio(?! estado)|diagnostico estudio|pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|macro (apagar|encender|on|off)|plan ny (apagar|encender|on|off)|tv url|vg url|vg borrar|riesgo \S|cuenta \S|wallet (agregar|añadir|quitar|borrar|regla|solos))/;
 
 export async function onAgentMessage(msg) {
   const q = (msg.content || "").trim();
@@ -101,6 +102,9 @@ export async function onAgentMessage(msg) {
   if (/^(calendario|noticias)\b/.test(ql)) { await refreshCal(); return agent(calText(7)); }
   if (/^vg url$/.test(ql)) return agent("📺 **Webhook de VG QUANT** (no lo compartas)\n" + (ENV.serverUrl || "https://<tu-servidor>") + "/vgq/" + vgSecret() + "\nPégala como Webhook URL en la alerta de VG QUANT en TradingView. Consulta con **vg registro**.");
   if (/^vg (registro|estado)$/.test(ql)) return agent(vgSummary());
+  { const m = ql.match(/^(riesgo|cuenta)(?:\s+\$?([\d.,]+))?$/); if (m) {
+      if (m[2]) { const v = +m[2].replace(/,/g, ""); if (!(v > 0)) return agent("Número inválido."); setRisk(m[1] === "riesgo" ? "risk" : "account", v); }
+      const c = riskCfg(); return agent("💵 Tamaño de posición: riesgo **$" + c.risk + "** por operación · cuenta **$" + c.account + "** (" + (c.risk / c.account * 100).toFixed(1) + " %). Cambia con **riesgo 100** o **cuenta 3000**.\nNo operable si el stop está a menos de 0,3 % o hace falta más de 10x."); } }
   { const m = ql.match(/^vg borrar (\S+)$/); if (m) return agent(vgDelete(m[1]) ? "🗑️ Registro " + m[1] + " borrado de VG QUANT." : "No encontré el registro " + m[1] + "."); }
   if (/^confirmaci[oó]n (registro|estado)$/.test(ql)) return agent(c15Summary());
   if (/^tv url$/.test(ql)) return agent("📺 **Webhook de TradingView para índices** (no lo compartas)\n" + (ENV.serverUrl || "https://<tu-servidor>") + "/tv/" + tvSecret() +
