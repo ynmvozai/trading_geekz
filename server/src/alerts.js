@@ -9,7 +9,7 @@ import { usd, px, sideEs, prParts } from "./util.js";
 import { recordAlert } from "./results.js";
 import { sesMirror } from "./sesionny.js";
 import { pf, dot, cerca, lado, ladoMin, flecha, espera, rango, niveles, empuje, animo } from "./friendly.js";
-import { sizeLine } from "./risk.js";
+import { sizeLine, nivelesMedidos } from "./risk.js";
 
 export const A = { paused: false, sent: 0, failed: 0, last: null, lastErr: "" };
 export const hookOf = (sym) => (SYMS[sym].ch === "oro" ? ENV.hooks.oro : ENV.hooks.crypto);
@@ -79,7 +79,7 @@ export function buildMessage(o) {
   if (z) {
     const where = inZ ? "Dentro de zona de " + lado(z.side) : "Cerca de zona de " + lado(z.side) + " (" + proxNear(y, o.near.d).toFixed(0) + "%)";
     L.push(o.side === z.side ? where + " → " + empuje(o.side, z.side) : where + "\n" + empuje(o.side, z.side));
-    const n = niveles(z, f); if (n) L.push(n);
+    const n = nivelesMedidos(y, z, f) || niveles(z, f); if (n) L.push(n);   // v4.21: stop medido
     if (o.side === z.side) { const sz = sizeLine(y, z, f); if (sz) L.push(sz); }   // v4.19: tamaño solo si la orden empuja a favor
     const a = animo(z.side, y); if (a) L.push(a);
     if (o.noCuenta) L.push("-# Solo informativa: no cuenta como señal (" + o.noCuenta + ").");
@@ -122,7 +122,7 @@ export function zoneAlert(z, p) {
   const v = prox(z, p), name = NAMES[z.sym] || z.sym, f = (x) => pf(x, z.sym), L = [];
   if (v >= 100) { L.push(flecha(z.side) + " " + name + " entró a zona de " + lado(z.side) + " · " + px(p, z.sym)); L.push(espera(z.side) + " · zona " + rango(z, f)); }
   else { L.push(flecha(z.side) + " " + name + " cerca de zona de " + lado(z.side) + " · " + px(p, z.sym)); L.push("Falta poco (" + v.toFixed(0) + "%) · zona " + rango(z, f)); }
-  const n = niveles(z, f); if (n) L.push(n);
+  const n = nivelesMedidos(z.sym, z, f) || niveles(z, f); if (n) L.push(n);   // v4.21: stop medido
   const sz = sizeLine(z.sym, z, f); if (sz) L.push(sz);   // v4.19
   const a = animo(z.side, z.sym); if (a) L.push(a);
   return L.join("\n");

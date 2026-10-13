@@ -802,16 +802,91 @@ export async function fase7(days = 365) {
   return res;
 }
 
+// ---------- Fase 8 · Metas con el stop medido (v4.21) ----------
+// Pedido de Yasser (13 oct 2026), después de la Fase 7. Regla FIJA antes de ver datos:
+//  Mismos toques que la Fase 7 (zonas 1H/4H, primer toque por zona, precio llega desde el lado correcto).
+//  Entrada = borde cercano (orden límite, se llena en el toque). Stop = borde lejano ± margen medido (BTC 0,5 %, SOL 1 %, oro 0,3 %).
+//  Metas a 1, 1,5, 2 y 3 veces el riesgo. Máximo 48 h; si no toca nada, sale al cierre. Si stop y meta caen en la misma vela, cuenta stop.
+//  En la vela del toque solo se revisa el stop. Comisión 0,1 % ida y vuelta, descontada en R.
+//  Afinado = primeros 8 meses del periodo; validación = últimos 4. Se elige la meta con mejor R en afinado y se juzga en validación.
+//  Vara: R promedio > 0 en validación con 50+ operaciones, comisión incluida.
+export const BUF8 = { BTC: 0.005, SOL: 0.01, XAU: 0.003 }, RS8 = [1, 1.5, 2, 3];
+export function metasSim(M, zones, buf, now = Infinity) {
+  const out = [];
+  for (const z of zones) {
+    const life = ZLIFE[z.tf] || 7 * DAY, buy = z.side === "buy", W = z.hi - z.lo, E = buy ? z.hi : z.lo;
+    if (!(W > 0)) continue;
+    let i = idxAt(M, z.t0); if (i < 0) continue; if (M.t[i] < z.t0) i++;
+    if (i >= M.n) continue;
+    if (buy ? M.c[i] <= E : M.c[i] >= E) continue;
+    let k = -1;
+    for (let j = i; j < M.n && M.t[j] < z.t0 + life; j++) if (buy ? M.l[j] <= E : M.h[j] >= E) { k = j; break; }
+    if (k < 0) continue;
+    const end = M.t[k] + 2 * DAY; if (end > now) continue;
+    const S = buy ? z.lo * (1 - buf) : z.hi * (1 + buf), risk = Math.abs(E - S); if (!(risk > 0)) continue;
+    const d = buy ? 1 : -1, cost = (FEE_RT * E) / risk, res = {};
+    let mfe = 0, stopped = false;
+    for (let j = k; j < M.n && M.t[j] < end; j++) {                         // MFE antes del stop
+      if (buy ? M.l[j] <= S : M.h[j] >= S) { stopped = true; break; }
+      if (j > k) mfe = Math.max(mfe, d * ((buy ? M.h[j] : M.l[j]) - E) / risk);
+    }
+    for (const R of RS8) {
+      const T = E + d * R * risk; let r = null, last = E;
+      for (let j = k; j < M.n && M.t[j] < end; j++) {
+        last = M.c[j];
+        if (buy ? M.l[j] <= S : M.h[j] >= S) { r = -1; break; }
+        if (j > k && (buy ? M.h[j] >= T : M.l[j] <= T)) { r = R; break; }
+      }
+      if (r == null) r = d * (last - E) / risk;
+      res[R] = r - cost;
+    }
+    out.push({ t: M.t[k], tf: z.tf, tipo: z.tipo, side: z.side, E, S, riskPct: risk / E, cost, mfe, stopped, r: res });
+  }
+  return out;
+}
+function st8(rs) {
+  const n = rs.length; if (!n) return { n: 0 };
+  const m = rs.reduce((a, b) => a + b, 0) / n, sd = Math.sqrt(rs.reduce((a, b) => a + (b - m) * (b - m), 0) / Math.max(1, n - 1)), h = 1.96 * sd / Math.sqrt(n);
+  return { n, acierto: +((rs.filter((x) => x > 0).length / n) * 100).toFixed(1), R_prom: +m.toFixed(3), ic95_R: [+(m - h).toFixed(3), +(m + h).toFixed(3)] };
+}
+export function resumenMetas(T, split) {
+  const tr = T.filter((x) => x.t < split), va = T.filter((x) => x.t >= split), tabla = {};
+  for (const R of RS8) tabla[R + "R"] = { afinado: st8(tr.map((x) => x.r[R])), validacion: st8(va.map((x) => x.r[R])), todo: st8(T.map((x) => x.r[R])) };
+  let best = null; for (const R of RS8) { const a = tabla[R + "R"].afinado; if (a.n && (!best || a.R_prom > tabla[best].afinado.R_prom)) best = R + "R"; }
+  const v = best ? tabla[best].validacion : { n: 0 };
+  const mf = T.map((x) => x.mfe);
+  return { toques: T.length, stop_medio_pct: T.length ? +((T.reduce((a, x) => a + x.riskPct, 0) / T.length) * 100).toFixed(3) : null, comision_media_R: T.length ? +(T.reduce((a, x) => a + x.cost, 0) / T.length).toFixed(3) : null,
+    llega_a_favor_antes_del_stop_R: { p50: r4(pctl(mf, 0.5), 2), p75: r4(pctl(mf, 0.75), 2), p90: r4(pctl(mf, 0.9), 2) }, tabla, mejor_en_afinado: best, pasa: !!(v.n >= 50 && v.R_prom > 0) };
+}
+export async function fase8(days = 365) {
+  const res = { fase: 8, generado: Date.now(), periodo_dias: days, regla: "Toque de zona 1H/4H · entrada en el borde · stop = borde lejano + margen medido (BTC 0,5 %, SOL 1 %, oro 0,3 %) · metas 1/1,5/2/3R · 48 h · comisión 0,1 %", mercados: {} };
+  const end = Math.floor(Date.now() / DAY) * DAY, start = end - days * DAY, split = start + 243 * DAY;
+  for (const sym of MARKETS) {
+    EST.progreso = "Fase 8 · " + NAMES[sym] + " · velas 1H/4H";
+    let K1, K4, M;
+    try { K1 = await klinesRange(sym, "1h", start - 30 * DAY, end); K4 = await klinesRange(sym, "4h", start - 60 * DAY, end); }
+    catch (e) { res.mercados[sym] = { error: "sin datos: " + e.message }; continue; }
+    EST.progreso = "Fase 8 · " + NAMES[sym] + " · velas de 1 minuto (puede tardar)";
+    try { M = await minutes(sym, start, end); } catch (e) { res.mercados[sym] = { error: "sin velas 1m: " + e.message }; continue; }
+    if (M.n < 10000) { res.mercados[sym] = { error: "muy poca historia (" + M.n + " velas de 1 min)" }; continue; }
+    const Z = [...detectZones(K1, "1H"), ...detectZones(K4, "4H")].filter((z) => z.t0 >= start);
+    const T = metasSim(M, Z, BUF8[sym], end);
+    res.mercados[sym] = { desde: new Date(M.t[0]).toISOString().slice(0, 10), validacion_desde: new Date(split).toISOString().slice(0, 10), todas: resumenMetas(T, split), "1H": resumenMetas(T.filter((x) => x.tf === "1H"), split), "4H": resumenMetas(T.filter((x) => x.tf === "4H"), split) };
+    M = null; await sleep(0);
+  }
+  return res;
+}
+
 // ---------- Orquestador ----------
-export function estudioData() { return { estado: EST, fase1: kvGet("estudio1", null), fase2: kvGet("estudio2", null), fase3: kvGet("estudio3", null), fase4: kvGet("estudio4", null), fase5: kvGet("estudio5", null), fase6: kvGet("estudio6", null), fase7: kvGet("estudio7", null) }; }
+export function estudioData() { return { estado: EST, fase1: kvGet("estudio1", null), fase2: kvGet("estudio2", null), fase3: kvGet("estudio3", null), fase4: kvGet("estudio4", null), fase5: kvGet("estudio5", null), fase6: kvGet("estudio6", null), fase7: kvGet("estudio7", null), fase8: kvGet("estudio8", null) }; }
 export async function runEstudio(fases, notify) {
   if (EST.running) return notify("⏳ El estudio ya está corriendo: " + EST.progreso);
   EST.running = true; EST.inicio = Date.now(); EST.error = "";
   try {
     for (const f of fases) {
       EST.fase = "Fase " + f;
-      await notify("🔬 Estudio · arrancó la Fase " + f + (f === 1 ? " (ballenas, 12 meses, 1 día por semana)" : f === 2 ? " (zonas + reglas, 12 meses de velas de 1 minuto)" : f === 4 ? " (ruptura de zona, 12 meses de velas de 1 minuto)" : f === 7 ? " (cuánto entra el precio en la zona antes de reaccionar: BTC, SOL y oro, 12 meses de velas de 1 minuto)" : f === 6 ? " (validación independiente de la regla candidata: SOL últimos 12 meses y BTC de hace 13 a 24 meses)" : f === 5 ? " (sesiones NY de Bitcoin: zona + FVG/BOS + volumen + órdenes grandes, 12 meses; descarga las operaciones reales día por día, puede tardar 1–2 h)" : " (TITO a ciegas, 60 mañanas por mercado, ~120 consultas a Anthropic)") + ". Te aviso al terminar.");
-      const r = f === 1 ? await fase1() : f === 2 ? await fase2() : f === 4 ? await fase4() : f === 5 ? await fase5() : f === 6 ? await fase6() : f === 7 ? await fase7() : await fase3();
+      await notify("🔬 Estudio · arrancó la Fase " + f + (f === 1 ? " (ballenas, 12 meses, 1 día por semana)" : f === 2 ? " (zonas + reglas, 12 meses de velas de 1 minuto)" : f === 4 ? " (ruptura de zona, 12 meses de velas de 1 minuto)" : f === 8 ? " (metas con el stop medido: BTC, SOL y oro, 12 meses de velas de 1 minuto, afinado 8 meses / validación 4)" : f === 7 ? " (cuánto entra el precio en la zona antes de reaccionar: BTC, SOL y oro, 12 meses de velas de 1 minuto)" : f === 6 ? " (validación independiente de la regla candidata: SOL últimos 12 meses y BTC de hace 13 a 24 meses)" : f === 5 ? " (sesiones NY de Bitcoin: zona + FVG/BOS + volumen + órdenes grandes, 12 meses; descarga las operaciones reales día por día, puede tardar 1–2 h)" : " (TITO a ciegas, 60 mañanas por mercado, ~120 consultas a Anthropic)") + ". Te aviso al terminar.");
+      const r = f === 1 ? await fase1() : f === 2 ? await fase2() : f === 4 ? await fase4() : f === 5 ? await fase5() : f === 6 ? await fase6() : f === 7 ? await fase7() : f === 8 ? await fase8() : await fase3();
       kvSet("estudio" + f, r);
       await notify("✅ Estudio · Fase " + f + " lista en " + Math.round((Date.now() - EST.inicio) / 60000) + " min.\n" + resumen(f, r));
     }
@@ -819,6 +894,9 @@ export async function runEstudio(fases, notify) {
   finally { EST.running = false; EST.progreso = "terminado"; }
 }
 function resumen(f, r) {
+  if (f === 8) { const L = (v) => (v && v.n ? v.n + " ops · " + v.acierto + "% · " + v.R_prom + "R (IC95 " + v.ic95_R.join(" a ") + ")" : "sin operaciones");
+    return Object.entries(r.mercados || {}).map(([s, m]) => { if (m.error) return "• " + NAMES[s] + ": " + m.error; const t = m.todas, b = t.mejor_en_afinado;
+      return "• " + NAMES[s] + ": " + (t.pasa ? "✅ " : "❌ ") + "mejor meta en afinado " + b + " → validación " + L(t.tabla[b].validacion) + "\n  stop medio " + t.stop_medio_pct + " % · comisión " + t.comision_media_R + "R por operación · a favor antes del stop: mediana " + t.llega_a_favor_antes_del_stop_R.p50 + "R"; }).join("\n") + "\n-# Regla fijada antes de correr. Vara: R promedio > 0 con 50+ operaciones en validación, comisión incluida."; }
   if (f === 7) return Object.entries(r.mercados || {}).map(([s, m]) => { if (m.error) return "• " + NAMES[s] + ": " + m.error; const t = m.todas, st = (b) => (t.stops.find((x) => x.margen_pct_mas_alla_del_borde === b) || {}).te_sacaba_antes_de_reaccionar_pct;
     return "• " + NAMES[s] + ": " + t.toques + " toques · reaccionan " + t.reaccionan_pct + "% · antes de reaccionar entra " + t.entra_pct_del_precio.p50 + "% (mediana) / " + t.entra_pct_del_precio.p80 + "% (80 %) / " + t.entra_pct_del_precio.p90 + "% (90 %)\n  pasa el borde lejano: mediana " + t.pasa_borde_lejano_pct.p50 + "% · 80 % " + t.pasa_borde_lejano_pct.p80 + "% · 90 % " + t.pasa_borde_lejano_pct.p90 + "%\n  stop en el borde lejano te sacaba antes de reaccionar " + st(0) + "% de las veces · +0,2 % → " + st(0.2) + "% · +0,5 % → " + st(0.5) + "%"; }).join("\n") + "\n-# Solo medición: no es una regla de entrada. Detalle completo en el panel del estudio.";
   if (f === 1) return MARKETS.map((s) => { const m = r.mercados[s]; if (!m) return ""; const t = m.por_tamano || {}; return "• " + NAMES[s] + ": " + m.ordenes + " órdenes en " + m.dias_analizados + " días · " + m.nota_recomendacion; }).join("\n");

@@ -10,7 +10,7 @@ import { etParts } from "./sesion.js";
 import { kvGet, kvSet } from "./store.js";
 import { usd, px, prParts, splitLong, log } from "./util.js";
 import { pf, dot, cerca, lado, ladoMin, flecha, espera, rango, niveles } from "./friendly.js";
-import { sizeLine } from "./risk.js";
+import { sizeLine, nivelesMedidos } from "./risk.js";
 
 export const SES = { sent: 0, failed: 0, lastErr: "" };
 export const MKTS = ["BTC", "SOL", "XAU", "US30", "NQ"];
@@ -162,7 +162,7 @@ export function sesTick(now = Date.now()) {
         st.t[k] = now;
         const tk = MNAME[m] + " " + ladoMin(z.side);
         if (lvl === 2 && !st.touched.includes(tk)) st.touched.push(tk);
-        const f = (x) => pfm(x, m), n = niveles(z, f), L = [];
+        const f = (x) => pfm(x, m), n = (!IDXK[m] && nivelesMedidos(m, z, f)) || niveles(z, f), L = [];   // v4.21: stop medido en cripto y oro
         if (lvl === 2) { L.push(flecha(z.side) + " " + MNAME[m] + " entró a zona de " + lado(z.side) + " · " + fmt(p, m)); L.push(espera(z.side) + " · zona " + rango(z, f)); }
         else { L.push(flecha(z.side) + " " + MNAME[m] + " cerca de zona de " + lado(z.side) + " · " + fmt(p, m)); L.push("Falta poco (" + v.toFixed(0) + "%) · zona " + rango(z, f)); }
         if (n) L.push(n);
