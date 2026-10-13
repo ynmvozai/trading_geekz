@@ -242,3 +242,10 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - #sesion-ny: todas sus reglas (alertas de BTC/SOL/oro, confirmaciones de 15 min, cambios de sesgo, plan diario 8:15 ET, avisos de zona de los 5 mercados), solo lunes–viernes 9:00–17:30 hora PR (`inWindow`). Fuera de horario BTC/SOL no se publican (se registran igual).
 - #resultados: resultados medidos (VG QUANT, confirmaciones 15 min); a futuro: contexto para un agente automático.
 - #mega-ballenas: solo BTC y SOL (`MEGA_SYMS`). #macro-fundamental y #sentimiento sin cambios.
+
+## v4.24 · Diario automático y #agent en silencio (13 oct 2026)
+- `src/diario.js`: #diario-de-trades (canal 1557713305542590565). Yasser escribe una línea (`compra btc 83200 sl 82500 tp 84500 plan si nota ...`); el servidor sigue el precio (Binance; Dow/Nasdaq con futuros CNBC ajustados por base) y cierra solo en stop o meta. Mide R con el stop inicial, comisión 0,1 % en cripto/oro, $ con riesgo de `riskCfg`, % de la cuenta. Guarda contexto (zona a favor, sesión NY), plan seguido sí/no y nota.
+- Comandos en #diario-de-trades: `cerrar 3 83900`, `stop 3 83000`, `plan 3 si`, `abiertas`, `diario`, `borrar 3`, `ayuda`. En #agent: `diario`. Solo el dueño anota.
+- Regla suya (diario GFF 100K, oct 2024: "DEBO VOLVER A 2 SOLO TRADES"): aviso al pasar de 2 operaciones en el día. En ese diario: días con plan seguido +7,7 % (11 de 12 en positivo); días sin plan −2,8 %.
+- Las señales de Ai Crypto (en pausa) salen al final de `diario` para comparar. Cuando una regla pase la vara, Ai Crypto anotará sus operaciones con el mismo formato.
+- #agent: ya no publica "Sistema encendido" ni "Buenos días" (van al log). Mapa del día 7:48 AM → #sesion-ny. Aviso de noticias fuera de sesión → #macro-fundamental. En #agent solo quedan respuestas y avisos de fallo.
