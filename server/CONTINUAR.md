@@ -224,3 +224,8 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 - Pedido de Yasser: olvidar el stop de cada zona y medir el margen necesario. Regla de medición fija en `src/estudio.js` (Fase 7): zonas 1H/4H, primer toque por zona, entrada en el borde, reacción = se aleja a favor max(1 ancho, 0,5 ATR 1H) en 48 h; penetración antes de reaccionar en %, $, anchos, ATR y más allá del borde lejano; prueba de stops borde lejano + 0/0,1/0,2/0,3/0,5/1 %.
 - BTC, SOL y oro, 12 meses de velas de 1 min de Binance. Corre sola una vez (kv `estudioV420`); repetir con `estudio 7`. Índices: sin historial de 1 min (CNBC), fuera de esta fase.
 - Es medición: el stop nuevo se define con Yasser después de ver los números.
+
+## v4.21 · Stop medido en las alertas y Fase 8 (metas) (13 oct 2026)
+- Fase 7 (12 meses, 1.5–1.8 mil toques por mercado): ~50 % de los toques que reaccionan pasan antes el borde lejano. Margen para no salir en ~80 % de las reacciones: BTC +0,5 %, SOL +1,0 %, oro +0,3 % más allá del borde lejano.
+- Aprobado por Yasser: el tamaño de posición y la línea de stop de las alertas (cripto y oro) usan ese stop medido en lugar del stop de la zona (`src/risk.js`, `nivelesMedidos`). Muestra R:R a la meta 1 con comisión. El seguimiento de señales (results.js) todavía usa el stop de la zona.
+- Fase 8 (`estudio 8`, se lanza a mano): entrada en el borde, stop medido, metas 1/1,5/2/3R, 48 h, comisión 0,1 %; mejor meta en los primeros 8 meses, juzgada en los últimos 4. Vara: R > 0 con 50+ operaciones en validación.
