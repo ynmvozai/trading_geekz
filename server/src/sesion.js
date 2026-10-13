@@ -12,6 +12,7 @@ import { kvGet, kvSet } from "./store.js";
 import { log, etParts } from "./util.js";
 import { parseAiZones } from "./zones.js";
 import { setIdxZones } from "./sesionny.js";
+import { sesPost } from "./sesionny.js";
 export { etParts };
 
 export const SESSION_Q = `Haz el PLAN DE LA SESIÓN DE NUEVA YORK de hoy con la data real del payload ([PANEL_HOT_ZONE], [VELAS], [VELAS_DIARIAS], [INDICES], [CALENDARIO_USD] y el sentimiento Fear & Greed).
@@ -49,15 +50,14 @@ export async function runSession(manual = false) {
     const r = applyAiZones(t, prices());
     const pz = parseAiZones(t), nIdx = pz.arr ? setIdxZones(pz.arr) : 0;
     const s = splitSections(r.txt);
-    if (!s.CRYPTO && !s.ORO && !s.INDICES) { await agent("🗽 Plan NY de hoy\n" + r.txt); return; }
+    if (!s.CRYPTO && !s.ORO && !s.INDICES) { await sesPost("🗽 Plan NY de hoy\n" + r.txt); return; }
     const head = (x) => "🗽 Plan NY · " + x + "\n";
-    const send = (hook, title, body) => (body ? (hook ? postLong(hook, head(title) + body) : agent(head(title) + body)) : Promise.resolve());
-    await send(ENV.hooks.crypto, "Crypto", s.CRYPTO);
-    await send(ENV.hooks.oro, "Oro", s.ORO);
-    let idxOk = true;
-    if (s.INDICES) { try { await idxPost(head("Índices") + s.INDICES); } catch (e) { idxOk = false; await agent(head("Índices") + s.INDICES + "\n\n⚠️ No pude publicar en #indices-zonas: " + e.message); } }
-    await agent("🗽 Plan NY de hoy\n" + (s.RESUMEN || "") +
-      "\n-# Detalle en #cryptoman, #oro-índice" + (idxOk ? " y #indices-zonas" : " (índices aquí en #agent)") + "." +
+    // v4.23 (Yasser): todo el plan va a #sesion-ny. #cryptoman queda vacío; #indices-zonas es solo VG QUANT.
+    const send = (title, body) => (body ? sesPost(head(title) + body) : Promise.resolve());
+    await send("Crypto", s.CRYPTO);
+    await send("Oro", s.ORO);
+    await send("Índices", s.INDICES);
+    await sesPost("🗽 Plan NY de hoy\n" + (s.RESUMEN || "") +
       (r.n ? "\n-# ✅ " + r.n + " zonas de Bitcoin, Solana y oro cargadas: las alertas ya las vigilan." : r.err ? "\n⚠️ No pude leer las zonas (" + r.err + ")." : "") + (nIdx ? "\n-# ✅ " + nIdx + " zonas del Dow y Nasdaq para #sesion-ny." : ""));
     kvSet("lastSession", etParts().date);
   } catch (e) {

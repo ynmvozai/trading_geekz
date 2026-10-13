@@ -7,7 +7,7 @@ import { againstBias, biasOf, minStop } from "./bias.js";
 import { kvGet, kvSet, feedSetAlert } from "./store.js";
 import { usd, px, sideEs, prParts } from "./util.js";
 import { recordAlert } from "./results.js";
-import { sesMirror } from "./sesionny.js";
+import { sesMirror, inWindow } from "./sesionny.js";
 import { pf, dot, cerca, lado, ladoMin, flecha, espera, rango, niveles, empuje, animo } from "./friendly.js";
 import { sizeLine, nivelesMedidos } from "./risk.js";
 
@@ -41,8 +41,9 @@ function onBig(o) {
   o.noCuenta = o.side !== z.side ? "la orden va en contra de la zona" : againstBias(o.sym, z.side) ? "va contra el sesgo (" + biasOf(o.sym).toLowerCase() + " mandan)" : "";
   if (!o.noCuenta) recordAlert({ t: o.t, sym: o.sym, kind: o.zone >= 0 ? "orden_en_zona" : "orden_cerca", z, order_side: o.side, entry: o.price, prox: o.zone >= 0 ? 100 : proxNear(o.sym, o.near.d), usd: o.usd });
   if (A.paused) { setAlert(o, "pausada"); return; }
-  const hk = hookOf(o.sym);
-  if (!hk) { setAlert(o, "falta el webhook"); return; }
+  // v4.23 (Yasser): #cryptoman no recibe nada. Oro → #oro-índice (siempre). BTC/SOL/oro → #sesion-ny solo en sesión.
+  const hk = o.sym === "XAU" ? ENV.hooks.oro : null;
+  if (!hk && !inWindow()) { setAlert(o, "fuera de sesión NY"); return; }
   const gk = o.sym + "|" + o.side + "|" + zkey(z), g = groups.get(gk), now = Date.now();
   if (g && now - g.t < GROUP_MS) {
     g.n++; g.usd += o.usd; g.price = o.price; setAlert(o, "agrupada");
@@ -51,8 +52,9 @@ function onBig(o) {
   }
   groups.set(gk, { t: now, n: 0, usd: 0, price: o.price, timer: null, sym: o.sym, side: o.side });
   setAlert(o, "en cola");
-  post(hk, buildMessage(o))
-    .then(() => { sesMirror(mirrorLine(o, z)); setAlert(o, "enviada"); A.sent++; A.last = { t: Date.now(), txt: o.sym + " " + sideEs(o.side) + " " + usd(o.usd) }; kvSet("lastAlert", A.last); })
+  const msg = buildMessage(o);
+  (hk ? post(hk, msg) : Promise.resolve())
+    .then(() => { sesMirror(msg.content); setAlert(o, "enviada"); A.sent++; A.last = { t: Date.now(), txt: o.sym + " " + sideEs(o.side) + " " + usd(o.usd) }; kvSet("lastAlert", A.last); })
     .catch((e) => { setAlert(o, "falló"); A.failed++; A.lastErr = e.message; });
 }
 function flushGroup(gk, hk) {
@@ -61,15 +63,16 @@ function flushGroup(gk, hk) {
   if (!g.n) return;
   const txt = "➕ " + (NAMES[g.sym] || g.sym) + ": siguen " + (g.side === "buy" ? "COMPRANDO" : "VENDIENDO") + " · +" + usd(g.usd) + " en " + g.n + (g.n === 1 ? " orden más" : " órdenes más") + " · " + pf(g.price, g.sym);
   groups.set(gk, { ...g, t: Date.now(), n: 0, usd: 0 });
-  if (!A.paused) post(hk, txt).then(() => A.sent++).catch(() => {});
+  if (A.paused) return;
+  if (hk) post(hk, txt).then(() => A.sent++).catch(() => {});
+  sesMirror(txt);
 }
 
 function brokenPost(z, stop, p) {
-  const f = (v) => pf(v, z.sym), name = NAMES[z.sym] || z.sym, hk = hookOf(z.sym);
+  const f = (v) => pf(v, z.sym), name = NAMES[z.sym] || z.sym;
   const txt = "❌ " + name + ": se rompió la zona de " + lado(z.side) + " " + rango(z, f) + "\nEl precio pasó el stop (" + f(stop) + ") · ahora " + px(p, z.sym) + ". Ya no se vigila ni cuenta señales." +
     "\n-# Si el precio vuelve y la respeta, puede servir como zona de " + (z.side === "sell" ? "compra" : "venta") + ".";
-  if (hk && !A.paused) post(hk, txt).catch(() => {});
-  sesMirror(txt);
+  if (!A.paused) sesMirror(txt);   // v4.23: solo #sesion-ny
 }
 
 // v4.22 · Decisión de Yasser (13 oct 2026): las alertas de zona son INFORMACIÓN, no señal de entrada.
@@ -116,6 +119,7 @@ export function watchText(syms, title) {
   return ("⏰ " + title + " · " + h + ":00 " + (pp.hour < 12 ? "AM" : "PM") + "\n" + ls.slice(0, 6).map((x) => x.t).join("\n")).slice(0, 1990);
 }
 export function watchAll() {
+  return;   // v4.23: los tableros por hora ya no salen en #cryptoman ni #oro-índice (#sesion-ny tiene los suyos)
   if (A.paused) return;
   const c = watchText(["BTC", "SOL"], "Crypto"), g = watchText(["XAU"], "Oro");
   if (c && ENV.hooks.crypto) post(ENV.hooks.crypto, c).catch(() => {});
@@ -140,8 +144,7 @@ export function watchTick() {
     if (!st) { watchState[k] = { lvl, t: 0 }; return; }
     if (lvl > st.lvl && Date.now() - st.t > 1800000) {
       if (lvl === 2 && !againstBias(z.sym, z.side)) recordAlert({ t: Date.now(), sym: z.sym, kind: "precio_en_zona", z, entry: p, prox: 100 });
-      const hk = hookOf(z.sym);
-      if (hk && !A.paused) post(hk, zoneAlert(z, p)).catch(() => {});
+      // v4.23: el aviso de zona sale solo en #sesion-ny (sesionny.js), no en #cryptoman ni #oro-índice.
       st.t = Date.now();
     }
     st.lvl = lvl;

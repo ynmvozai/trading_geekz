@@ -168,6 +168,7 @@ export function sesTick(now = Date.now()) {
         if (n) L.push(n);
         if (!IDXK[m]) { const sz = sizeLine(m, z, f); if (sz) L.push(sz); }   // v4.19: tamaño solo cripto y oro
         if (IDXK[m]) L.push("-# Índice: solo zona, sin órdenes en vivo.");
+        else L.push("-# ℹ️ Información, no señal de entrada: en 12 meses de datos las zonas no mostraron ventaja.");
         sesPost(L.join("\n"));
       }
       st.lvl[k] = lvl;

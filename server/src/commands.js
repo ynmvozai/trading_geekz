@@ -114,7 +114,7 @@ export async function onAgentMessage(msg) {
     const res = [];
     await sesPost(boardText("🧪 Prueba de #sesion-ny · así se verá el canal", Date.now() - 3600000, null));
     res.push(SES.lastErr ? "❌ #sesion-ny: " + SES.lastErr : "✅ #sesion-ny: prueba enviada");
-    try { await idxPost("🧪 **Prueba de #indices-zonas** · aquí llegarán el plan NY de US30/NAS100 y los avisos de noticias."); res.push("✅ #indices-zonas: prueba enviada"); } catch (e) { res.push("❌ #indices-zonas: " + e.message); }
+    try { await idxPost("🧪 **Prueba de #indices-zonas** · aquí llegarán las zonas de VG QUANT (DJ30, NQ, BTC, SOL y oro)."); res.push("✅ #indices-zonas: prueba enviada"); } catch (e) { res.push("❌ #indices-zonas: " + e.message); }
     return agent(res.join("\n") + "\nSi algún canal dice 403: en Discord → Editar canal → Permisos → agrega al bot con \"Enviar mensajes\".");
   }
   if (/^vigilancia$/.test(ql)) return agent([watchText(["BTC", "SOL"], "Crypto"), watchText(["XAU"], "Oro")].filter(Boolean).join("\n\n") || "Todo tranquilo: ninguna zona a medio camino o más cerca.");

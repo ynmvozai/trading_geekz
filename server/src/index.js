@@ -75,7 +75,7 @@ binanceStart({
 startMega();
 startWallets();
 // v4.5: el cambio de sesgo va solo al canal de su mercado (y a #sesion-ny en horario NY), ya no a #agent.
-onBiasChange((sym, txt) => { const hk = hookOf(sym); if (hk) post(hk, txt).catch(() => {}); sesMirror(txt); });
+onBiasChange((sym, txt) => { sesMirror(txt); });   // v4.23: solo #sesion-ny
 startBias();
 startFund();
 // v4.4: el estudio (fases 1, 2 y 3) arranca solo una vez después de esta actualización; luego se repite con el comando "estudio".

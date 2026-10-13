@@ -7,6 +7,7 @@ import { Z, zDist, isBroken } from "./zones.js";
 import { usd, splitLong, log } from "./util.js";
 import { pf, ladoMin, lado, empuje } from "./friendly.js";
 
+export const MEGA_SYMS = ["BTC", "SOL"];
 export const MG = { sent: 0, failed: 0, lastErr: "", last: null, liqSent: 0 };
 const LEVELS = ["", "🐳 MEGA BALLENA", "🐳🐳 BALLENA GIGANTE", "🚨 ORDEN HISTÓRICA"];
 
@@ -53,6 +54,7 @@ const win = {};      // sym|side → [{t, usd, price}]
 const fired = {};    // sym|side → { lvl, t } para no repetir el mismo nivel en 5 min
 export function onBurst(b, price, now = Date.now()) {
   const sym = b.sym, k = sym + "|" + b.side, T = b.first;
+  if (!MEGA_SYMS.includes(sym)) return null;   // v4.23: #mega-ballenas solo BTC y SOL
   // Solo cuentan órdenes de verdad grandes (≥ 1/3 del mínimo de alerta): el volumen normal no suma.
   if (!MEGA[sym] || b.usd < (SYMS[sym].min || 0) / 3) return null;
   const arr = (win[k] = (win[k] || []).filter((x) => T - x.t <= MEGA_WIN_MS));
@@ -73,6 +75,7 @@ export function onBurst(b, price, now = Date.now()) {
 // ---------- Liquidaciones: suma en 5 min por lado ----------
 const liqWin = {}, liqFired = {};
 export function onLiq(sym, kind, amount, price, T = Date.now(), now = Date.now()) {
+  if (!MEGA_SYMS.includes(sym)) return null;   // v4.23: solo BTC y SOL
   const k = sym + "|" + kind;
   const arr = (liqWin[k] = (liqWin[k] || []).filter((x) => T - x.t <= LIQ_WIN_MS));
   arr.push({ t: T, usd: amount });

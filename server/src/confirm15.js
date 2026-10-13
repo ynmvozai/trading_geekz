@@ -20,7 +20,8 @@ import { klinesRaw } from "./binance.js";
 import { fiveMin } from "./estudio.js";
 import { log, px } from "./util.js";
 import { postLong, resPost } from "./discord.js";
-import { hookOf, A } from "./alerts.js";
+import { A } from "./alerts.js";
+import { sesMirror } from "./sesionny.js";
 import { NAMES } from "./config.js";
 import { sizeLine } from "./risk.js";
 
@@ -124,9 +125,9 @@ export async function c15Tick(now = Date.now()) {
 const SIDE = (s) => (s === "buy" ? "🟢 compra" : "🔴 venta");
 const usdM = (x) => "$" + (x / 1e6).toFixed(1) + "M";
 function c15Post(a) {
-  const hk = hookOf(a.sym); if (!hk || A.paused) return;
+  if (A.paused) return;   // v4.23: solo #sesion-ny (en sesión)
   const w = a.hi - a.lo, meta = a.side === "buy" ? a.hi + w : a.lo - w, inv = a.side === "buy" ? a.lo : a.hi;
-  postLong(hk, "📐 **Confirmación 15 min · " + NAMES[a.sym] + "** · " + SIDE(a.side) + (a.name ? " · " + a.name : "") +
+  sesMirror("📐 **Confirmación 15 min · " + NAMES[a.sym] + "** · " + SIDE(a.side) + (a.name ? " · " + a.name : "") +
     "\nZona " + px(a.lo, a.sym) + " – " + px(a.hi, a.sym) + " · cierre " + px(a.close, a.sym) +
     "\n✅ FVG 5m · ✅ BOS · ✅ volumen sobre promedio · ✅ órdenes grandes netas a favor (compras " + usdM(a.buy) + " / ventas " + usdM(a.sell) + ")" +
     (a.sl ? "\n" + sizeLine(a.sym, { side: a.side, lo: a.lo, hi: a.hi, sl: a.sl }, (x) => px(x, a.sym), a.close) : "") +

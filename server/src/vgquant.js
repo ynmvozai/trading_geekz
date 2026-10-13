@@ -5,6 +5,7 @@
 // falla si cierra por encima del borde superior. Zona de DEMANDA ("sube"): espejo. Sin resolver a las 24 h.
 import { kvGet, kvSet } from "./store.js";
 import { IDX, tvSym } from "./macro.js";
+import { S } from "./market.js";
 import { log } from "./util.js";
 import { idxPost, resPost } from "./discord.js";
 
@@ -21,6 +22,9 @@ const num = (s) => {
   else x = x.replace(/,/g, ".");
   return +x;
 };
+// v4.23: VG QUANT también para BTC, SOL y oro (precio de Binance); DJ30/NQ con futuros de CNBC.
+export const vgSym = (s) => { const x = String(s || "").toUpperCase(); return tvSym(x) || (/BTC/.test(x) ? "BTC" : /SOL/.test(x) ? "SOL" : /XAU|GOLD/.test(x) ? "XAU" : null); };
+const SYMRE = "DJ30|US30|NQ|USTEC|NAS100|NDX|BTC\\w*|SOL\\w*|XAU\\w*|GOLD\\w*";
 const DIR = (s) => (/OFERTA|VENTA|SELL|SUPPLY|BAJ/i.test(s) ? "baja" : /DEMANDA|COMPRA|BUY|DEMAND|SUB/i.test(s) ? "sube" : null);
 
 // Acepta JSON {"sym","tf","dir","lo","hi","prob","session","price"} o el texto del mensaje de Discord.
@@ -32,8 +36,8 @@ export function parseVg(body) {
     const m = (re) => { const x = raw.match(re); return x ? x[1] : null; };
     const z = raw.match(/zona\s+([\d.,]+)\s*[–-]\s*([\d.,]+)/i);
     o = {
-      sym: m(/\b(DJ30|US30|NQ|USTEC|NAS100|NDX)\b/i),
-      tf: m(/\b(?:DJ30|US30|NQ|USTEC|NAS100|NDX)\s+(\d+[mhDWM]?)\b/i),
+      sym: m(new RegExp("\\b(" + SYMRE + ")\\b", "i")),
+      tf: m(new RegExp("\\b(?:" + SYMRE + ")(?:\\.\\w+)?\\s+(\\d+[mhDWM]?)\\b", "i")),
       dir: m(/precio\s+entr[oó]\s+en\s+(\w+)/i) || m(/\((se espera que \w+)\)/i),
       lo: z && z[1], hi: z && z[2],
       prob: m(/probabilidad\s+([\d.,]+)\s*%/i),
@@ -45,10 +49,10 @@ export function parseVg(body) {
   if (lo > hi) [lo, hi] = [hi, lo];
   let prob = o.prob == null ? null : num(o.prob); if (prob != null && prob <= 1) prob *= 100;
   const price = o.price == null ? null : num(o.price);
-  const sym = tvSym(o.sym);
+  const sym = vgSym(o.sym);
   const dir = DIR(String(o.dir || ""));
   const out = { sym, tf: o.tf ? String(o.tf) : null, dir, lo, hi, prob, session: o.session ? String(o.session) : null, price, raw: raw.slice(0, 400) };
-  if (!sym) return { ok: false, error: "no reconozco el mercado (necesito DJ30 o NQ/USTEC)" };
+  if (!sym) return { ok: false, error: "no reconozco el mercado (DJ30, NQ/USTEC, BTC, SOL u oro)" };
   if (!dir) return { ok: false, error: "no reconozco la dirección (OFERTA/DEMANDA o baja/sube)" };
   if (!(lo > 0) || !(hi > lo)) return { ok: false, error: "zona inválida (necesito lo < hi)" };
   if (price != null && (price < lo * 0.9 || price > hi * 1.1)) return { ok: false, error: "precio fuera de la zona (" + price + ")" };
@@ -58,7 +62,8 @@ export function parseVg(body) {
 // ---------- Registro ----------
 const list = () => kvGet("vgq", []) || [];
 const save = (arr) => { while (arr.length > MAX) arr.shift(); kvSet("vgq", arr); };
-const vgRef = (sym) => (IDX[sym] ? +IDX[sym].price : null);
+const vgRef = (sym) => (IDX[sym] ? +IDX[sym].price : S[sym] && S[sym].price ? +S[sym].price : null);
+const vgFresh = (sym, now) => (IDX[sym] ? now - IDX[sym].t < STALE : !!(S[sym] && S[sym].lastRecv && now - S[sym].lastRecv < STALE));
 
 export function recordVg(a, now = Date.now()) {
   const arr = list();
@@ -67,7 +72,7 @@ export function recordVg(a, now = Date.now()) {
   const w = a.hi - a.lo;
   // v4.22 · Base: las zonas de VG QUANT vienen en precio de DJ30/USTEC del bróker; el seguimiento usa futuros (CNBC).
   // base = futuro − precio de la alerta en el momento de llegar. Se mide con precio ajustado = futuro − base.
-  const ref = vgRef(a.sym), fresh = IDX[a.sym] && now - IDX[a.sym].t < STALE;
+  const ref = vgRef(a.sym), fresh = vgFresh(a.sym, now);
   const basis = a.price > 0 && ref != null && fresh ? ref - a.price : null;
   const rec = { id: now.toString(36) + Math.random().toString(36).slice(2, 5), t: now, ...a, width: w, basis, status: "abierta", min: a.price ?? null, max: a.price ?? null, last: a.price ?? null, t_end: null, end_price: null };
   arr.push(rec); save(arr); VG.n++; VG.err = "";
@@ -82,7 +87,7 @@ export function vgTick(now = Date.now()) {
   for (const a of arr) {
     if (a.status !== "abierta") continue;
     const raw = vgRef(a.sym), p = raw == null ? null : raw - (a.basis || 0);   // v4.22: precio ajustado por base
-    const fresh = IDX[a.sym] && now - IDX[a.sym].t < STALE;
+    const fresh = vgFresh(a.sym, now);
     if (p != null && fresh) {
       a.last = p; a.min = a.min == null ? p : Math.min(a.min, p); a.max = a.max == null ? p : Math.max(a.max, p); changed = true;
       let res = null;
@@ -96,7 +101,7 @@ export function vgTick(now = Date.now()) {
 }
 
 const DIRTXT = (d) => (d === "baja" ? "oferta (esperaba bajada)" : "demanda (esperaba subida)");
-const MK = (s) => (s === "YM" ? "DJ30" : "NQ");
+const MK = (s) => ({ YM: "DJ30", NQ: "NQ", BTC: "BTC", SOL: "SOL", XAU: "Oro" })[s] || s;
 function vgResult(a) {
   const st = a.status === "acierta" ? "✅ Acertó" : a.status === "falla" ? "❌ Falló (cerró fuera de la zona)" : "⏳ Sin resolver a 24 h";
   resPost("📊 **VG QUANT · " + MK(a.sym) + " " + (a.tf || "") + "** · " + DIRTXT(a.dir) + "\nZona " + fmt(a.lo) + " – " + fmt(a.hi) + " · " + st +
