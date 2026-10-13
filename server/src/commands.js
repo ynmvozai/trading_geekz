@@ -8,6 +8,7 @@ import { aiAsk } from "./tito.js";
 import { tokenCheck } from "./tokencheck.js";
 import { resultsText } from "./results.js";
 import { estadoText } from "./health.js";
+import { vgSummary, vgSecret } from "./vgquant.js";
 import { DAILY_Q, ZONES_Q } from "./prompts.js";
 import { kvGet, kvSet } from "./store.js";
 import { usd, px, hhmmss, sideEs, prParts, log } from "./util.js";
@@ -69,7 +70,7 @@ function ayuda() {
     "Mercados: btc, sol, oro. Cualquier otra pregunta la contesta TITO con Ai.";
 }
 
-const ADMIN_RE = /^(estudio(?! estado)|diagnostico estudio|pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|macro (apagar|encender|on|off)|plan ny (apagar|encender|on|off)|tv url|wallet (agregar|añadir|quitar|borrar|regla|solos))/;
+const ADMIN_RE = /^(estudio(?! estado)|diagnostico estudio|pausar|reanudar|cargar zonas|borrar zona|reiniciar|mapa diario|macro (apagar|encender|on|off)|plan ny (apagar|encender|on|off)|tv url|vg url|wallet (agregar|añadir|quitar|borrar|regla|solos))/;
 
 export async function onAgentMessage(msg) {
   const q = (msg.content || "").trim();
@@ -96,6 +97,8 @@ export async function onAgentMessage(msg) {
   if (/^plan ny (encender|prender|on)$/.test(ql)) { kvSet("sessionOff", false); return agent("Plan de sesión NY automático encendido: lunes a viernes, 8:15 AM hora de Nueva York."); }
   if (/^(plan ny|plan de (la )?sesi[oó]n|sesi[oó]n ny|plan nueva york)$/.test(ql)) return runSession(true);
   if (/^(calendario|noticias)\b/.test(ql)) { await refreshCal(); return agent(calText(7)); }
+  if (/^vg url$/.test(ql)) return agent("📺 **Webhook de VG QUANT** (no lo compartas)\n" + (ENV.serverUrl || "https://<tu-servidor>") + "/vgq/" + vgSecret() + "\nFormato del mensaje: JSON (ver instrucciones en el canal).");
+  if (/^vg (registro|estado)$/.test(ql)) return agent(vgSummary());
   if (/^tv url$/.test(ql)) return agent("📺 **Webhook de TradingView para índices** (no lo compartas)\n" + (ENV.serverUrl || "https://<tu-servidor>") + "/tv/" + tvSecret() +
     "\nMensaje de la alerta (5 min, \"Once per bar close\"):\n`{\"s\":\"{{ticker}}\",\"o\":{{open}},\"h\":{{high}},\"l\":{{low}},\"c\":{{close}},\"t\":\"{{time}}\"}`\nRecibidos hasta ahora: " + TV.n);
   if (/^radar$/.test(ql)) return agent(boardText("📡 Radar ahora", Date.now() - 3600000, null));

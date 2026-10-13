@@ -6,6 +6,7 @@ import { S, flow, feed, big } from "./market.js";
 import { Z, prox, zoneStatus } from "./zones.js";
 import { bn, rest } from "./binance.js";
 import { bot, hookStats } from "./discord.js";
+import { onVg, vgSecret } from "./vgquant.js";
 import { A, sim, simStats } from "./alerts.js";
 import { T } from "./tito.js";
 import { openCount } from "./results.js";
@@ -101,6 +102,14 @@ export function startHttp() {
       let body = "";
       req.on("data", (c) => { body += c; if (body.length > 4096) req.destroy(); });
       req.on("end", () => { const r = onTv(body.trim()); json(r.ok ? 200 : 400, r); });
+      return;
+    }
+    if (u.startsWith("/vgq/")) {
+      if (req.method !== "POST") return json(404, { error: "no existe" });
+      if (u.slice(5) !== vgSecret()) return json(404, { error: "no existe" });
+      let body = "";
+      req.on("data", (c) => { body += c; if (body.length > 4096) req.destroy(); });
+      req.on("end", () => { const r = onVg(body.trim()); json(r.ok ? 200 : 400, r); });
       return;
     }
     if (u.startsWith("/helius/")) {
