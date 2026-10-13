@@ -141,6 +141,8 @@ export function onVg(body) {
   const p = parseVg(raw);
   if (test) return { ok: p.ok, prueba: true, leido: p.ok ? p.alert : null, error: p.error };   // prueba: no registra ni publica
   const fwd = (extra) => idxPost(raw.slice(0, 1800) + extra).catch((e) => { VG.err = "indices-zonas: " + e.message; });
+  // v4.25: alertas de precio de TradingView ("DJ30 Crossing 51,998.29") que comparten el webhook: no son VG QUANT; se ignoran sin publicar.
+  if (!p.ok && /\b(Crossing|Cruce|Greater Than|Less Than)\b/i.test(raw)) { VG.ignored = (VG.ignored || 0) + 1; return { ok: true, ignorado: true }; }
   if (!p.ok) { VG.err = p.error; fwd("\n-# ⚠️ No pude leer este mensaje para el seguimiento (" + p.error + ")."); return { ok: true, reenviado: true, seguimiento: false, error: p.error }; }
   const r = recordVg(p.alert);
   if (r.dup) return { ok: true, id: r.id, dup: true };
