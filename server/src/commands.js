@@ -140,6 +140,7 @@ export async function onAgentMessage(msg) {
     await walletSend("🧪 Prueba de #wallet-tracking\nAquí llegan los avisos cuando 3 o más wallets seguidas compran la misma moneda.");
     return agent([MG.lastErr ? "❌ #mega-ballenas: " + MG.lastErr : "✅ #mega-ballenas: prueba enviada", W.lastErr && !ENV.heliusKey ? "✅ #wallet-tracking: prueba enviada (falta HELIUS_API_KEY para datos reales)" : W.lastErr ? "❌ #wallet-tracking: " + W.lastErr : "✅ #wallet-tracking: prueba enviada"].join("\n"));
   }
+  if (/^(probar )?buenos d[ií]as$/.test(ql)) { const { sendMorning } = await import("./buenosdias.js"); return sendMorning(); }
   if (/^diario$/.test(ql)) return agent(diarioText(simStats()));
   if (/^resultados/.test(ql)) { const d = +(/(\d+)/.exec(ql) || [])[1] || 30; return agent(resultsText(Math.min(d, 365))); }
   if (/^reiniciar$/.test(ql)) {

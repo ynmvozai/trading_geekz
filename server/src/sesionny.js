@@ -154,7 +154,8 @@ export function sesTick(now = Date.now()) {
   // Máximos y mínimos de la sesión (desde el open de NY).
   if (em >= 9 * 60 + 30 && em <= 16 * 60) MKTS.forEach((m) => { const p = priceOf(m); if (p == null) return; st.hi[m] = Math.max(st.hi[m] || p, p); st.lo[m] = Math.min(st.lo[m] || p, p); });
   // Pre-apertura: al abrir la ventana (9:00 AM PR).
-  if (!st.posted.pre) { st.posted.pre = 1; save(st); }   // v4.27: sin tablero de pre-apertura (el plan NY ya salió a las 8:15 ET)
+  // v4.28 (Yasser: "me gusta el mensaje de las 9:00 AM"): vuelve el tablero de pre-apertura.
+  if (!st.posted.pre) { st.posted.pre = 1; save(st); sesPost(boardText(em < 9 * 60 + 30 ? "🗽 Nueva York abre en " + (9 * 60 + 30 - em) + " min" : "🗽 Sesión de Nueva York en curso", now - 2 * 3600000, st)); return; }
   // Open de NY: 9:30 AM ET.
   if (!st.posted.open && em >= 9 * 60 + 30 && em < 10 * 60) {
     st.posted.open = 1; MKTS.forEach((m) => { const p = priceOf(m); if (p != null) { st.open[m] = p; st.hi[m] = p; st.lo[m] = p; } }); save(st);
@@ -169,6 +170,11 @@ export function sesTick(now = Date.now()) {
   if (em >= 10 * 60 + 30 && em < 16 * 60 && et.minute >= 30 && et.minute < 33) {
     const k = et.hour + ":30";
     if (!st.posted["r" + k]) { st.posted["r" + k] = 1; save(st); const h = hourText("📡 NY " + (et.hour % 12 || 12) + ":30 · última hora", now - 3600000, st); if (h) sesPost(h); return; }
+  }
+  // v4.28 (Yasser): #agent, un solo mensaje antes del cierre de NY (3:50 PM ET).
+  if (!st.posted.preclose && em >= 15 * 60 + 50 && em < 16 * 60) {
+    st.posted.preclose = 1; save(st);
+    agent(closeText(st, st.open && Object.keys(st.open).length ? openT : winStart).replace("🏁 Cerró Nueva York", "⏳ Nueva York cierra en " + (16 * 60 - em) + " min · así va el día")); return;
   }
   // Cierre de NY: 4:00 PM ET.
   if (!st.posted.close && em >= 16 * 60 && em < 17 * 60) {

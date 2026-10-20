@@ -324,3 +324,13 @@ test("v4.27: resumen horario vacío si no hay nada que contar", async () => {
   const SN = await import("../src/sesionny.js");
   assert.equal(SN.hourText("📡 prueba", Date.now() + 1e9, { open: {}, bias: [] }).includes("🐋"), false);
 });
+
+test("v4.28: buenos días solo L-V a las 8:30 AM PR, una vez", async () => {
+  const B = await import("../src/buenosdias.js");
+  const { kvSet } = await import("../src/store.js");
+  kvSet("lastMorning", "2026-10-19"); kvSet("morningOff", false);
+  assert.equal(B.morningTick(Date.parse("2026-10-17T12:31:00Z")), false);   // sábado
+  assert.equal(B.morningTick(Date.parse("2026-10-19T12:35:00Z")), false);   // ya salió hoy
+  assert.equal(B.morningTick(Date.parse("2026-10-20T12:10:00Z")), false);   // 8:10 AM: todavía no
+  assert.match(B.MORNING_Q, /Alpha de hoy/);
+});

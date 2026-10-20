@@ -267,3 +267,8 @@ Revisión de canales (lunes 19 oct): #sesion-ny 126 mensajes en 8 h (54 ballenas
 - VG QUANT: misma zona una vez cada 24 h; el resultado sale como RESPUESTA al aviso en #indices-zonas (bot, message_reference), con récord y cuántas faltan para 50. Respaldo: #resultados.
 - Ai Crypto encendido otra vez (Yasser): orden en zona A++ a favor y no contra el sesgo → señal de práctica en #ai-crypto, con stop medido (Fase 7) y comisión en el resultado.
 - #agent: un solo mensaje automático por día: al abrir NY (9:30 ET) tablero + resumen del plan.
+
+## v4.28 · Mensajes de TITO en #agent (19 oct 2026)
+- Pedido de Yasser: #agent publica solo 3 mensajes automáticos por día (L-V): (1) 8:30 AM PR "Buenos días" (`src/buenosdias.js`: línea positiva + alpha del día con datos reales + consejo de valor; comando `buenos dias` para probar; `morningOff` en kv lo apaga); (2) 9:30 ET apertura de NY (tablero + resumen del plan); (3) 3:50 PM ET "NY cierra en 10 min · así va el día".
+- Vuelve el tablero de pre-apertura de las 9:00 AM en #sesion-ny (a Yasser le gusta).
+- Canales sin uso (#wallet-tracking, #crypto, #general) se quedan: Yasser piensa abrir el grupo a otras personas en el futuro.
