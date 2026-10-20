@@ -110,3 +110,8 @@ test("v4.25: ignora las alertas de precio que comparten el webhook", async () =>
   const r = onVg("DJ30 Crossing 51,998.29");
   assert.equal(r.ignorado, true);
 });
+
+test("v4.26: lee el formato de webhook de Discord {content}", () => {
+  const r = parseVg(JSON.stringify({ content: "🚨 VG QUANT · BTCUSDT.P 240 · precio entró en DEMANDA (se espera que SUBA) · zona 80533.6 – 81311.0 · probabilidad 93% · sesión Asia · precio 81212.1" }));
+  assert.equal(r.ok, true); assert.equal(r.alert.sym, "BTC"); assert.equal(r.alert.dir, "sube"); assert.equal(r.alert.lo, 80533.6); assert.equal(r.alert.price, 81212.1);
+});

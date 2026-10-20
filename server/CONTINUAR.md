@@ -252,3 +252,7 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 
 ## v4.25 · Alertas de precio en el webhook de VG QUANT (13 oct 2026)
 - La alerta de precio "DJ30 Crossing 51,998.29" de Yasser también apunta a /vgq. Él la quiere (ahí ve ventas), así que no se toca: el servidor ignora en silencio los mensajes "Crossing / Greater Than / Less Than" en vez de reenviarlos a #indices-zonas como ilegibles.
+
+## v4.26 · VG QUANT: leer el formato {"content": …} (19 oct 2026)
+- Revisión de canales: desde el 14 oct las alertas de VG QUANT llegan como JSON de webhook de Discord (`{"content":"🚨 VG QUANT · BTCUSDT.P 240 · …"}`). `parseVg` no lo leía → ninguna zona se registró ni se midió (12 alertas perdidas del 14 al 19 oct) y #indices-zonas mostraba el JSON crudo.
+- Ahora se lee el texto de `content` y se reenvía el texto limpio.

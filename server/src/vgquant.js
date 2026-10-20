@@ -31,6 +31,10 @@ const DIR = (s) => (/OFERTA|VENTA|SELL|SUPPLY|BAJ/i.test(s) ? "baja" : /DEMANDA|
 export function parseVg(body) {
   const raw = String(body || "").trim();
   let o = null;
+  // v4.26: el script de TradingView manda el mensaje en formato de webhook de Discord: {"content":"🚨 VG QUANT · BTCUSDT.P 240 · …"}.
+  let txt = raw;
+  try { const j = JSON.parse(raw); if (j && typeof j === "object" && typeof j.content === "string" && !j.sym && !j.ticker) txt = j.content.trim(); } catch {}
+  if (txt !== raw) return parseVg(txt);
   try { const j = JSON.parse(raw); if (j && typeof j === "object") o = { sym: j.sym || j.s || j.ticker, tf: j.tf || j.interval, dir: j.dir || j.side, lo: j.lo, hi: j.hi, prob: j.prob ?? j.probabilidad, session: j.session || j.sesion, price: j.price ?? j.precio }; } catch {}
   if (!o) {
     const m = (re) => { const x = raw.match(re); return x ? x[1] : null; };
@@ -140,7 +144,8 @@ export function onVg(body) {
   let test = false; try { test = !!JSON.parse(raw).test; } catch {}
   const p = parseVg(raw);
   if (test) return { ok: p.ok, prueba: true, leido: p.ok ? p.alert : null, error: p.error };   // prueba: no registra ni publica
-  const fwd = (extra) => idxPost(raw.slice(0, 1800) + extra).catch((e) => { VG.err = "indices-zonas: " + e.message; });
+  let shown = raw; try { const j = JSON.parse(raw); if (j && typeof j.content === "string") shown = j.content.trim(); } catch {}   // v4.26: reenviar el texto, no el JSON
+  const fwd = (extra) => idxPost(shown.slice(0, 1800) + extra).catch((e) => { VG.err = "indices-zonas: " + e.message; });
   // v4.25: alertas de precio de TradingView ("DJ30 Crossing 51,998.29") que comparten el webhook: no son VG QUANT; se ignoran sin publicar.
   if (!p.ok && /\b(Crossing|Cruce|Greater Than|Less Than)\b/i.test(raw)) { VG.ignored = (VG.ignored || 0) + 1; return { ok: true, ignorado: true }; }
   if (!p.ok) { VG.err = p.error; fwd("\n-# ⚠️ No pude leer este mensaje para el seguimiento (" + p.error + ")."); return { ok: true, reenviado: true, seguimiento: false, error: p.error }; }
