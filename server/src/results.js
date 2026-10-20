@@ -92,7 +92,8 @@ export function weeklyText(days = 7) {
   if (!done.length) { L.push(rows.length ? "Señales en seguimiento: " + rows.length + " · todavía ninguna llegó a meta ni a stop." : "Esta semana no hubo señales."); L.push("-# Precio real de Binance, sin ajustar. Escribe “resultados” para el detalle."); return L.join("\n"); }
   const w = done.filter((a) => a.status !== "SL").length, l = done.length - w, r = done.reduce((s, a) => s + a.r, 0);
   L.push("✅ " + w + (w === 1 ? " ganada" : " ganadas") + " · ❌ " + l + (l === 1 ? " perdida" : " perdidas") + " → " + Math.round((w / done.length) * 100) + "% de acierto");
-  L.push("💰 Balance: " + (r >= 0 ? "ganaste " : "perdiste ") + Math.abs(r).toFixed(1) + " veces lo arriesgado por señal");
+  // v4.27: R promedio por señal (antes salía la suma y parecía "por señal").
+  L.push("💰 R promedio por señal: " + (r / done.length >= 0 ? "+" : "") + (r / done.length).toFixed(2) + "R · total " + (r >= 0 ? "+" : "") + r.toFixed(1) + "R en " + done.length + " (sin comisión, stop de la zona)");
   const by = ORDER.map((k) => { const d = done.filter((a) => a.sym === k); return { k, n: d.length, w: d.filter((a) => a.status !== "SL").length }; }).filter((x) => x.n >= 2);
   if (by.length >= 2) {
     by.sort((a, b) => b.w / b.n - a.w / a.n);

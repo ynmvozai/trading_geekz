@@ -60,7 +60,7 @@ export function onBurst(b, price, now = Date.now()) {
   const arr = (win[k] = (win[k] || []).filter((x) => T - x.t <= MEGA_WIN_MS));
   arr.push({ t: T, usd: b.usd, price });
   const single = megaLevel(sym, b.usd), sum = arr.reduce((s, x) => s + x.usd, 0), acc = megaLevel(sym, sum);
-  const lvl = Math.max(single, acc); if (!lvl) return null;
+  const lvl = Math.max(single, acc); if (lvl < 2) return null;   // v4.27 (Yasser, menos ruido): solo nivel 2 o más
   const f = fired[k];
   if (f && now - f.t < 300000 && f.lvl >= lvl) return null;
   fired[k] = { lvl, t: now };

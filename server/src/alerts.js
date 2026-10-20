@@ -9,7 +9,7 @@ import { usd, px, sideEs, prParts } from "./util.js";
 import { recordAlert } from "./results.js";
 import { sesMirror, inWindow } from "./sesionny.js";
 import { pf, dot, cerca, lado, ladoMin, flecha, espera, rango, niveles, empuje, animo } from "./friendly.js";
-import { sizeLine, nivelesMedidos } from "./risk.js";
+import { sizeLine, nivelesMedidos, measuredStop, FEE_RT } from "./risk.js";
 
 export const A = { paused: false, sent: 0, failed: 0, last: null, lastErr: "" };
 export const hookOf = (sym) => (SYMS[sym].ch === "oro" ? ENV.hooks.oro : ENV.hooks.crypto);
@@ -32,7 +32,6 @@ function setAlert(o, t) { o.alert = t; if (o.fe) { o.fe.alert = t; try { feedSet
 // Varias órdenes grandes del mismo lado en la misma zona en 2 min = un solo mensaje + un "siguen…" al final.
 const GROUP_MS = 120000, groups = new Map();
 function onBig(o) {
-  // v4.9: Ai Crypto en pausa: el estudio corregido no encontró ventaja en estas señales. Las abiertas se siguen cerrando.
   const nz = o.zone < 0 ? nearZone(o.sym, o.price) : null;
   if (nz && nz.d <= nearR(o.sym) / 100) o.near = nz;
   if (o.zone < 0 && !o.near) { setAlert(o, "fuera de zona"); return; }
@@ -41,9 +40,11 @@ function onBig(o) {
   o.noCuenta = o.side !== z.side ? "la orden va en contra de la zona" : againstBias(o.sym, z.side) ? "va contra el sesgo (" + biasOf(o.sym).toLowerCase() + " mandan)" : "";
   if (!o.noCuenta) recordAlert({ t: o.t, sym: o.sym, kind: o.zone >= 0 ? "orden_en_zona" : "orden_cerca", z, order_side: o.side, entry: o.price, prox: o.zone >= 0 ? 100 : proxNear(o.sym, o.near.d), usd: o.usd });
   if (A.paused) { setAlert(o, "pausada"); return; }
-  // v4.23 (Yasser): #cryptoman no recibe nada. Oro → #oro-índice (siempre). BTC/SOL/oro → #sesion-ny solo en sesión.
+  if (o.zone >= 0 && !o.noCuenta) simOpen(o, o.zone);   // v4.27 (Yasser): Ai Crypto vuelve a operar en práctica
+  // v4.27 (Yasser, menos ruido): las ballenas de BTC/SOL ya no salen una por una en #sesion-ny; van en el resumen de cada hora.
+  // Oro → #oro-índice (siempre), igual que antes.
   const hk = o.sym === "XAU" ? ENV.hooks.oro : null;
-  if (!hk && !inWindow()) { setAlert(o, "fuera de sesión NY"); return; }
+  if (!hk) { setAlert(o, "resumen horario"); return; }
   const gk = o.sym + "|" + o.side + "|" + zkey(z), g = groups.get(gk), now = Date.now();
   if (g && now - g.t < GROUP_MS) {
     g.n++; g.usd += o.usd; g.price = o.price; setAlert(o, "agrupada");
@@ -54,7 +55,7 @@ function onBig(o) {
   setAlert(o, "en cola");
   const msg = buildMessage(o);
   (hk ? post(hk, msg) : Promise.resolve())
-    .then(() => { sesMirror(msg.content); setAlert(o, "enviada"); A.sent++; A.last = { t: Date.now(), txt: o.sym + " " + sideEs(o.side) + " " + usd(o.usd) }; kvSet("lastAlert", A.last); })
+    .then(() => { setAlert(o, "enviada"); A.sent++; A.last = { t: Date.now(), txt: o.sym + " " + sideEs(o.side) + " " + usd(o.usd) }; kvSet("lastAlert", A.last); })
     .catch((e) => { setAlert(o, "falló"); A.failed++; A.lastErr = e.message; });
 }
 function flushGroup(gk, hk) {
@@ -65,14 +66,13 @@ function flushGroup(gk, hk) {
   groups.set(gk, { ...g, t: Date.now(), n: 0, usd: 0 });
   if (A.paused) return;
   if (hk) post(hk, txt).then(() => A.sent++).catch(() => {});
-  sesMirror(txt);
 }
 
 function brokenPost(z, stop, p) {
   const f = (v) => pf(v, z.sym), name = NAMES[z.sym] || z.sym;
   const txt = "❌ " + name + ": se rompió la zona de " + lado(z.side) + " " + rango(z, f) + "\nEl precio pasó el stop (" + f(stop) + ") · ahora " + px(p, z.sym) + ". Ya no se vigila ni cuenta señales." +
     "\n-# Si el precio vuelve y la respeta, puede servir como zona de " + (z.side === "sell" ? "compra" : "venta") + ".";
-  if (!A.paused) sesMirror(txt);   // v4.23: solo #sesion-ny
+  if (!A.paused) sesMirror(txt);   // v4.23: solo #sesion-ny (pasa poco: se deja)
 }
 
 // v4.22 · Decisión de Yasser (13 oct 2026): las alertas de zona son INFORMACIÓN, no señal de entrada.
@@ -159,11 +159,12 @@ function simOpen(o, zi) {
   const z = Z.list[zi];
   if (!z || z.grade !== "A++" || o.side !== z.side || isBroken(z) || againstBias(o.sym, z.side)) return;
   if (sim.open.some((t) => t.sym === o.sym && t.zname === z.name && t.lo === z.lo)) return;
-  const e = o.price, R = Math.abs(e - z.sl);
+  // v4.27: stop medido (Fase 7: borde lejano + margen) en lugar del stop de la zona, y comisión 0,1 % en el resultado.
+  const e = o.price, sl = measuredStop(o.sym, z.side, z.lo, z.hi) ?? z.sl, R = Math.abs(e - sl);
   if (!(R > 0) || R < minStop(o.sym, e)) return;      // stop demasiado pegado: el ruido normal lo toca
-  if (z.side === "sell" && !(z.sl > e && z.tp1 < e)) return;
-  if (z.side === "buy" && !(z.sl < e && z.tp1 > e)) return;
-  const t = { id: o.t + o.sym, sym: o.sym, side: z.side, zname: z.name, lo: z.lo, entry: e, sl: z.sl, tp: z.tp1, t: o.t, usd: o.usd, R };
+  if (z.side === "sell" && !(sl > e && z.tp1 < e)) return;
+  if (z.side === "buy" && !(sl < e && z.tp1 > e)) return;
+  const t = { id: o.t + o.sym, sym: o.sym, side: z.side, zname: z.name, lo: z.lo, entry: e, sl, tp: z.tp1, t: o.t, usd: o.usd, R, fee: (FEE_RT * e) / R };
   sim.open.push(t); storeSim();
   const f = (v) => pf(v, t.sym), k = Math.abs(t.tp - e) / R;
   simPost("🤖 Señal Ai: " + (t.side === "buy" ? "COMPRAR " : "VENDER ") + (NAMES[t.sym] || t.sym) + " · " + f(e) + "\n🛑 Stop " + f(t.sl) + " · 🎯 Meta " + f(t.tp) + "\nPuede ganar " + k.toFixed(1) + " veces lo que arriesga · práctica, no se ejecuta");
@@ -173,14 +174,15 @@ function simCheck(sym, p, T) {
     const t = sim.open[i]; if (t.sym !== sym) continue;
     const hitSL = t.side === "sell" ? p >= t.sl : p <= t.sl, hitTP = t.side === "sell" ? p <= t.tp : p >= t.tp;
     if (!hitSL && !hitTP) continue;
-    t.out = hitSL ? "SL" : "TP"; t.exit = hitSL ? t.sl : t.tp; t.r = hitSL ? -1 : Math.abs(t.tp - t.entry) / t.R; t.end = T;
+    t.out = hitSL ? "SL" : "TP"; t.exit = hitSL ? t.sl : t.tp; t.r = (hitSL ? -1 : Math.abs(t.tp - t.entry) / t.R) - (t.fee || 0); t.end = T;
     sim.open.splice(i, 1); sim.closed.unshift(t); storeSim();
-    simPost((hitSL ? "❌ Señal Ai tocó el stop: " + (NAMES[t.sym] || t.sym) + "\nPerdió lo arriesgado (1 vez)" : "✅ Señal Ai ganó: " + (NAMES[t.sym] || t.sym) + " llegó a la meta\nGanó " + t.r.toFixed(1) + " veces lo arriesgado") + "\n📊 " + simRecord());
+    simPost((hitSL ? "❌ Señal Ai tocó el stop: " + (NAMES[t.sym] || t.sym) + "\nResultado " + t.r.toFixed(2) + "R (con comisión)" : "✅ Señal Ai ganó: " + (NAMES[t.sym] || t.sym) + " llegó a la meta\nResultado +" + t.r.toFixed(2) + "R (con comisión)") + "\n📊 " + simRecord());
   }
 }
 export function simRecord() {
   const n = sim.closed.length, w = sim.closed.filter((t) => t.r > 0).length;
-  return n ? "Récord: " + w + " de " + n + " ganadas (" + Math.round(w / n * 100) + "%)" : "Primera señal cerrada";
+  const r = sim.closed.reduce((a, t) => a + t.r, 0);
+  return n ? "Récord: " + w + " de " + n + " ganadas (" + Math.round(w / n * 100) + "%) · R promedio " + (r / n >= 0 ? "+" : "") + (r / n).toFixed(2) + " · vara: 50+ con R promedio > 0" : "Primera señal cerrada";
 }
 export function simStats() {
   const n = sim.closed.length, w = sim.closed.filter((t) => t.r > 0).length, r = sim.closed.reduce((a, t) => a + t.r, 0);

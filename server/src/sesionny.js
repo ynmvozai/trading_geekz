@@ -2,7 +2,7 @@
 // Open y cierre de Nueva York se calculan en hora de NY (cambian solos con el horario de verano/invierno).
 // BTC, SOL y Oro: zonas + órdenes grandes reales de Binance. US30 y NAS100: solo zonas (sin órdenes en vivo).
 import { ENV, NAMES, ORDER } from "./config.js";
-import { postLong } from "./discord.js";
+import { postLong, agent } from "./discord.js";
 import { S, feed } from "./market.js";
 import { Z, prox, zDist, isBroken } from "./zones.js";
 import { IDX, refreshIdx } from "./macro.js";
@@ -41,6 +41,24 @@ export function inWindow(t = Date.now()) {
   return !["Sat", "Sun"].includes(p.weekday) && m >= 9 * 60 && m < 17 * 60 + 30;
 }
 export const sesMirror = (txt) => (inWindow() ? sesPost(txt) : Promise.resolve());
+
+// v4.27: cambios de sesgo → se guardan y salen en el resumen de cada hora (antes salía un mensaje por cambio).
+export function noteBias(sym, txt, t = Date.now()) {
+  const st = day(); st.bias = st.bias || []; st.bias.push({ t, txt: String(txt || "").split("\n")[0].replace(/^[^A-Za-zÁÉÍÓÚáéíóúÑñ]+/, "") }); save(st);
+}
+// v4.27: resumen de la hora: zonas calientes + ballenas de la hora por mercado + cambios de sesgo. "" si no hay nada que contar.
+export function hourText(title, since, st) {
+  const L = [];
+  MKTS.map(heat).filter((h) => h.v >= 50).sort((a, b) => b.v - a.v).forEach((h) => { const op = st && st.open && st.open[h.m], c = op ? chg(h.p, op) : ""; L.push(dot(h.v) + " " + MNAME[h.m] + (c ? " " + c : " " + pfm(h.p, h.m)) + " · " + (h.v >= 100 ? "en zona de " : cerca(h.v) + " de ") + ladoMin(h.z.side)); });
+  for (const m of MKTS) {
+    if (IDXK[m]) continue;
+    const fl = flowSince(m, since); if (fl.b + fl.s < 10e6) continue;
+    const top = topOrders(m, since, 1)[0], net = fl.b - fl.s;
+    L.push("🐋 " + MNAME[m] + ": compras " + usd(fl.b) + " · ventas " + usd(fl.s) + " → " + (net >= 0 ? "ganan compradores" : "ganan vendedores") + (top ? " · mayor " + (top.side === "buy" ? "compra " : "venta ") + usd(top.usd) : ""));
+  }
+  for (const b of ((st && st.bias) || []).filter((b) => b.t >= since)) L.push("🔄 " + b.txt);
+  return L.length ? [title, ...L].join("\n") : "";
+}
 
 function day() {
   const d = prParts().date;
@@ -136,16 +154,21 @@ export function sesTick(now = Date.now()) {
   // Máximos y mínimos de la sesión (desde el open de NY).
   if (em >= 9 * 60 + 30 && em <= 16 * 60) MKTS.forEach((m) => { const p = priceOf(m); if (p == null) return; st.hi[m] = Math.max(st.hi[m] || p, p); st.lo[m] = Math.min(st.lo[m] || p, p); });
   // Pre-apertura: al abrir la ventana (9:00 AM PR).
-  if (!st.posted.pre) { st.posted.pre = 1; save(st); sesPost(boardText(em < 9 * 60 + 30 ? "🗽 Nueva York abre en " + (9 * 60 + 30 - em) + " min" : "🗽 Sesión de Nueva York en curso", now - 2 * 3600000, st)); return; }
+  if (!st.posted.pre) { st.posted.pre = 1; save(st); }   // v4.27: sin tablero de pre-apertura (el plan NY ya salió a las 8:15 ET)
   // Open de NY: 9:30 AM ET.
   if (!st.posted.open && em >= 9 * 60 + 30 && em < 10 * 60) {
     st.posted.open = 1; MKTS.forEach((m) => { const p = priceOf(m); if (p != null) { st.open[m] = p; st.hi[m] = p; st.lo[m] = p; } }); save(st);
-    sesPost(boardText("🔔 Abrió Nueva York", winStart, st)); return;
+    const b = boardText("🔔 Abrió Nueva York", winStart, st);
+    sesPost(b);
+    // v4.27 (Yasser): el único mensaje automático de #agent: la información general al abrir NY.
+    const pr = kvGet("planResumen", null), etd = etParts(now).date;
+    agent(b.replace("-# La decisión final siempre es tuya.", "").trim() + (pr && pr.date === etd && pr.txt ? "\n\n🗽 Plan de hoy\n" + pr.txt : "") + "\n-# Detalle en #sesion-ny. La decisión final siempre es tuya.");
+    return;
   }
   // Radar compacto cada hora (10:30 AM a 3:30 PM ET).
   if (em >= 10 * 60 + 30 && em < 16 * 60 && et.minute >= 30 && et.minute < 33) {
     const k = et.hour + ":30";
-    if (!st.posted["r" + k]) { st.posted["r" + k] = 1; save(st); sesPost(radarText("📡 NY " + (et.hour % 12 || 12) + ":30 · desde el open", now - 3600000, st)); return; }
+    if (!st.posted["r" + k]) { st.posted["r" + k] = 1; save(st); const h = hourText("📡 NY " + (et.hour % 12 || 12) + ":30 · última hora", now - 3600000, st); if (h) sesPost(h); return; }
   }
   // Cierre de NY: 4:00 PM ET.
   if (!st.posted.close && em >= 16 * 60 && em < 17 * 60) {
@@ -158,8 +181,10 @@ export function sesTick(now = Date.now()) {
     zonesOf(m).forEach((z) => {
       const k = z.sym + "|" + z.lo + "|" + z.hi, v = proxOf(z, p), lvl = v >= 100 ? 2 : v >= 80 ? 1 : 0, prev = st.lvl[k];
       if (prev == null) { st.lvl[k] = lvl; return; }
-      if (lvl > prev && now - (st.t[k] || 0) > 1800000) {
-        st.t[k] = now;
+      st.done = st.done || {};
+      // v4.27 (Yasser, menos ruido): solo cuando el precio ENTRA a la zona, una vez por zona por día (sin avisos de "cerca").
+      if (lvl === 2 && prev < 2 && !st.done[k]) {
+        st.done[k] = 1; st.t[k] = now;
         const tk = MNAME[m] + " " + ladoMin(z.side);
         if (lvl === 2 && !st.touched.includes(tk)) st.touched.push(tk);
         const f = (x) => pfm(x, m), n = (!IDXK[m] && nivelesMedidos(m, z, f)) || niveles(z, f), L = [];   // v4.21: stop medido en cripto y oro

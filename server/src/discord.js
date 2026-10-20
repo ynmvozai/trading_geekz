@@ -80,6 +80,23 @@ export async function botPost(channelId, txt) {
     hookStats.sent++;
   }
 }
+// v4.27: publicar con el bot y devolver el id del primer mensaje; replyTo = id del mensaje al que responde (mismo canal).
+export async function botPostId(channelId, txt, replyTo = null) {
+  if (!ENV.botToken || !channelId) throw new Error("falta DISCORD_BOT_TOKEN o el id del canal");
+  let first = null;
+  for (const part of splitLong(txt)) {
+    const body = { content: part, allowed_mentions: { parse: [] } };
+    if (replyTo && !first) body.message_reference = { message_id: replyTo, fail_if_not_exists: false };
+    const r = await fetch("https://discord.com/api/v10/channels/" + channelId + "/messages", {
+      method: "POST", headers: { "content-type": "application/json", authorization: "Bot " + ENV.botToken },
+      body: JSON.stringify(body), signal: AbortSignal.timeout(15000),
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status + (r.status === 403 ? " (el bot no tiene permiso de escribir en ese canal)" : ""));
+    const j = await r.json().catch(() => ({})); if (!first) first = j.id || null;
+    hookStats.sent++;
+  }
+  return first;
+}
 // #indices-zonas: webhook si existe; si no, el bot.
 // v4.16: #resultados: webhook si existe; si no, el bot.
 export const resPost = (txt) => (ENV.hooks.resultados ? postLong(ENV.hooks.resultados, txt) : botPost(ENV.resultadosChannelId, txt));

@@ -256,3 +256,14 @@ _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nuev
 ## v4.26 · VG QUANT: leer el formato {"content": …} (19 oct 2026)
 - Revisión de canales: desde el 14 oct las alertas de VG QUANT llegan como JSON de webhook de Discord (`{"content":"🚨 VG QUANT · BTCUSDT.P 240 · …"}`). `parseVg` no lo leía → ninguna zona se registró ni se midió (12 alertas perdidas del 14 al 19 oct) y #indices-zonas mostraba el JSON crudo.
 - Ahora se lee el texto de `content` y se reenvía el texto limpio.
+
+## v4.27 · Menos ruido + Ai Crypto encendido (19 oct 2026)
+Revisión de canales (lunes 19 oct): #sesion-ny 126 mensajes en 8 h (54 ballenas, 27 "siguen…", 22 "cerca de zona"); #mega-ballenas 42 en 15 h. Aprobado por Yasser ("tremendas sugerencias, comienza"):
+- #sesion-ny: solo (1) precio ENTRA a una zona, una vez por zona por día; (2) confirmación 15 min; (3) resumen de cada hora (:30 ET, 10:30–3:30) con zonas calientes, ballenas de la hora por mercado (si ≥ $10M) y cambios de sesgo; no sale si no hay nada. Más apertura, cierre, plan NY (ahora UN mensaje) y zona rota. Sin tablero de pre-apertura.
+- Ballenas de BTC/SOL ya no salen una por una (siguen registrándose y midiéndose). Oro sigue en #oro-índice.
+- #mega-ballenas: solo nivel 2+ (BTC ≥ $40M, SOL ≥ $15M) y liquidaciones grandes.
+- #macro-fundamental: noticias de la misma hora en un solo mensaje.
+- Resumen semanal: "R promedio por señal" (antes salía la suma y parecía por señal).
+- VG QUANT: misma zona una vez cada 24 h; el resultado sale como RESPUESTA al aviso en #indices-zonas (bot, message_reference), con récord y cuántas faltan para 50. Respaldo: #resultados.
+- Ai Crypto encendido otra vez (Yasser): orden en zona A++ a favor y no contra el sesgo → señal de práctica en #ai-crypto, con stop medido (Fase 7) y comisión en el resultado.
+- #agent: un solo mensaje automático por día: al abrir NY (9:30 ET) tablero + resumen del plan.

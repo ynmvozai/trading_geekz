@@ -192,13 +192,14 @@ test("v4.0: mega ballenas por rangos, liquidaciones y wallets", async () => {
   assert.match(MG.rangoTxt("BTC", 2), /Rango: \$40\.00M–\$100\.00M \(nivel 2 de 3\)/);
   assert.match(MG.rangoTxt("SOL", 3), /más de \$40\.00M/);
   const t0 = Date.now();
-  const one = MG.onBurst({ sym: "BTC", side: "sell", usd: 18e6, first: t0 }, 100200, t0);
-  assert.match(one, /^🐳 MEGA BALLENA · Bitcoin\n🔴 Vendieron \$18\.00M en una sola orden · 100,200\nRango: \$15\.00M–\$40\.00M/);
+  assert.equal(MG.onBurst({ sym: "BTC", side: "sell", usd: 18e6, first: t0 }, 100200, t0), null);                     // v4.27: nivel 1 ya no avisa
+  const one = MG.onBurst({ sym: "BTC", side: "sell", usd: 45e6, first: t0 + 500 }, 100200, t0 + 500);
+  assert.match(one, /^🐳🐳 BALLENA GIGANTE · Bitcoin\n🔴 Vendieron \$45\.00M en una sola orden · 100,200\nRango: \$40\.00M–\$100\.00M/);
   assert.equal(MG.onBurst({ sym: "BTC", side: "sell", usd: 2e6, first: t0 + 1000 }, 100100, t0 + 1000), null);       // mismo nivel en 5 min: no repite
   assert.equal(MG.onBurst({ sym: "BTC", side: "buy", usd: 200e3, first: t0 }, 100100, t0), null);                     // orden chica no cuenta
-  for (let i = 0; i < 3; i++) MG.onBurst({ sym: "SOL", side: "buy", usd: 1.4e6, first: t0 + i * 5000 }, 200, t0 + i * 5000);
-  const acc = MG.onBurst({ sym: "SOL", side: "buy", usd: 1.4e6, first: t0 + 15000 }, 201, t0 + 15000);
-  assert.match(acc || "", /🐳 MEGA BALLENA · Solana\n🟢 Compraron \$5\.60M en 4 órdenes en 15 segundos/);
+  for (let i = 0; i < 8; i++) MG.onBurst({ sym: "SOL", side: "buy", usd: 1.7e6, first: t0 + i * 5000 }, 200, t0 + i * 5000);
+  const acc = MG.onBurst({ sym: "SOL", side: "buy", usd: 1.7e6, first: t0 + 40000 }, 201, t0 + 40000);
+  assert.match(acc || "", /🐳🐳 BALLENA GIGANTE · Solana\n🟢 Compraron \$15\.30M en 9 órdenes en 40 segundos/);
   assert.equal(MG.onLiq("BTC", "long", 3e6, 99000, t0, t0), null);
   assert.match(MG.onLiq("BTC", "long", 2.5e6, 98900, t0 + 60000, t0 + 60000), /^💥 LIQUIDACIONES GRANDES · Bitcoin\nCerraron a la fuerza \$5\.50M en compras \(largos\)/);
   const WL = await import("../src/wallets.js");
@@ -317,4 +318,9 @@ test("v4.23: #mega-ballenas ignora el oro", async () => {
   const { onBurst, onLiq } = await import("../src/mega.js");
   assert.equal(onBurst({ sym: "XAU", side: "buy", usd: 9e9, first: Date.now() }, 4200), null);
   assert.equal(onLiq("XAU", "long", 9e9, 4200), null);
+});
+
+test("v4.27: resumen horario vacío si no hay nada que contar", async () => {
+  const SN = await import("../src/sesionny.js");
+  assert.equal(SN.hourText("📡 prueba", Date.now() + 1e9, { open: {}, bias: [] }).includes("🐋"), false);
 });

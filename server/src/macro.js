@@ -61,6 +61,8 @@ export function calForAi() {
 
 // Aviso 30 min antes de cada noticia de alto impacto de USD (una vez por evento).
 export function calTick(now = Date.now()) {
+  // v4.27 (Yasser, menos ruido): todas las noticias de la misma hora en UN solo mensaje.
+  const byT = new Map();
   for (const e of CAL.events) {
     if (e.impact !== "High") continue;
     const dt = e.t - now;
@@ -68,7 +70,12 @@ export function calTick(now = Date.now()) {
     const k = "calWarn:" + e.title + ":" + e.t;
     if (kvGet(k)) continue;
     kvSet(k, 1);
-    const txt = "📰 En 30 min (" + new Date(e.t).toLocaleTimeString("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" }) + "): " + newsEs(e.title) + "\nImpacto alto" + (e.forecast ? " · esperado " + e.forecast : "") + (e.previous ? " (antes " + e.previous + ")" : "") + "\nMejor no abrir entradas hasta ver la reacción.";
+    if (!byT.has(e.t)) byT.set(e.t, []);
+    byT.get(e.t).push(e);
+  }
+  for (const [t, evs] of byT) {
+    const txt = "📰 En 30 min (" + new Date(t).toLocaleTimeString("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" }) + ") · impacto alto\n" +
+      evs.map((e) => "• " + newsEs(e.title) + (e.forecast ? " · esperado " + e.forecast : "") + (e.previous ? " (antes " + e.previous + ")" : "")).join("\n") + "\nMejor no abrir entradas hasta ver la reacción.";
     // v3.9: un solo canal. En horario de #sesion-ny va allí; fuera de ese horario, a #agent.
     import("./sesionny.js").then((SN) => (SN.inWindow(now) ? SN.sesPost(txt) : botPost(ENV.macroChannelId, txt))).catch(() => {});   // v4.24: fuera de sesión → #macro-fundamental (antes #agent)
   }

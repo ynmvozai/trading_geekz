@@ -51,13 +51,10 @@ export async function runSession(manual = false) {
     const pz = parseAiZones(t), nIdx = pz.arr ? setIdxZones(pz.arr) : 0;
     const s = splitSections(r.txt);
     if (!s.CRYPTO && !s.ORO && !s.INDICES) { await sesPost("🗽 Plan NY de hoy\n" + r.txt); return; }
-    const head = (x) => "🗽 Plan NY · " + x + "\n";
-    // v4.23 (Yasser): todo el plan va a #sesion-ny. #cryptoman queda vacío; #indices-zonas es solo VG QUANT.
-    const send = (title, body) => (body ? sesPost(head(title) + body) : Promise.resolve());
-    await send("Crypto", s.CRYPTO);
-    await send("Oro", s.ORO);
-    await send("Índices", s.INDICES);
-    await sesPost("🗽 Plan NY de hoy\n" + (s.RESUMEN || "") +
+    // v4.27 (Yasser, menos ruido): el plan sale en UN solo mensaje en #sesion-ny; el resumen se guarda para el mensaje de apertura en #agent.
+    kvSet("planResumen", { date: etParts().date, txt: s.RESUMEN || "" });
+    const parts = [["Crypto", s.CRYPTO], ["Oro", s.ORO], ["Índices", s.INDICES]].filter(([, b]) => b).map(([t, b]) => "**" + t + "**\n" + b);
+    await sesPost("🗽 Plan NY de hoy\n" + (s.RESUMEN || "") + "\n\n" + parts.join("\n\n") +
       (r.n ? "\n-# ✅ " + r.n + " zonas de Bitcoin, Solana y oro cargadas: las alertas ya las vigilan." : r.err ? "\n⚠️ No pude leer las zonas (" + r.err + ")." : "") + (nIdx ? "\n-# ✅ " + nIdx + " zonas del Dow y Nasdaq para #sesion-ny." : ""));
     kvSet("lastSession", etParts().date);
   } catch (e) {

@@ -19,7 +19,7 @@ import { startBias, onBiasChange } from "./bias.js";
 import { startFund } from "./fundamental.js";
 import { runEstudio } from "./estudio.js";
 import { hookOf } from "./alerts.js";
-import { sesMirror } from "./sesionny.js";
+import { sesMirror, noteBias } from "./sesionny.js";
 import { startWallets } from "./wallets.js";
 import { sessionTick } from "./sesion.js";
 import { sesTick } from "./sesionny.js";
@@ -77,7 +77,7 @@ binanceStart({
 startMega();
 startWallets();
 // v4.5: el cambio de sesgo va solo al canal de su mercado (y a #sesion-ny en horario NY), ya no a #agent.
-onBiasChange((sym, txt) => { sesMirror(txt); });   // v4.23: solo #sesion-ny
+onBiasChange((sym, txt) => { noteBias(sym, txt); });   // v4.27: va en el resumen de cada hora de #sesion-ny
 startBias();
 startFund();
 // v4.4: el estudio (fases 1, 2 y 3) arranca solo una vez después de esta actualización; luego se repite con el comando "estudio".

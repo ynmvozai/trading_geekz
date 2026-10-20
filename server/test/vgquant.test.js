@@ -115,3 +115,11 @@ test("v4.26: lee el formato de webhook de Discord {content}", () => {
   const r = parseVg(JSON.stringify({ content: "🚨 VG QUANT · BTCUSDT.P 240 · precio entró en DEMANDA (se espera que SUBA) · zona 80533.6 – 81311.0 · probabilidad 93% · sesión Asia · precio 81212.1" }));
   assert.equal(r.ok, true); assert.equal(r.alert.sym, "BTC"); assert.equal(r.alert.dir, "sube"); assert.equal(r.alert.lo, 80533.6); assert.equal(r.alert.price, 81212.1);
 });
+
+test("v4.27: la misma zona de VG QUANT se registra una sola vez por día", () => {
+  const t0 = Date.now() + 9e6;
+  const a = { sym: "SOL", tf: "240", dir: "baja", lo: 102.92, hi: 104.1, prob: 80, session: null, price: 103 };
+  assert.equal(recordVg(a, t0).dup, undefined);
+  assert.equal(recordVg(a, t0 + 5 * 3600000).dup, true);
+  assert.equal(recordVg(a, t0 + 25 * 3600000).dup, undefined);
+});

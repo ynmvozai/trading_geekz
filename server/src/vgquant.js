@@ -7,11 +7,12 @@ import { kvGet, kvSet } from "./store.js";
 import { IDX, tvSym } from "./macro.js";
 import { S } from "./market.js";
 import { log } from "./util.js";
-import { idxPost, resPost } from "./discord.js";
+import { ENV } from "./config.js";
+import { idxPost, resPost, botPostId } from "./discord.js";
 
 const MAX = 300;
 const H24 = 24 * 3600000;
-const DEDUPE = 60 * 60000;
+const DEDUPE = 24 * 3600000;   // v4.27 (Yasser, menos ruido): la misma zona se avisa una vez por día
 const STALE = 20 * 60000;
 export const VG = { n: 0, err: "", lastRaw: "" };
 
@@ -106,8 +107,12 @@ export function vgTick(now = Date.now()) {
 
 const DIRTXT = (d) => (d === "baja" ? "oferta (esperaba bajada)" : "demanda (esperaba subida)");
 const MK = (s) => ({ YM: "DJ30", NQ: "NQ", BTC: "BTC", SOL: "SOL", XAU: "Oro" })[s] || s;
+// v4.27: el resultado sale como RESPUESTA al aviso original en #indices-zonas (zona y resultado juntos). Si no se puede, va a #resultados.
+const setMsg = (id, msgId) => { const arr = list(), r = arr.find((x) => x.id === id); if (r) { r.msgId = msgId; save(arr); } };
 function vgResult(a) {
   const st = a.status === "acierta" ? "✅ Acertó" : a.status === "falla" ? "❌ Falló (cerró fuera de la zona)" : "⏳ Sin resolver a 24 h";
+  const txt = "📊 **Resultado · " + MK(a.sym) + " " + (a.tf || "") + "** · " + st + "\nPrecio final " + fmt(a.end_price) + " · máx " + fmt(a.max) + " · mín " + fmt(a.min) + (a.basis == null ? " · ⚠️ sin base" : "") + "\n-# Regla fija: 1 ancho de zona, 24 h. " + vgShort();
+  if (a.msgId && ENV.botToken) { botPostId(ENV.indicesChannelId, txt, a.msgId).catch(() => resPost(txt).catch(() => {})); return; }
   resPost("📊 **VG QUANT · " + MK(a.sym) + " " + (a.tf || "") + "** · " + DIRTXT(a.dir) + "\nZona " + fmt(a.lo) + " – " + fmt(a.hi) + " · " + st +
     "\nPrecio final " + fmt(a.end_price) + " · máx " + fmt(a.max) + " · mín " + fmt(a.min) + " (en precio de la alerta" + (a.basis != null ? ", base " + fmt(a.basis) + ")" : "; ⚠️ sin base: puede no ser confiable)") + "\n-# Medición con regla fija (1 ancho de zona, 24 h). No es señal validada.").catch((e) => { VG.err = "resultados: " + e.message; });
 }
@@ -119,6 +124,10 @@ export function vgDelete(id) {
   arr.splice(i, 1); save(arr); return true;
 }
 
+function vgShort() {
+  const arr = list(), done = arr.filter((a) => a.status === "acierta" || a.status === "falla"), ac = done.filter((a) => a.status === "acierta").length;
+  return done.length ? "Récord VG QUANT: " + ac + " de " + done.length + " (" + Math.round((ac / done.length) * 100) + "%) · faltan " + Math.max(0, 50 - done.length) + " para juzgar" : "Primer resultado de VG QUANT";
+}
 export function vgSummary() {
   const arr = list();
   const done = arr.filter((a) => a.status === "acierta" || a.status === "falla");
@@ -145,7 +154,8 @@ export function onVg(body) {
   const p = parseVg(raw);
   if (test) return { ok: p.ok, prueba: true, leido: p.ok ? p.alert : null, error: p.error };   // prueba: no registra ni publica
   let shown = raw; try { const j = JSON.parse(raw); if (j && typeof j.content === "string") shown = j.content.trim(); } catch {}   // v4.26: reenviar el texto, no el JSON
-  const fwd = (extra) => idxPost(shown.slice(0, 1800) + extra).catch((e) => { VG.err = "indices-zonas: " + e.message; });
+  const fwd = (extra, recId) => (ENV.botToken ? botPostId(ENV.indicesChannelId, shown.slice(0, 1800) + extra).then((mid) => { if (recId && mid) setMsg(recId, mid); }) : idxPost(shown.slice(0, 1800) + extra))
+    .catch((e) => { VG.err = "indices-zonas: " + e.message; });
   // v4.25: alertas de precio de TradingView ("DJ30 Crossing 51,998.29") que comparten el webhook: no son VG QUANT; se ignoran sin publicar.
   if (!p.ok && /\b(Crossing|Cruce|Greater Than|Less Than)\b/i.test(raw)) { VG.ignored = (VG.ignored || 0) + 1; return { ok: true, ignorado: true }; }
   if (!p.ok) { VG.err = p.error; fwd("\n-# ⚠️ No pude leer este mensaje para el seguimiento (" + p.error + ")."); return { ok: true, reenviado: true, seguimiento: false, error: p.error }; }
@@ -153,6 +163,6 @@ export function onVg(body) {
   if (r.dup) return { ok: true, id: r.id, dup: true };
   const a = p.alert, w = a.hi - a.lo;
   const meta = a.dir === "baja" ? "acierta si baja a " + fmt(a.lo - w) + " · falla si cierra sobre " + fmt(a.hi) : "acierta si sube a " + fmt(a.hi + w) + " · falla si cierra bajo " + fmt(a.lo);
-  fwd("\n-# 📊 Seguimiento activo 24 h: " + meta + ". Resultado en #resultados.");
+  fwd("\n-# 📊 Seguimiento 24 h: " + meta + ". El resultado saldrá como respuesta a este mensaje.", r.id);
   return { ok: true, id: r.id };
 }
