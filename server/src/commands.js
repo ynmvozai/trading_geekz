@@ -205,7 +205,8 @@ export async function runDaily() {
   try {
     const t = await aiAsk(DAILY_Q);
     const r = applyAiZones(t, prices());
-    await sesPost("🗺️ **Mapa del día**\n" + r.txt + "\n\n" + (r.n ? "✅ Servidor actualizado con " + r.n + " zonas nuevas: las alertas ya usan estas." : "⚠️ No pude actualizar las zonas" + (r.err ? " (" + r.err + ")" : "") + "."));
+    // v4.29 (Yasser, menos ruido): el mapa del día ya no se publica; solo actualiza las zonas. El Plan NY de las 8:15 ET es el único mensaje de la mañana.
+    if (r.n) log("Mapa del día: " + r.n + " zonas nuevas"); else await agent("⚠️ El mapa del día no pudo actualizar las zonas" + (r.err ? " (" + r.err + ")" : "") + ".");
   } catch (e) {
     await agent("⚠️ El mapa del día falló: " + e.message);
   }

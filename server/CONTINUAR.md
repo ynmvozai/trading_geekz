@@ -272,3 +272,7 @@ Revisión de canales (lunes 19 oct): #sesion-ny 126 mensajes en 8 h (54 ballenas
 - Pedido de Yasser: #agent publica solo 3 mensajes automáticos por día (L-V): (1) 8:30 AM PR "Buenos días" (`src/buenosdias.js`: línea positiva + alpha del día con datos reales + consejo de valor; comando `buenos dias` para probar; `morningOff` en kv lo apaga); (2) 9:30 ET apertura de NY (tablero + resumen del plan); (3) 3:50 PM ET "NY cierra en 10 min · así va el día".
 - Vuelve el tablero de pre-apertura de las 9:00 AM en #sesion-ny (a Yasser le gusta).
 - Canales sin uso (#wallet-tracking, #crypto, #general) se quedan: Yasser piensa abrir el grupo a otras personas en el futuro.
+
+## v4.29 · Mapa del día en silencio (20 oct 2026)
+- Yasser: "sigue enviando muchos mensajes en NY". La mañana tenía 2 mensajes largos con las mismas zonas: Mapa del día (7:48 AM) y Plan NY (8:15 ET). El mapa sigue actualizando las zonas pero ya no se publica; si falla, avisa en #agent.
+- El correo de Railway "Deploy Crashed" no corresponde al despliegue activo: v4.28 llevaba 10 h encendido sin reinicios y el historial no muestra despliegues fallidos.
