@@ -1,6 +1,6 @@
 // v4.30 · Gráfica de velas en PNG (sin dependencias) para que TITO muestre lo que está viendo, con la entrada que propone.
 // Pedido de Yasser (22 oct 2026): "que me envíe un screenshot de la gráfica que está viendo con la entrada que propone".
-// Se dibuja con las MISMAS velas que recibe TITO: Binance (BTC, SOL, oro) y futuros YM/NQ (Yahoo; si falla, CNBC del servidor).
+// Se dibuja con las MISMAS velas que recibe TITO: Binance (BTC, SOL, oro) y futuros YM/NQ (CNBC 5 min; respaldo Yahoo).
 import zlib from "node:zlib";
 import { SYMS } from "./config.js";
 import { klinesRaw } from "./binance.js";
@@ -68,23 +68,45 @@ const TFS = ["5m", "15m", "1h", "4h"];
 const YH = { YM: "YM=F", NQ: "NQ=F", DXY: "DX-Y.NYB" }, YRANGE = { "5m": "2d", "15m": "5d", "1h": "1mo", "4h": "3mo" };
 const UA = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36", accept: "application/json" };
 
-// Velas reales de Yahoo para los futuros (para 4h se agrupan las de 1h). Devuelve [[t(ms), o, h, l, c], …].
-export async function idxBars(k, tf) {
+// v4.33 · Velas reales de los futuros: CNBC (barras de 5 min, funciona desde Railway) y Yahoo de respaldo.
+// 15m, 1h y 4h se arman agrupando las de 5 min. Devuelve [[t(ms), o, h, l, c], …] con .fuente.
+const CN = { YM: "@DJ.1", NQ: "@ND.1", DXY: ".DXY" }, TFMS = { "5m": 300000, "15m": 900000, "1h": 3600000, "4h": 14400000 };
+export function groupBars(bars, ms) {
+  const m = new Map();
+  for (const b of bars) { const key = Math.floor(b[0] / ms) * ms; const a = m.get(key); if (!a) m.set(key, [key, b[1], b[2], b[3], b[4]]); else { a[2] = Math.max(a[2], b[2]); a[3] = Math.min(a[3], b[3]); a[4] = b[4]; } }
+  return [...m.values()].sort((a, b) => a[0] - b[0]);
+}
+export function parseCnbcBars(j) {
+  const q = (j && j.barData && j.barData.priceBars) || [];
+  return q.map((b) => [+b.tradeTimeinMills, +b.open, +b.high, +b.low, +b.close]).filter((b) => b.every((v) => isFinite(v) && v > 0)).sort((a, b) => a[0] - b[0]);
+}
+async function cnbcBars(k, tf) {
+  const r = await fetch("https://ts-api.cnbc.com/harmony/app/charts/5D.json?symbol=" + encodeURIComponent(CN[k]), { headers: UA, signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error("CNBC HTTP " + r.status);
+  const b = parseCnbcBars(await r.json());
+  if (b.length < 20) throw new Error("CNBC sin velas");
+  return tf === "5m" ? b : groupBars(b, TFMS[tf]);
+}
+async function yahooBars(k, tf) {
   const iv = tf === "4h" ? "1h" : tf;
   const r = await fetch("https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(YH[k]) + "?interval=" + iv + "&range=" + YRANGE[tf], { headers: UA, signal: AbortSignal.timeout(15000) });
   if (!r.ok) throw new Error("Yahoo HTTP " + r.status);
   const j = await r.json(), x = j && j.chart && j.chart.result && j.chart.result[0];
   if (!x || !Array.isArray(x.timestamp)) throw new Error("Yahoo sin velas");
   const q = x.indicators.quote[0];
-  let out = x.timestamp.map((t, i) => [t * 1000, q.open[i], q.high[i], q.low[i], q.close[i]]).filter((b) => b.slice(1).every((v) => v != null && isFinite(v)));
-  if (tf === "4h") { const m = new Map(); for (const b of out) { const key = Math.floor(b[0] / 14400000); const a = m.get(key); if (!a) m.set(key, [...b]); else { a[2] = Math.max(a[2], b[2]); a[3] = Math.min(a[3], b[3]); a[4] = b[4]; } } out = [...m.values()]; }
-  return out;
+  const out = x.timestamp.map((t, i) => [t * 1000, q.open[i], q.high[i], q.low[i], q.close[i]]).filter((b) => b.slice(1).every((v) => v != null && isFinite(v)));
+  return tf === "4h" ? groupBars(out, TFMS["4h"]) : out;
+}
+export async function idxBars(k, tf) {
+  let err;
+  try { const b = await cnbcBars(k, tf); b.fuente = "CNBC " + CN[k]; return b; } catch (e) { err = e; log("Velas", k, tf, "CNBC:", e.message); }
+  try { const b = await yahooBars(k, tf); b.fuente = "Yahoo " + YH[k]; return b; } catch (e) { throw new Error(err.message + " / " + e.message); }
 }
 export async function barsOf(mk, tf, n = 90) {
-  if (mk === "DXY") { const b = await idxBars("DXY", tf); return { bars: b.slice(-n), fuente: "Yahoo DX-Y.NYB" }; }
+  if (mk === "DXY") { const b = await idxBars("DXY", tf); return { bars: b.slice(-n), fuente: b.fuente }; }
   if (mk === "ETH") { const a = await klinesRaw("ETHUSDT", tf, n); return { bars: a.map((k) => [k[0], +k[1], +k[2], +k[3], +k[4]]), fuente: "Binance futuros ETHUSDT" }; }
   if (mk === "YM" || mk === "NQ") {
-    try { const b = await idxBars(mk, tf); if (b.length >= 10) return { bars: b.slice(-n), fuente: "Yahoo " + YH[mk] }; } catch (e) { log("Velas", mk, tf, "Yahoo:", e.message); }
+    try { const b = await idxBars(mk, tf); if (b.length >= 10) return { bars: b.slice(-n), fuente: b.fuente }; } catch (e) { log("Velas", mk, tf, e.message); }
     const h1 = (IDX[mk] && IDX[mk].h1) || [];
     if (h1.length >= 5) return { bars: h1.slice(-n).map((b) => [Date.parse(b[0].replace(" ", "T") + "Z") || 0, b[1], b[2], b[3], b[4]]), fuente: (IDX[mk].fuente || "CNBC") + " (1h aproximada)" };
     throw new Error("sin velas del " + (mk === "YM" ? "Dow" : "Nasdaq") + " ahora");

@@ -341,3 +341,15 @@ test("v4.30: gráfica PNG y bloques [[GRAFICO]] de TITO", async () => {
   assert.equal(ex.txt, "Escenario de compra"); assert.equal(ex.specs.length, 1); assert.equal(ex.specs[0].entrada, 53700);
   assert.equal(C.mkOf("Nasdaq"), "NQ"); assert.equal(C.mkOf("oro"), "XAU"); assert.equal(C.mkOf("DJ30"), "YM");
 });
+
+test("v4.33 · velas CNBC de 5 min se agrupan en 15m sin perder máximos ni mínimos", async () => {
+  const { parseCnbcBars, groupBars } = await import("../src/chart.js");
+  const t0 = Date.UTC(2026, 9, 22, 14, 0);
+  const j = { barData: { priceBars: [0, 1, 2, 3].map((i) => ({ tradeTimeinMills: String(t0 + i * 300000), open: String(100 + i), high: String(105 + i), low: String(95 - i), close: String(101 + i) })) } };
+  const b = parseCnbcBars(j);
+  assert.equal(b.length, 4);
+  const g = groupBars(b, 900000);
+  assert.equal(g.length, 2);
+  assert.deepEqual(g[0], [t0, 100, 107, 93, 103]);
+  assert.deepEqual(g[1], [t0 + 900000, 103, 108, 92, 104]);
+});
