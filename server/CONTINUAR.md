@@ -283,3 +283,7 @@ Revisión de canales (lunes 19 oct): #sesion-ny 126 mensajes en 8 h (54 ballenas
 - Comando directo en #agent: `grafica btc 1h` (btc, sol, oro, dow/us30, nasdaq/nas100; 5m/15m/1h/4h).
 - Prueba sin Discord: GET /grafico/<secreto de VG QUANT>?m=US30&tf=15m&lado=compra&entrada=…&stop=…&meta=…&zona=lo,hi → PNG.
 - La instrucción de la gráfica va en el contexto de cada pregunta, no en el prompt de Yasser (no se tocó).
+
+## v4.31 · Gráfica con estilo TradingView (22 oct 2026)
+- Yasser quiere que la imagen "se vea como TradingView". Una alerta/webhook de TradingView no puede mandar imágenes ni capturas, y una captura de su pantalla exigiría su computadora encendida; por eso se imita el estilo: tema oscuro de TV, encabezado OHLC, marca de agua (US30, 15M), eje de precio con etiquetas de color, eje de tiempo en hora PR y la herramienta de posición larga/corta (caja verde de meta, roja de stop, R:R).
+- Railway: incidente de seguridad del 21 oct; los despliegues de cuentas Hobby estaban pausados → v4.30/v4.31 quedan en cola hasta que se reactiven.

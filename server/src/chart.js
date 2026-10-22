@@ -95,39 +95,74 @@ const fmtP = (v) => (v >= 1000 ? Math.round(v).toLocaleString("en-US") : v >= 10
 
 // spec: { mercado, tf, lado, entrada, stop, meta, zona:[lo,hi] } → { png, caption }
 export async function renderChart(spec) {
+  // v4.31: estilo TradingView (tema oscuro, eje de precio y de tiempo, marca de agua, herramienta de posición larga/corta).
   const mk = mkOf(spec.mercado); if (!mk) throw new Error("mercado no reconocido: " + spec.mercado);
   const tf = TFS.includes(String(spec.tf || "").toLowerCase()) ? String(spec.tf).toLowerCase() : "1h";
-  const { bars, fuente } = await barsOf(mk, tf, 90);
+  const { bars, fuente } = await barsOf(mk, tf, 110);
   if (bars.length < 5) throw new Error("pocas velas para dibujar");
   const lv = { entrada: +spec.entrada || null, stop: +spec.stop || null, meta: +spec.meta || null };
   const zona = Array.isArray(spec.zona) && spec.zona.length === 2 && spec.zona.every((v) => +v > 0) ? [Math.min(+spec.zona[0], +spec.zona[1]), Math.max(+spec.zona[0], +spec.zona[1])] : null;
+  const venta = String(spec.lado || "").toLowerCase().startsWith("v");
   let lo = Math.min(...bars.map((b) => b[3])), hi = Math.max(...bars.map((b) => b[2]));
   for (const v of [lv.entrada, lv.stop, lv.meta, ...(zona || [])]) if (v) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
-  const pad = (hi - lo) * 0.06 || hi * 0.002; lo -= pad; hi += pad;
-  const W = 1100, H = 620, L = 20, R = 150, T = 60, Bm = 50;
-  const cv = canvas(W, H, [19, 23, 34]);
-  const y = (p) => T + (hi - p) / (hi - lo) * (H - T - Bm);
-  const grid = [42, 46, 58], muted = [120, 128, 150], white = [220, 224, 235], green = [38, 166, 154], red = [239, 83, 80], blue = [66, 135, 245], gold = [240, 185, 11];
-  const lvY = [lv.entrada, lv.stop, lv.meta].filter(Boolean).map((v) => y(v));
-  for (let i = 0; i <= 6; i++) { const p = lo + (hi - lo) * i / 6, yy = Math.round(y(p)); cv.hline(L, W - R, yy, grid); if (!lvY.some((v) => Math.abs(v - yy) < 22)) cv.text(W - R + 10, yy - 7, fmtP(p), muted, 2); }
-  const zc = (spec.lado || "").toLowerCase().startsWith("v") ? red : green;
-  if (zona) cv.rect(L, y(zona[1]), W - R, y(zona[0]), zc, 0.16);
-  const n = bars.length, step = (W - R - L) / n, bw = Math.max(2, Math.floor(step * 0.65));
+  const pad = (hi - lo) * 0.08 || hi * 0.002; lo -= pad; hi += pad;
+  const W = 1200, H = 680, L = 10, AX = 110, T = 44, TB = 34, FT = 22;
+  const R = W - AX, B = H - TB - FT;
+  const bg = [19, 23, 34], grid = [32, 36, 48], axis = [42, 46, 57], txt = [178, 181, 190], white = [209, 212, 220];
+  const up = [8, 153, 129], dn = [242, 54, 69], blue = [41, 98, 255], tgt = [8, 153, 129], stp = [242, 54, 69];
+  const cv = canvas(W, H, bg);
+  const y = (p) => T + (hi - p) / (hi - lo) * (B - T);
+  const n = bars.length, extra = lv.entrada ? 34 : 6, step = (R - L) / (n + extra), bw = Math.max(3, Math.floor(step * 0.7));
+  const X = (i) => L + step * i + step / 2;
+  // cuadrícula
+  const ticks = 8;
+  for (let i = 0; i <= ticks; i++) { const yy = Math.round(T + (B - T) * i / ticks); cv.hline(L, R, yy, grid); }
+  const every = Math.max(1, Math.round(n / 8));
+  for (let i = 0; i < n; i += every) { const xx = Math.round(X(i)); for (let yy = T; yy <= B; yy++) cv.px(xx, yy, grid); }
+  // marca de agua
+  const wm = (mk === "YM" ? "US30" : mk === "NQ" ? "NAS100" : mk === "XAU" ? "XAUUSD" : mk + "USDT") + ", " + tf.toUpperCase();
+  cv.text(Math.round((R - cv.textW(wm, 9)) / 2), Math.round((T + B) / 2 - 32), wm, [36, 41, 56], 9);
+  // zona
+  if (zona) { const zc = venta ? dn : up; cv.rect(L, y(zona[1]), R, y(zona[0]), zc, 0.12); }
+  // velas
   bars.forEach((b, i) => {
-    const cx = L + step * i + step / 2, up = b[4] >= b[1], c = up ? green : red;
+    const cx = Math.round(X(i)), c = b[4] >= b[1] ? up : dn;
     cv.rect(cx, y(b[2]), cx, y(b[3]), c);
     const top = y(Math.max(b[1], b[4])), bot = y(Math.min(b[1], b[4]));
-    cv.rect(cx - bw / 2, top, cx + bw / 2, Math.max(bot, top + 1), c);
+    cv.rect(cx - Math.floor(bw / 2), top, cx + Math.floor(bw / 2), Math.max(bot, top + 1), c);
   });
-  if (zona) { const lbl = "ZONA " + fmtP(zona[0]) + " - " + fmtP(zona[1]); cv.rect(L + 4, y(zona[1]) + 3, L + 14 + cv.textW(lbl, 2), y(zona[1]) + 21, [19, 23, 34], 0.85); cv.text(L + 9, y(zona[1]) + 6, lbl, zc, 2); }
-  const lines = [["ENTRADA", lv.entrada, blue], ["STOP", lv.stop, red], ["META", lv.meta, green]];
-  for (const [nm, v, c] of lines) if (v) { const yy = Math.round(y(v)); cv.hline(L, W - R, yy, c, 10, 1, 2); cv.rect(W - R + 4, yy - 10, W - 4, yy + 10, c, 0.9); cv.text(W - R + 8, yy - 7, fmtP(v), [255, 255, 255], 2); cv.text(W - R - cv.textW(nm, 2) - 8, yy - 20, nm, c, 2); }
-  const last = bars[n - 1][4];
-  cv.text(L, 16, NAME[mk] + " · " + tf + (spec.lado ? " · " + (String(spec.lado).toLowerCase().startsWith("v") ? "VENTA" : "COMPRA") + " PROPUESTA" : ""), white, 3);
-  const r = lv.entrada && lv.stop ? Math.abs(lv.entrada - lv.stop) : null, k = r && lv.meta ? Math.abs(lv.meta - lv.entrada) / r : null;
-  cv.text(L, H - 34, "TITO · " + fuente + " · ULTIMO " + fmtP(last) + (k ? " · META = " + k.toFixed(1) + "R" : ""), muted, 2);
-  cv.text(L, H - 16, "ESCENARIO, NO ASESORIA. LA DECISION FINAL ES TUYA.", gold, 2);
-  return { png: encodePng(cv), caption: "📈 " + NAME[mk].toLowerCase().replace(/^./, (c) => c.toUpperCase()) + " · " + tf + " · " + fuente + (k ? " · meta " + k.toFixed(1) + "R" : "") };
+  // herramienta de posición (como la de TradingView)
+  let k = null;
+  if (lv.entrada && lv.stop) {
+    const x0 = Math.round(X(n + 1)), x1 = R - 6, risk = Math.abs(lv.entrada - lv.stop);
+    if (lv.meta) { cv.rect(x0, y(lv.entrada), x1, y(lv.meta), tgt, 0.22); k = Math.abs(lv.meta - lv.entrada) / risk; }
+    cv.rect(x0, y(lv.entrada), x1, y(lv.stop), stp, 0.22);
+    cv.hline(x0, x1, Math.round(y(lv.entrada)), [120, 123, 134], 0, 1, 2);
+    const pc = (a) => (Math.abs(a - lv.entrada) / lv.entrada * 100).toFixed(2) + "%";
+    const tag = (yy, label, c) => { const w = cv.textW(label, 2) + 16, xx = Math.max(x0 - 40, Math.min(Math.round((x0 + x1) / 2 - w / 2), x1 - w)); cv.rect(xx, yy - 11, xx + w, yy + 11, c, 1); cv.text(xx + 8, yy - 7, label, [255, 255, 255], 2); };
+    if (lv.meta) tag(Math.round(y(lv.meta)) + (venta ? 14 : -14), "TARGET " + fmtP(lv.meta) + " (" + pc(lv.meta) + ")", tgt);
+    tag(Math.round(y(lv.stop)) + (venta ? -14 : 14), "STOP " + fmtP(lv.stop) + " (" + pc(lv.stop) + ")", stp);
+    tag(Math.round(y(lv.entrada)), (venta ? "VENTA " : "COMPRA ") + fmtP(lv.entrada) + (k ? " · R:R " + k.toFixed(2) : ""), [90, 94, 106]);
+  }
+  // eje de precio
+  cv.rect(R, 0, W, H, bg); for (let yy = 0; yy < H; yy++) cv.px(R, yy, axis);
+  const last = bars[n - 1][4], lc = last >= bars[n - 1][1] ? up : dn;
+  const tagY = [last, lv.entrada, lv.stop, lv.meta].filter(Boolean).map((v) => y(v));
+  for (let i = 0; i <= ticks; i++) { const yy = Math.round(T + (B - T) * i / ticks), p = hi - (hi - lo) * i / ticks; if (!tagY.some((v) => Math.abs(v - yy) < 24) && yy < B - 8) cv.text(R + 10, yy - 7, fmtP(p), txt, 2); }
+  const ptag = (v, c) => { const yy = Math.round(y(v)); cv.rect(R + 1, yy - 11, W - 2, yy + 11, c, 1); cv.text(R + 8, yy - 7, fmtP(v), [255, 255, 255], 2); };
+  cv.hline(L, R, Math.round(y(last)), lc, 4, 0.8);
+  if (lv.meta) ptag(lv.meta, tgt); if (lv.stop) ptag(lv.stop, stp); if (lv.entrada) ptag(lv.entrada, blue);
+  ptag(last, lc);
+  // eje de tiempo (hora de Puerto Rico)
+  cv.rect(0, B + 1, W, B + TB, bg); cv.hline(0, W, B, axis);
+  const hm = (t) => new Date(t).toLocaleString("en-US", { timeZone: "America/Puerto_Rico", hour12: false, ...(tf === "4h" || tf === "1h" ? { day: "2-digit", hour: "2-digit", minute: "2-digit" } : { hour: "2-digit", minute: "2-digit" }) }).replace(",", "");
+  for (let i = Math.ceil(every / 2); i < n; i += every) { const s = hm(bars[i][0]); cv.text(Math.round(X(i) - cv.textW(s, 2) / 2), B + 10, s, txt, 2); }
+  // encabezado OHLC
+  const b = bars[n - 1], name = { BTC: "BITCOIN / TETHERUS PERP", SOL: "SOLANA / TETHERUS PERP", XAU: "GOLD / TETHERUS PERP", YM: "DOW JONES FUTUROS (YM)", NQ: "NASDAQ 100 FUTUROS (NQ)" }[mk];
+  let hx = cv.text(L + 6, 12, name + " · " + tf.toUpperCase() + " ·  ", white, 2);
+  for (const [l, v] of [["O", b[1]], ["H", b[2]], ["L", b[3]], ["C", b[4]]]) { hx = cv.text(hx, 12, l, txt, 2); hx = cv.text(hx + 4, 12, fmtP(v) + "  ", lc, 2); }
+  cv.text(L + 6, H - FT + 4, "TITO · " + fuente + " · HORA PR · ESCENARIO, NO ASESORIA", [93, 96, 107], 2);
+  return { png: encodePng(cv), caption: "📈 " + name.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase()) + " · " + tf + " · " + fuente + (k ? " · R:R " + k.toFixed(2) : "") };
 }
 
 // Saca los bloques [[GRAFICO]]{…}[[/GRAFICO]] del texto de TITO.
