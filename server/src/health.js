@@ -1,5 +1,6 @@
 // /health (para UptimeRobot), /alive (para Railway), /state (para el panel v3.0 de solo lectura) y el texto de "estado".
 import { renderChart } from "./chart.js";
+import { zonesFor } from "./zonasgraf.js";
 import http from "node:http";
 import fs from "node:fs";
 import { ENV, ORDER, NAMES, VERSION, PUBLIC_URL } from "./config.js";
@@ -123,7 +124,7 @@ export function startHttp() {
     if (u.startsWith("/grafico/")) {   // v4.30: prueba de la gráfica (solo con el secreto de VG QUANT)
       if (u.slice(9) !== vgSecret()) return json(404, { error: "no existe" });
       const qs = new URL(req.url, "http://x").searchParams, z = qs.get("zona");
-      renderChart({ mercado: qs.get("m") || "BTC", tf: qs.get("tf") || "1h", lado: qs.get("lado"), entrada: qs.get("entrada"), stop: qs.get("stop"), meta: qs.get("meta"), zona: z ? z.split(",") : null })
+      renderChart({ mercado: qs.get("m") || "BTC", tf: qs.get("tf") || "1h", lado: qs.get("lado"), entrada: qs.get("entrada"), stop: qs.get("stop"), meta: qs.get("meta"), zona: z ? z.split(",") : null }, { zonas: zonesFor(qs.get("m") || "BTC") })
         .then((g) => { res.writeHead(200, { "content-type": "image/png", "cache-control": "no-store" }); res.end(g.png); })
         .catch((e) => json(500, { error: e.message }));
       return;

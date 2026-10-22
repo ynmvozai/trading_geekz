@@ -17,9 +17,10 @@ import { fundForAi } from "./fundamental.js";
 const SENT_NOTE = "\n\n# SESGO DE ORDER FLOW (TERMÓMETRO)\nEn [PANEL_HOT_ZONE] recibes sesgo_order_flow por mercado: COMPRADORES (+2 o más), VENDEDORES (−2 o menos) o NEUTRAL, con sus razones (estructura 1H, tendencia 4H con medias 20/50, neto de ballenas 4 h y zonas rotas) y atr_1h_pct (movimiento normal por hora). Regla: no propongas zonas en contra del sesgo como prioritarias; si lo haces, márcalas \"contra tendencia\". Una zona con estado ROTA ya no vale. Pon el stop a más de medio movimiento normal de 1 hora de la entrada (0.5 × atr_1h_pct).\n\n# SENTIMIENTO (FEAR & GREED INDEX)\nEn [PANEL_HOT_ZONE] recibes sentimiento_fear_greed: crypto_btc_sol (alternative.me, 0-100) y acciones_ref_oro (CNN, acciones de EE. UU.; para el oro es solo referencia del ánimo general). 0-24 miedo extremo, 25-44 miedo, 45-55 neutral, 56-75 codicia, 76-100 codicia extrema. Úsalo como factor de contexto en cada zona con lectura contraria: miedo extremo en zona de compra o codicia extrema en zona de venta = confluencia; lo opuesto = más riesgo, pide mejor confirmación. Menciona el valor, el de ayer y el de hace 7 días cuando aporte. Nunca lo uses como gatillo de entrada ni como certeza. Si viene null, di que no hay dato.\n\n# CALENDARIO E ÍNDICES (ACTUALIZACIÓN v3.2)\nYa tienes calendario conectado: [PANEL_HOT_ZONE].calendario_usd_7_dias trae los eventos USD de impacto medio y alto (Forex Factory, hora de PR). Úsalo para noticias; si dice sin dato, dilo. Esto reemplaza lo que dice arriba sobre no tener calendario. Cuando recibas [INDICES], son futuros reales de US30 (YM) y NAS100 (NQ): úsalos en vez de QQQUSDT.\n\n# MACRO FUNDAMENTAL (v4.5)\nEn [PANEL_HOT_ZONE].macro_fundamental tienes data real de FRED (Reserva Federal de St. Louis): inflación (general, subyacente, ritmo de 3 meses, PCE), empleo (desempleo, empleos por mes, solicitudes, regla de Sahm, PIB), Fed (tasa, ciclo, bono de 2 y 10 años, curva 10a−2a), dólar, VIX, liquidez y el régimen de cada mercado (tendencia alcista, bajista, consolidación o mixto). Úsalo cuando Yasser pregunte por inflación, recesión, la Fed, consolidación o el panorama; cita el dato y su fecha. Es contexto, nunca gatillo de entrada. Si viene sin dato, dilo.";
 
 const CHART_NOTE = "[GRAFICA_E_INDICES · instrucciones del servidor v4.30]\n" +
+  "0) Pares de Yasser en TradingView (lista 'Pares de Yasser'): GBEBROKERS:DJ30, GBEBROKERS:USTEC, GBEBROKERS:XAUUSD, COINBASE:BTCUSD, COINBASE:SOLUSD, COINBASE:ETHUSD y TVC:DXY. Tus datos: Dow y Nasdaq = futuros YM/NQ (él confirmó que coinciden con su gráfica), BTC/SOL/ETH/oro = Binance futuros, DXY = índice del dólar (Yahoo). Puede haber diferencias de unos puntos con su bróker o con Coinbase.\n" +
   "1) [INDICES] trae los futuros EN VIVO del Dow (YM) y del Nasdaq (NQ): precio, velas 15m y 1h reales, y zonas_hoy del Plan NY. Úsalos para contestar sobre el Dow y el Nasdaq; no digas que no tienes precio si vienen con datos. Son futuros: el CFD del bróker de Yasser (DJ30/USTEC) puede diferir unos puntos; dilo cuando des niveles exactos.\n" +
   "2) Cuando propongas una entrada o escenario con niveles, o Yasser pida ver la gráfica, añade AL FINAL de tu respuesta una línea exacta, sin nada más en esa línea:\n" +
-  "[[GRAFICO]]{\"mercado\":\"US30|NAS100|BTC|SOL|ORO\",\"tf\":\"5m|15m|1h|4h\",\"lado\":\"compra|venta\",\"entrada\":0,\"stop\":0,\"meta\":0,\"zona\":[0,0]}[[/GRAFICO]]\n" +
+  "[[GRAFICO]]{\"mercado\":\"US30|NAS100|BTC|SOL|ETH|ORO|DXY\",\"tf\":\"5m|15m|1h|4h\",\"lado\":\"compra|venta\",\"entrada\":0,\"stop\":0,\"meta\":0,\"zona\":[0,0]}[[/GRAFICO]]\n" +
   "con los números reales (los mismos de tu respuesta). El servidor dibuja la gráfica con las mismas velas que ves y la envía como imagen. Si solo pide ver la gráfica sin entrada, omite entrada/stop/meta. Máximo 2 gráficas.";
 
 async function idxLive() {
@@ -33,6 +34,7 @@ async function idxLive() {
     delete o.velas_diarias_largas;
     base[key] = o;
   }
+  try { const d = await idxBars("DXY", "1h"); base.DXY_indice_dolar = { precio: d.length ? +d[d.length - 1][4].toFixed(3) : null, velas_1h: d.slice(-36).map((b) => [new Date(b[0]).toISOString().slice(5, 16).replace("T", " "), ...b.slice(1).map((v) => +v.toFixed(3))]) }; } catch (e) { base.DXY_indice_dolar = "sin datos (" + e.message + ")"; }
   return base;
 }
 
@@ -50,7 +52,7 @@ export function panelData() {
 export async function aiAsk(question, extra = "", label = "") {
   if (!ENV.anthropicKey) throw new Error("falta ANTHROPIC_API_KEY en Railway");
   if (!hist) hist = kvGet("aiHist", []) || [];
-  const syms = ["BTCUSDT", "SOLUSDT", "XAUUSDT", "QQQUSDT"];
+  const syms = ["BTCUSDT", "SOLUSDT", "XAUUSDT", "ETHUSDT"];   // v4.32: ETH (está en su lista de TradingView); QQQ ya no hace falta
   const res = await Promise.all(syms.map((s) => Promise.all([kl(s, "4h", 42), kl(s, "1h", 36)])));
   const velas = {};
   syms.forEach((s, i) => { velas[s] = { "4h": res[i][0], "1h": res[i][1] }; });

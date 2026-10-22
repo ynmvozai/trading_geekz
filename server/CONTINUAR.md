@@ -287,3 +287,7 @@ Revisión de canales (lunes 19 oct): #sesion-ny 126 mensajes en 8 h (54 ballenas
 ## v4.31 · Gráfica con estilo TradingView (22 oct 2026)
 - Yasser quiere que la imagen "se vea como TradingView". Una alerta/webhook de TradingView no puede mandar imágenes ni capturas, y una captura de su pantalla exigiría su computadora encendida; por eso se imita el estilo: tema oscuro de TV, encabezado OHLC, marca de agua (US30, 15M), eje de precio con etiquetas de color, eje de tiempo en hora PR y la herramienta de posición larga/corta (caja verde de meta, roja de stop, R:R).
 - Railway: incidente de seguridad del 21 oct; los despliegues de cuentas Hobby estaban pausados → v4.30/v4.31 quedan en cola hasta que se reactiven.
+
+## v4.32 · Zonas en la gráfica + pares de Yasser (22 oct 2026)
+- Yasser confirmó que las velas de YM=F (Yahoo) coinciden con su gráfica. Pidió que se vean las zonas: la gráfica dibuja las zonas que el servidor vigila para ese mercado (`src/zonasgraf.js`): mapa/Plan NY (cripto, oro, Dow, Nasdaq) y VG QUANT de las últimas 48 h, corridas por la base del futuro.
+- Lista activa de TradingView "Pares de Yasser": TVC:DXY, GBEBROKERS:DJ30, GBEBROKERS:USTEC, COINBASE:SOLUSD, COINBASE:BTCUSD, COINBASE:ETHUSD, GBEBROKERS:XAUUSD, VANTAGE:DJ30. TITO ahora recibe también ETH (Binance ETHUSDT, en lugar de QQQUSDT) y el DXY (Yahoo DX-Y.NYB, 1h); la gráfica acepta ETH y DXY.

@@ -61,11 +61,11 @@ export function encodePng(cv) {
 }
 
 // ---------- Velas ----------
-const MK = { BTC: "BTC", BITCOIN: "BTC", SOL: "SOL", SOLANA: "SOL", ORO: "XAU", XAU: "XAU", GOLD: "XAU", US30: "YM", DOW: "YM", DJ30: "YM", YM: "YM", NAS100: "NQ", NASDAQ: "NQ", NQ: "NQ", USTEC: "NQ" };
+const MK = { ETH: "ETH", ETHEREUM: "ETH", DXY: "DXY", DOLAR: "DXY", DOLLAR: "DXY", BTC: "BTC", BITCOIN: "BTC", SOL: "SOL", SOLANA: "SOL", ORO: "XAU", XAU: "XAU", GOLD: "XAU", US30: "YM", DOW: "YM", DJ30: "YM", YM: "YM", NAS100: "NQ", NASDAQ: "NQ", NQ: "NQ", USTEC: "NQ" };
 export const mkOf = (s) => MK[norm(s).replace(/[^A-Z0-9]/g, "")] || null;
-const NAME = { BTC: "BITCOIN", SOL: "SOLANA", XAU: "ORO", YM: "DOW (FUTUROS YM)", NQ: "NASDAQ (FUTUROS NQ)" };
+const NAME = { ETH: "ETHEREUM", DXY: "INDICE DEL DOLAR (DXY)", BTC: "BITCOIN", SOL: "SOLANA", XAU: "ORO", YM: "DOW (FUTUROS YM)", NQ: "NASDAQ (FUTUROS NQ)" };
 const TFS = ["5m", "15m", "1h", "4h"];
-const YH = { YM: "YM=F", NQ: "NQ=F" }, YRANGE = { "5m": "2d", "15m": "5d", "1h": "1mo", "4h": "3mo" };
+const YH = { YM: "YM=F", NQ: "NQ=F", DXY: "DX-Y.NYB" }, YRANGE = { "5m": "2d", "15m": "5d", "1h": "1mo", "4h": "3mo" };
 const UA = { "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36", accept: "application/json" };
 
 // Velas reales de Yahoo para los futuros (para 4h se agrupan las de 1h). Devuelve [[t(ms), o, h, l, c], …].
@@ -81,6 +81,8 @@ export async function idxBars(k, tf) {
   return out;
 }
 export async function barsOf(mk, tf, n = 90) {
+  if (mk === "DXY") { const b = await idxBars("DXY", tf); return { bars: b.slice(-n), fuente: "Yahoo DX-Y.NYB" }; }
+  if (mk === "ETH") { const a = await klinesRaw("ETHUSDT", tf, n); return { bars: a.map((k) => [k[0], +k[1], +k[2], +k[3], +k[4]]), fuente: "Binance futuros ETHUSDT" }; }
   if (mk === "YM" || mk === "NQ") {
     try { const b = await idxBars(mk, tf); if (b.length >= 10) return { bars: b.slice(-n), fuente: "Yahoo " + YH[mk] }; } catch (e) { log("Velas", mk, tf, "Yahoo:", e.message); }
     const h1 = (IDX[mk] && IDX[mk].h1) || [];
@@ -94,7 +96,7 @@ export async function barsOf(mk, tf, n = 90) {
 const fmtP = (v) => (v >= 1000 ? Math.round(v).toLocaleString("en-US") : v >= 10 ? v.toFixed(2) : v.toFixed(4));
 
 // spec: { mercado, tf, lado, entrada, stop, meta, zona:[lo,hi] } → { png, caption }
-export async function renderChart(spec) {
+export async function renderChart(spec, opts = {}) {
   // v4.31: estilo TradingView (tema oscuro, eje de precio y de tiempo, marca de agua, herramienta de posición larga/corta).
   const mk = mkOf(spec.mercado); if (!mk) throw new Error("mercado no reconocido: " + spec.mercado);
   const tf = TFS.includes(String(spec.tf || "").toLowerCase()) ? String(spec.tf).toLowerCase() : "1h";
@@ -120,9 +122,12 @@ export async function renderChart(spec) {
   const every = Math.max(1, Math.round(n / 8));
   for (let i = 0; i < n; i += every) { const xx = Math.round(X(i)); for (let yy = T; yy <= B; yy++) cv.px(xx, yy, grid); }
   // marca de agua
-  const wm = (mk === "YM" ? "US30" : mk === "NQ" ? "NAS100" : mk === "XAU" ? "XAUUSD" : mk + "USDT") + ", " + tf.toUpperCase();
+  const wm = (mk === "YM" ? "US30" : mk === "NQ" ? "NAS100" : mk === "XAU" ? "XAUUSD" : mk === "DXY" ? "DXY" : mk + "USDT") + ", " + tf.toUpperCase();
   cv.text(Math.round((R - cv.textW(wm, 9)) / 2), Math.round((T + B) / 2 - 32), wm, [36, 41, 56], 9);
-  // zona
+  // v4.32: zonas que el servidor vigila para ese mercado (Plan NY / mapa, y VG QUANT ajustada por la base del futuro)
+  const zs = (opts.zonas || []).filter((z) => z.hi >= lo && z.lo <= hi).slice(0, 6);
+  for (const z of zs) { const c = z.side === "sell" ? dn : up; cv.rect(L, y(Math.min(z.hi, hi)), R, y(Math.max(z.lo, lo)), c, 0.10); cv.hline(L, R, Math.round(y(z.hi)), c, 6, 0.6); cv.hline(L, R, Math.round(y(z.lo)), c, 6, 0.6); }
+  // zona propuesta
   if (zona) { const zc = venta ? dn : up; cv.rect(L, y(zona[1]), R, y(zona[0]), zc, 0.12); }
   // velas
   bars.forEach((b, i) => {
@@ -131,6 +136,7 @@ export async function renderChart(spec) {
     const top = y(Math.max(b[1], b[4])), bot = y(Math.min(b[1], b[4]));
     cv.rect(cx - Math.floor(bw / 2), top, cx + Math.floor(bw / 2), Math.max(bot, top + 1), c);
   });
+  for (const z of zs) { const c = z.side === "sell" ? dn : up, lbl = z.label, yy = Math.round(y(Math.min(z.hi, hi))) + 3; cv.rect(L + 4, yy, L + 14 + cv.textW(lbl, 2), yy + 18, bg, 0.85); cv.text(L + 9, yy + 3, lbl, c, 2); }
   // herramienta de posición (como la de TradingView)
   let k = null;
   if (lv.entrada && lv.stop) {
@@ -158,7 +164,7 @@ export async function renderChart(spec) {
   const hm = (t) => new Date(t).toLocaleString("en-US", { timeZone: "America/Puerto_Rico", hour12: false, ...(tf === "4h" || tf === "1h" ? { day: "2-digit", hour: "2-digit", minute: "2-digit" } : { hour: "2-digit", minute: "2-digit" }) }).replace(",", "");
   for (let i = Math.ceil(every / 2); i < n; i += every) { const s = hm(bars[i][0]); cv.text(Math.round(X(i) - cv.textW(s, 2) / 2), B + 10, s, txt, 2); }
   // encabezado OHLC
-  const b = bars[n - 1], name = { BTC: "BITCOIN / TETHERUS PERP", SOL: "SOLANA / TETHERUS PERP", XAU: "GOLD / TETHERUS PERP", YM: "DOW JONES FUTUROS (YM)", NQ: "NASDAQ 100 FUTUROS (NQ)" }[mk];
+  const b = bars[n - 1], name = { ETH: "ETHEREUM / TETHERUS PERP", DXY: "INDICE DEL DOLAR (DXY)", BTC: "BITCOIN / TETHERUS PERP", SOL: "SOLANA / TETHERUS PERP", XAU: "GOLD / TETHERUS PERP", YM: "DOW JONES FUTUROS (YM)", NQ: "NASDAQ 100 FUTUROS (NQ)" }[mk];
   let hx = cv.text(L + 6, 12, name + " · " + tf.toUpperCase() + " ·  ", white, 2);
   for (const [l, v] of [["O", b[1]], ["H", b[2]], ["L", b[3]], ["C", b[4]]]) { hx = cv.text(hx, 12, l, txt, 2); hx = cv.text(hx + 4, 12, fmtP(v) + "  ", lc, 2); }
   cv.text(L + 6, H - FT + 4, "TITO · " + fuente + " · HORA PR · ESCENARIO, NO ASESORIA", [93, 96, 107], 2);

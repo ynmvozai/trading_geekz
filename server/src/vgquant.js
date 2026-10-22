@@ -128,6 +128,10 @@ function vgShort() {
   const arr = list(), done = arr.filter((a) => a.status === "acierta" || a.status === "falla"), ac = done.filter((a) => a.status === "acierta").length;
   return done.length ? "Récord VG QUANT: " + ac + " de " + done.length + " (" + Math.round((ac / done.length) * 100) + "%) · faltan " + Math.max(0, 50 - done.length) + " para juzgar" : "Primer resultado de VG QUANT";
 }
+// v4.32: zonas de VG QUANT de las últimas 48 h para dibujarlas en la gráfica (precio del futuro = zona + base).
+export function vgZones(sym, now = Date.now()) {
+  return list().filter((a) => a.sym === sym && now - a.t < 48 * 3600000).map((a) => ({ lo: a.lo + (a.basis || 0), hi: a.hi + (a.basis || 0), side: a.dir === "baja" ? "sell" : "buy", label: "VG QUANT " + (a.tf || "") + " " + (a.dir === "baja" ? "OFERTA" : "DEMANDA") + (a.status !== "abierta" ? " (" + a.status + ")" : "") }));
+}
 export function vgSummary() {
   const arr = list();
   const done = arr.filter((a) => a.status === "acierta" || a.status === "falla");
