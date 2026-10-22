@@ -276,3 +276,10 @@ Revisión de canales (lunes 19 oct): #sesion-ny 126 mensajes en 8 h (54 ballenas
 ## v4.29 · Mapa del día en silencio (20 oct 2026)
 - Yasser: "sigue enviando muchos mensajes en NY". La mañana tenía 2 mensajes largos con las mismas zonas: Mapa del día (7:48 AM) y Plan NY (8:15 ET). El mapa sigue actualizando las zonas pero ya no se publica; si falla, avisa en #agent.
 - El correo de Railway "Deploy Crashed" no corresponde al despliegue activo: v4.28 llevaba 10 h encendido sin reinicios y el historial no muestra despliegues fallidos.
+
+## v4.30 · TITO ve el Dow/Nasdaq en vivo y manda la gráfica (22 oct 2026)
+- Problema: TITO contestaba "no tengo precio en vivo del Dow" porque en el chat solo recibía el mapa de índices del 7 oct. Ahora cada pregunta trae [INDICES]: futuros YM/NQ en vivo (CNBC, refresco al preguntar) + velas reales 15m y 1h (Yahoo YM=F / NQ=F) + zonas de hoy del Plan NY. El mapa del 7 oct queda como "viejo".
+- `src/chart.js`: gráfica de velas en PNG sin dependencias (letra 5x7 propia). TITO añade `[[GRAFICO]]{mercado, tf, lado, entrada, stop, meta, zona}[[/GRAFICO]]` al final cuando propone una entrada; el servidor lo quita del texto, dibuja con las mismas velas y la manda como imagen a #agent (`agentFile`, multipart por webhook). Máx. 2 por respuesta.
+- Comando directo en #agent: `grafica btc 1h` (btc, sol, oro, dow/us30, nasdaq/nas100; 5m/15m/1h/4h).
+- Prueba sin Discord: GET /grafico/<secreto de VG QUANT>?m=US30&tf=15m&lado=compra&entrada=…&stop=…&meta=…&zona=lo,hi → PNG.
+- La instrucción de la gráfica va en el contexto de cada pregunta, no en el prompt de Yasser (no se tocó).

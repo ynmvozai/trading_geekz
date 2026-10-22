@@ -1,6 +1,7 @@
 // Comandos del canal #agent (control remoto desde el celular). Todo lo demás va a TITO.
 import { ENV, ORDER, NAMES, VERSION, PUBLIC_URL } from "./config.js";
-import { agent, isAdmin, idxPost } from "./discord.js";
+import { agent, agentFile, isAdmin, idxPost } from "./discord.js";
+import { renderChart, extractCharts } from "./chart.js";
 import { S, flow, feed, prices } from "./market.js";
 import { Z, zonesText, sanitizeZones, parseZoneInput, setZones, applyAiZones, shareLink } from "./zones.js";
 import { setPaused, watchText, simStats } from "./alerts.js";
@@ -140,6 +141,8 @@ export async function onAgentMessage(msg) {
     await walletSend("🧪 Prueba de #wallet-tracking\nAquí llegan los avisos cuando 3 o más wallets seguidas compran la misma moneda.");
     return agent([MG.lastErr ? "❌ #mega-ballenas: " + MG.lastErr : "✅ #mega-ballenas: prueba enviada", W.lastErr && !ENV.heliusKey ? "✅ #wallet-tracking: prueba enviada (falta HELIUS_API_KEY para datos reales)" : W.lastErr ? "❌ #wallet-tracking: " + W.lastErr : "✅ #wallet-tracking: prueba enviada"].join("\n"));
   }
+  const gm = /^(?:gr[aá]fica|grafico|gráfico|chart)\s+(\S+)(?:\s+(5m|15m|1h|4h))?$/.exec(ql);
+  if (gm) { try { const g = await renderChart({ mercado: gm[1], tf: gm[2] || "1h" }); return agentFile(g.png, "grafica.png", g.caption); } catch (e) { return agent("⚠️ No pude dibujar la gráfica: " + e.message); } }
   if (/^(probar )?buenos d[ií]as$/.test(ql)) { const { sendMorning } = await import("./buenosdias.js"); return sendMorning(); }
   if (/^diario$/.test(ql)) return agent(diarioText(simStats()));
   if (/^resultados/.test(ql)) { const d = +(/(\d+)/.exec(ql) || [])[1] || 30; return agent(resultsText(Math.min(d, 365))); }
@@ -192,7 +195,14 @@ export async function onAgentMessage(msg) {
   try {
     let t = await aiAsk(upd ? q + "\n" + ZONES_Q : q);
     if (upd) { const r = applyAiZones(t, prices()); t = r.txt + (r.n ? "\n\n✅ Zonas actualizadas en el servidor (" + r.n + "): las alertas ya usan estas." : r.err ? "\n\n⚠️ No pude leer las zonas (" + r.err + ")." : ""); }
-    return agent(t);
+    // v4.30: gráficas que TITO pide dibujar ([[GRAFICO]]{…}[[/GRAFICO]]) → imagen en #agent.
+    const ex = extractCharts(t);
+    await agent(ex.txt);
+    for (const sp of ex.specs) {
+      try { const g = await renderChart(sp); await agentFile(g.png, "tito-grafica.png", g.caption); }
+      catch (e) { await agent("⚠️ No pude dibujar la gráfica: " + e.message); }
+    }
+    return;
   } catch (e) {
     return agent("No pude analizar ahora: " + e.message);
   }

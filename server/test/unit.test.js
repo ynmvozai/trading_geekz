@@ -334,3 +334,10 @@ test("v4.28: buenos días solo L-V a las 8:30 AM PR, una vez", async () => {
   assert.equal(B.morningTick(Date.parse("2026-10-20T12:10:00Z")), false);   // 8:10 AM: todavía no
   assert.match(B.MORNING_Q, /Alpha de hoy/);
 });
+
+test("v4.30: gráfica PNG y bloques [[GRAFICO]] de TITO", async () => {
+  const C = await import("../src/chart.js");
+  const ex = C.extractCharts('Escenario de compra\n[[GRAFICO]]{"mercado":"US30","tf":"15m","lado":"compra","entrada":53700,"stop":53620,"meta":53900}[[/GRAFICO]]');
+  assert.equal(ex.txt, "Escenario de compra"); assert.equal(ex.specs.length, 1); assert.equal(ex.specs[0].entrada, 53700);
+  assert.equal(C.mkOf("Nasdaq"), "NQ"); assert.equal(C.mkOf("oro"), "XAU"); assert.equal(C.mkOf("DJ30"), "YM");
+});
