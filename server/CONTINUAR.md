@@ -291,3 +291,8 @@ Revisión de canales (lunes 19 oct): #sesion-ny 126 mensajes en 8 h (54 ballenas
 ## v4.32 · Zonas en la gráfica + pares de Yasser (22 oct 2026)
 - Yasser confirmó que las velas de YM=F (Yahoo) coinciden con su gráfica. Pidió que se vean las zonas: la gráfica dibuja las zonas que el servidor vigila para ese mercado (`src/zonasgraf.js`): mapa/Plan NY (cripto, oro, Dow, Nasdaq) y VG QUANT de las últimas 48 h, corridas por la base del futuro.
 - Lista activa de TradingView "Pares de Yasser": TVC:DXY, GBEBROKERS:DJ30, GBEBROKERS:USTEC, COINBASE:SOLUSD, COINBASE:BTCUSD, COINBASE:ETHUSD, GBEBROKERS:XAUUSD, VANTAGE:DJ30. TITO ahora recibe también ETH (Binance ETHUSDT, en lugar de QQQUSDT) y el DXY (Yahoo DX-Y.NYB, 1h); la gráfica acepta ETH y DXY.
+
+## v4.33–v4.35 (22 oct 2026)
+- v4.33: velas de YM/NQ/DXY desde CNBC ts-api 5D (5 min, agrupadas a 15m/1h/4h); Yahoo de respaldo (no responde desde Railway).
+- v4.34: velas de índices a TITO en hora PR (antes UTC); etiqueta de entrada no pisa el eje; sin velas planas.
+- v4.35: reportes.js — análisis de TITO + gráfica en #agent L-V 9:30, 12:00 y 4:30 PM PR (kv rep930/rep1200/rep1630; apagar con kv reportesOff). Ya no van a #agent el tablero del open ni el aviso pre-cierre. Alerta de zona (entrada) también a #agent con gráfica 15m. Comando "reporte [9|12|4]".
