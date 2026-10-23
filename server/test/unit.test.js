@@ -353,3 +353,16 @@ test("v4.33 · velas CNBC de 5 min se agrupan en 15m sin perder máximos ni mín
   assert.deepEqual(g[0], [t0, 100, 107, 93, 103]);
   assert.deepEqual(g[1], [t0 + 900000, 103, 108, 92, 104]);
 });
+
+test("v4.35 · reportes de TITO: 9:30, 12:00 y 4:30 PM PR, una vez por día, nunca en fin de semana", async () => {
+  const R = await import("../src/reportes.js");
+  const { kvSet } = await import("../src/store.js");
+  kvSet("reportesOff", true);   // no llama a la IA en la prueba
+  assert.equal(R.reportTick(Date.parse("2026-10-23T13:31:00Z")), null);
+  kvSet("reportesOff", false);
+  const at = (iso) => Date.parse(iso);
+  assert.deepEqual(R.SLOTS.map((s) => s.h + ":" + s.m), ["9:30", "12:0", "16:30"]);
+  assert.equal(R.reportTick(at("2026-10-24T13:31:00Z")), null);           // sábado
+  assert.equal(R.reportTick(at("2026-10-23T13:20:00Z")), null);           // 9:20 AM PR
+  assert.match(R.repQ(R.SLOTS[2]), /4:30 PM/);
+});

@@ -11,6 +11,17 @@ import { kvGet, kvSet } from "./store.js";
 import { usd, px, prParts, splitLong, log } from "./util.js";
 import { pf, dot, cerca, lado, ladoMin, flecha, espera, rango, niveles } from "./friendly.js";
 import { sizeLine, nivelesMedidos } from "./risk.js";
+import { agentFile } from "./discord.js";
+import { renderChart } from "./chart.js";
+import { zonesFor } from "./zonasgraf.js";
+
+async function zoneToAgent(m, z, txt) {
+  try {
+    await agent("🎯 **Alerta de zona**\n" + txt);
+    const g = await renderChart({ mercado: m, tf: "15m", lado: z.side === "sell" ? "venta" : "compra", zona: [z.lo, z.hi] }, { zonas: zonesFor(m) });
+    await agentFile(g.png, "zona.png", g.caption);
+  } catch (e) { log("Zona a #agent:", e.message); }
+}
 
 export const SES = { sent: 0, failed: 0, lastErr: "" };
 export const MKTS = ["BTC", "SOL", "XAU", "US30", "NQ"];
@@ -161,9 +172,7 @@ export function sesTick(now = Date.now()) {
     st.posted.open = 1; MKTS.forEach((m) => { const p = priceOf(m); if (p != null) { st.open[m] = p; st.hi[m] = p; st.lo[m] = p; } }); save(st);
     const b = boardText("🔔 Abrió Nueva York", winStart, st);
     sesPost(b);
-    // v4.27 (Yasser): el único mensaje automático de #agent: la información general al abrir NY.
-    const pr = kvGet("planResumen", null), etd = etParts(now).date;
-    agent(b.replace("-# La decisión final siempre es tuya.", "").trim() + (pr && pr.date === etd && pr.txt ? "\n\n🗽 Plan de hoy\n" + pr.txt : "") + "\n-# Detalle en #sesion-ny. La decisión final siempre es tuya.");
+    // v4.35 (Yasser): a #agent ya no va el tablero; TITO manda su análisis a las 9:30, 12:00 y 4:30 PR (reportes.js).
     return;
   }
   // Radar compacto cada hora (10:30 AM a 3:30 PM ET).
@@ -171,11 +180,7 @@ export function sesTick(now = Date.now()) {
     const k = et.hour + ":30";
     if (!st.posted["r" + k]) { st.posted["r" + k] = 1; save(st); const h = hourText("📡 NY " + (et.hour % 12 || 12) + ":30 · última hora", now - 3600000, st); if (h) sesPost(h); return; }
   }
-  // v4.28 (Yasser): #agent, un solo mensaje antes del cierre de NY (3:50 PM ET).
-  if (!st.posted.preclose && em >= 15 * 60 + 50 && em < 16 * 60) {
-    st.posted.preclose = 1; save(st);
-    agent(closeText(st, st.open && Object.keys(st.open).length ? openT : winStart).replace("🏁 Cerró Nueva York", "⏳ Nueva York cierra en " + (16 * 60 - em) + " min · así va el día")); return;
-  }
+  // v4.35: el aviso antes del cierre en #agent lo reemplaza el análisis de TITO de las 4:30 PM PR.
   // Cierre de NY: 4:00 PM ET.
   if (!st.posted.close && em >= 16 * 60 && em < 17 * 60) {
     st.posted.close = 1; save(st);
@@ -201,6 +206,8 @@ export function sesTick(now = Date.now()) {
         if (IDXK[m]) L.push("-# Índice: solo zona, sin órdenes en vivo.");
         else L.push("-# ℹ️ Información, no señal de entrada: en 12 meses de datos las zonas no mostraron ventaja.");
         sesPost(L.join("\n"));
+        // v4.35 (Yasser): el mensaje de la zona también le llega a TITO (#agent), con la gráfica.
+        zoneToAgent(m, z, L.join("\n"));
       }
       st.lvl[k] = lvl;
     });

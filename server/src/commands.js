@@ -144,6 +144,8 @@ export async function onAgentMessage(msg) {
   }
   const gm = /^(?:gr[aá]fica|grafico|gráfico|chart)\s+(\S+)(?:\s+(5m|15m|1h|4h))?$/.exec(ql);
   if (gm) { try { const g = await renderChart({ mercado: gm[1], tf: gm[2] || "1h" }, { zonas: zonesFor(gm[1]) }); return agentFile(g.png, "grafica.png", g.caption); } catch (e) { return agent("⚠️ No pude dibujar la gráfica: " + e.message); } }
+  // v4.35: "reporte" (o "reporte 12" / "reporte 4:30") manda ya el análisis programado de TITO.
+  { const rm = ql.match(/^(?:probar )?reporte(?:\s+(9|12|4))?/); if (rm) { const { SLOTS, sendReport } = await import("./reportes.js"); return sendReport(SLOTS[{ "12": 1, "4": 2 }[rm[1]] || 0]); } }
   if (/^(probar )?buenos d[ií]as$/.test(ql)) { const { sendMorning } = await import("./buenosdias.js"); return sendMorning(); }
   if (/^diario$/.test(ql)) return agent(diarioText(simStats()));
   if (/^resultados/.test(ql)) { const d = +(/(\d+)/.exec(ql) || [])[1] || 30; return agent(resultsText(Math.min(d, 365))); }
