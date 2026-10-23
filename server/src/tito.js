@@ -12,6 +12,8 @@ import { sentData } from "./sentiment.js";
 import { calForAi, refreshIdx, idxForAi } from "./macro.js";
 import { idxZones } from "./sesionny.js";
 import { idxBars } from "./chart.js";
+// v4.34: las velas van en HORA DE PUERTO RICO (UTC−4 fijo, sin cambio de horario). Antes iban en UTC y TITO decía horas corridas 4 h.
+const hPR = (t) => new Date(t - 4 * 3600000).toISOString().slice(5, 16).replace("T", " ");
 import { fundForAi } from "./fundamental.js";
 
 const SENT_NOTE = "\n\n# SESGO DE ORDER FLOW (TERMÓMETRO)\nEn [PANEL_HOT_ZONE] recibes sesgo_order_flow por mercado: COMPRADORES (+2 o más), VENDEDORES (−2 o menos) o NEUTRAL, con sus razones (estructura 1H, tendencia 4H con medias 20/50, neto de ballenas 4 h y zonas rotas) y atr_1h_pct (movimiento normal por hora). Regla: no propongas zonas en contra del sesgo como prioritarias; si lo haces, márcalas \"contra tendencia\". Una zona con estado ROTA ya no vale. Pon el stop a más de medio movimiento normal de 1 hora de la entrada (0.5 × atr_1h_pct).\n\n# SENTIMIENTO (FEAR & GREED INDEX)\nEn [PANEL_HOT_ZONE] recibes sentimiento_fear_greed: crypto_btc_sol (alternative.me, 0-100) y acciones_ref_oro (CNN, acciones de EE. UU.; para el oro es solo referencia del ánimo general). 0-24 miedo extremo, 25-44 miedo, 45-55 neutral, 56-75 codicia, 76-100 codicia extrema. Úsalo como factor de contexto en cada zona con lectura contraria: miedo extremo en zona de compra o codicia extrema en zona de venta = confluencia; lo opuesto = más riesgo, pide mejor confirmación. Menciona el valor, el de ayer y el de hace 7 días cuando aporte. Nunca lo uses como gatillo de entrada ni como certeza. Si viene null, di que no hay dato.\n\n# CALENDARIO E ÍNDICES (ACTUALIZACIÓN v3.2)\nYa tienes calendario conectado: [PANEL_HOT_ZONE].calendario_usd_7_dias trae los eventos USD de impacto medio y alto (Forex Factory, hora de PR). Úsalo para noticias; si dice sin dato, dilo. Esto reemplaza lo que dice arriba sobre no tener calendario. Cuando recibas [INDICES], son futuros reales de US30 (YM) y NAS100 (NQ): úsalos en vez de QQQUSDT.\n\n# MACRO FUNDAMENTAL (v4.5)\nEn [PANEL_HOT_ZONE].macro_fundamental tienes data real de FRED (Reserva Federal de St. Louis): inflación (general, subyacente, ritmo de 3 meses, PCE), empleo (desempleo, empleos por mes, solicitudes, regla de Sahm, PIB), Fed (tasa, ciclo, bono de 2 y 10 años, curva 10a−2a), dólar, VIX, liquidez y el régimen de cada mercado (tendencia alcista, bajista, consolidación o mixto). Úsalo cuando Yasser pregunte por inflación, recesión, la Fed, consolidación o el panorama; cita el dato y su fecha. Es contexto, nunca gatillo de entrada. Si viene sin dato, dilo.";
@@ -26,15 +28,16 @@ const CHART_NOTE = "[GRAFICA_E_INDICES · instrucciones del servidor v4.30]\n" +
 async function idxLive() {
   try { await refreshIdx(); } catch {}
   const base = idxForAi(), zs = idxZones();
+  base.hora_actual_PR = hPR(Date.now()) + " (las velas de índices y DXY están en esta misma hora)";
   for (const [key, k] of [["US30_futuros_YM", "YM"], ["NAS100_futuros_NQ", "NQ"]]) {
     const o = base[key] || {};
-    try { o.velas_15m = (await idxBars(k, "15m")).slice(-48).map((b) => [new Date(b[0]).toISOString().slice(5, 16).replace("T", " "), ...b.slice(1).map((v) => +v.toFixed(2))]); } catch (e) { o.velas_15m = "sin datos (" + e.message + ")"; }
-    try { o.velas_1h = (await idxBars(k, "1h")).slice(-48).map((b) => [new Date(b[0]).toISOString().slice(5, 16).replace("T", " "), ...b.slice(1).map((v) => +v.toFixed(2))]); } catch {}
+    try { o.velas_15m_hora_PR = (await idxBars(k, "15m")).slice(-48).map((b) => [hPR(b[0]), ...b.slice(1).map((v) => +v.toFixed(2))]); } catch (e) { o.velas_15m_hora_PR = "sin datos (" + e.message + ")"; }
+    try { o.velas_1h_hora_PR = (await idxBars(k, "1h")).slice(-48).map((b) => [hPR(b[0]), ...b.slice(1).map((v) => +v.toFixed(2))]); } catch {}
     o.zonas_hoy = zs.filter((z) => z.sym === (k === "YM" ? "US30" : "NQ"));
     delete o.velas_diarias_largas;
     base[key] = o;
   }
-  try { const d = await idxBars("DXY", "1h"); base.DXY_indice_dolar = { precio: d.length ? +d[d.length - 1][4].toFixed(3) : null, velas_1h: d.slice(-36).map((b) => [new Date(b[0]).toISOString().slice(5, 16).replace("T", " "), ...b.slice(1).map((v) => +v.toFixed(3))]) }; } catch (e) { base.DXY_indice_dolar = "sin datos (" + e.message + ")"; }
+  try { const d = await idxBars("DXY", "1h"); base.DXY_indice_dolar = { precio: d.length ? +d[d.length - 1][4].toFixed(3) : null, velas_1h_hora_PR: d.slice(-36).map((b) => [hPR(b[0]), ...b.slice(1).map((v) => +v.toFixed(3))]) }; } catch (e) { base.DXY_indice_dolar = "sin datos (" + e.message + ")"; }
   return base;
 }
 

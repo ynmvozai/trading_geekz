@@ -78,7 +78,7 @@ export function groupBars(bars, ms) {
 }
 export function parseCnbcBars(j) {
   const q = (j && j.barData && j.barData.priceBars) || [];
-  return q.map((b) => [+b.tradeTimeinMills, +b.open, +b.high, +b.low, +b.close]).filter((b) => b.every((v) => isFinite(v) && v > 0)).sort((a, b) => a[0] - b[0]);
+  return q.map((b) => [+b.tradeTimeinMills, +b.open, +b.high, +b.low, +b.close]).filter((b) => b.every((v) => isFinite(v) && v > 0) && b[2] > b[3]).sort((a, b) => a[0] - b[0]);
 }
 async function cnbcBars(k, tf) {
   const r = await fetch("https://ts-api.cnbc.com/harmony/app/charts/5D.json?symbol=" + encodeURIComponent(CN[k]), { headers: UA, signal: AbortSignal.timeout(15000) });
@@ -167,7 +167,7 @@ export async function renderChart(spec, opts = {}) {
     cv.rect(x0, y(lv.entrada), x1, y(lv.stop), stp, 0.22);
     cv.hline(x0, x1, Math.round(y(lv.entrada)), [120, 123, 134], 0, 1, 2);
     const pc = (a) => (Math.abs(a - lv.entrada) / lv.entrada * 100).toFixed(2) + "%";
-    const tag = (yy, label, c) => { const w = cv.textW(label, 2) + 16, xx = Math.max(x0 - 40, Math.min(Math.round((x0 + x1) / 2 - w / 2), x1 - w)); cv.rect(xx, yy - 11, xx + w, yy + 11, c, 1); cv.text(xx + 8, yy - 7, label, [255, 255, 255], 2); };
+    const tag = (yy, label, c) => { const w = cv.textW(label, 2) + 16, xx = Math.max(L + 4, Math.min(Math.round((x0 + x1) / 2 - w / 2), x1 - w)); cv.rect(xx, yy - 11, xx + w, yy + 11, c, 1); cv.text(xx + 8, yy - 7, label, [255, 255, 255], 2); };
     if (lv.meta) tag(Math.round(y(lv.meta)) + (venta ? 14 : -14), "TARGET " + fmtP(lv.meta) + " (" + pc(lv.meta) + ")", tgt);
     tag(Math.round(y(lv.stop)) + (venta ? -14 : 14), "STOP " + fmtP(lv.stop) + " (" + pc(lv.stop) + ")", stp);
     tag(Math.round(y(lv.entrada)), (venta ? "VENTA " : "COMPRA ") + fmtP(lv.entrada) + (k ? " · R:R " + k.toFixed(2) : ""), [90, 94, 106]);
