@@ -121,6 +121,11 @@ export function startHttp() {
       req.on("end", () => { onHelius(body).then((r) => json(r.ok ? 200 : 400, r)).catch((e) => json(500, { error: e.message })); });
       return;
     }
+    if (u.startsWith("/semana/")) {   // v4.36: manda a #resultados las gráficas de los trades de la semana
+      if (u.slice(8) !== vgSecret()) return json(404, { error: "no existe" });
+      import("./semana.js").then((m) => m.sendWeek()).then((r) => json(200, { ok: true, ...r })).catch((e) => json(500, { error: e.message }));
+      return;
+    }
     if (u.startsWith("/grafico/")) {   // v4.30: prueba de la gráfica (solo con el secreto de VG QUANT)
       if (u.slice(9) !== vgSecret()) return json(404, { error: "no existe" });
       const qs = new URL(req.url, "http://x").searchParams, z = qs.get("zona");

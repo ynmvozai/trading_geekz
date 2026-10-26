@@ -366,3 +366,15 @@ test("v4.35 · reportes de TITO: 9:30, 12:00 y 4:30 PM PR, una vez por día, nun
   assert.equal(R.reportTick(at("2026-10-23T13:20:00Z")), null);           // 9:20 AM PR
   assert.match(R.repQ(R.SLOTS[2]), /4:30 PM/);
 });
+
+test("v4.36 · semana: empieza el lunes 00:00 PR y junta diario + señales medidas", async () => {
+  const W = await import("../src/semana.js");
+  const { kvSet } = await import("../src/store.js");
+  assert.equal(new Date(W.weekStart(Date.parse("2026-10-26T03:06:00Z"))).toISOString(), "2026-10-19T04:00:00.000Z");   // dom 11:06 PM PR
+  assert.equal(new Date(W.weekStart(Date.parse("2026-10-26T05:00:00Z"))).toISOString(), "2026-10-26T04:00:00.000Z");   // lun 1:00 AM PR
+  const t0 = Date.parse("2026-10-20T14:00:00Z");
+  kvSet("diario", { n: 1, open: [], closed: [{ id: 1, sym: "BTC", side: "buy", entry: 100, sl0: 99, tp: 102, exit: 102, t: t0, t_end: t0 + 3600000, r: 1.9, basis: null, how: "meta" }] });
+  const L = W.collectWeek(Date.parse("2026-10-19T04:00:00Z"), t0 + 7200000);
+  const mine = L.find((x) => x.fuente.startsWith("Tu diario"));
+  assert.ok(mine); assert.equal(mine.r, 1.9); assert.equal(mine.tp, 102);
+});

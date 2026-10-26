@@ -102,7 +102,15 @@ export async function idxBars(k, tf) {
   try { const b = await cnbcBars(k, tf); b.fuente = "CNBC " + CN[k]; return b; } catch (e) { err = e; log("Velas", k, tf, "CNBC:", e.message); }
   try { const b = await yahooBars(k, tf); b.fuente = "Yahoo " + YH[k]; return b; } catch (e) { throw new Error(err.message + " / " + e.message); }
 }
-export async function barsOf(mk, tf, n = 90) {
+// v4.36: rng = { desde, hasta } (ms) para dibujar una operación pasada con las velas de ese momento.
+const inRng = (b, rng) => (rng ? b.filter((x) => x[0] >= rng.desde && x[0] <= rng.hasta) : b);
+export async function barsOf(mk, tf, n = 90, rng = null) {
+  if (rng && !["YM", "NQ", "DXY"].includes(mk)) {
+    const sym = mk === "ETH" ? "ETHUSDT" : SYMS[mk].label, lim = Math.min(500, Math.ceil((rng.hasta - rng.desde) / TFMS[tf]) + 2);
+    const a = await klinesRaw(sym, tf, lim, rng.desde);
+    return { bars: inRng(a.map((k) => [k[0], +k[1], +k[2], +k[3], +k[4]]), rng), fuente: "Binance futuros " + sym };
+  }
+  if (rng) { const b = await idxBars(mk, tf); return { bars: inRng(b, rng), fuente: b.fuente }; }
   if (mk === "DXY") { const b = await idxBars("DXY", tf); return { bars: b.slice(-n), fuente: b.fuente }; }
   if (mk === "ETH") { const a = await klinesRaw("ETHUSDT", tf, n); return { bars: a.map((k) => [k[0], +k[1], +k[2], +k[3], +k[4]]), fuente: "Binance futuros ETHUSDT" }; }
   if (mk === "YM" || mk === "NQ") {
@@ -122,7 +130,8 @@ export async function renderChart(spec, opts = {}) {
   // v4.31: estilo TradingView (tema oscuro, eje de precio y de tiempo, marca de agua, herramienta de posición larga/corta).
   const mk = mkOf(spec.mercado); if (!mk) throw new Error("mercado no reconocido: " + spec.mercado);
   const tf = TFS.includes(String(spec.tf || "").toLowerCase()) ? String(spec.tf).toLowerCase() : "1h";
-  const { bars, fuente } = await barsOf(mk, tf, 110);
+  const rng = opts.desde && opts.hasta ? { desde: opts.desde, hasta: opts.hasta } : null;
+  const { bars, fuente } = await barsOf(mk, tf, 110, rng);
   if (bars.length < 5) throw new Error("pocas velas para dibujar");
   const lv = { entrada: +spec.entrada || null, stop: +spec.stop || null, meta: +spec.meta || null };
   const zona = Array.isArray(spec.zona) && spec.zona.length === 2 && spec.zona.every((v) => +v > 0) ? [Math.min(+spec.zona[0], +spec.zona[1]), Math.max(+spec.zona[0], +spec.zona[1])] : null;
@@ -136,7 +145,7 @@ export async function renderChart(spec, opts = {}) {
   const up = [8, 153, 129], dn = [242, 54, 69], blue = [41, 98, 255], tgt = [8, 153, 129], stp = [242, 54, 69];
   const cv = canvas(W, H, bg);
   const y = (p) => T + (hi - p) / (hi - lo) * (B - T);
-  const n = bars.length, extra = lv.entrada ? 34 : 6, step = (R - L) / (n + extra), bw = Math.max(3, Math.floor(step * 0.7));
+  const n = bars.length, extra = lv.entrada && !opts.tEntrada ? 34 : 6, step = (R - L) / (n + extra), bw = Math.max(3, Math.floor(step * 0.7));
   const X = (i) => L + step * i + step / 2;
   // cuadrícula
   const ticks = 8;
@@ -162,7 +171,9 @@ export async function renderChart(spec, opts = {}) {
   // herramienta de posición (como la de TradingView)
   let k = null;
   if (lv.entrada && lv.stop) {
-    const x0 = Math.round(X(n + 1)), x1 = R - 6, risk = Math.abs(lv.entrada - lv.stop);
+    const idxAt = (t) => { let k = 0; for (let i = 0; i < n; i++) if (bars[i][0] <= t) k = i; return k; };
+    const iE = opts.tEntrada ? idxAt(opts.tEntrada) : null, iS = opts.tSalida ? idxAt(opts.tSalida) : null;
+    const x0 = iE != null ? Math.round(X(iE)) : Math.round(X(n + 1)), x1 = iE != null ? Math.max(Math.round(X(iS != null ? iS : n - 1)), x0 + 24) : R - 6, risk = Math.abs(lv.entrada - lv.stop);
     if (lv.meta) { cv.rect(x0, y(lv.entrada), x1, y(lv.meta), tgt, 0.22); k = Math.abs(lv.meta - lv.entrada) / risk; }
     cv.rect(x0, y(lv.entrada), x1, y(lv.stop), stp, 0.22);
     cv.hline(x0, x1, Math.round(y(lv.entrada)), [120, 123, 134], 0, 1, 2);
@@ -172,6 +183,10 @@ export async function renderChart(spec, opts = {}) {
     tag(Math.round(y(lv.stop)) + (venta ? -14 : 14), "STOP " + fmtP(lv.stop) + " (" + pc(lv.stop) + ")", stp);
     tag(Math.round(y(lv.entrada)), (venta ? "VENTA " : "COMPRA ") + fmtP(lv.entrada) + (k ? " · R:R " + k.toFixed(2) : ""), [90, 94, 106]);
   }
+  // v4.36: marcas de entrada y salida (operaciones pasadas)
+  const vmark = (t, label, c) => { let k = 0; for (let i = 0; i < n; i++) if (bars[i][0] <= t) k = i; const xx = Math.round(X(k)); for (let yy = T; yy <= B; yy++) if (Math.floor(yy / 5) % 2 === 0) cv.px(xx, yy, c, 0.9); const w = cv.textW(label, 2) + 12, lx = Math.min(Math.max(L, xx - w / 2), R - w); cv.rect(lx, B - 22, lx + w, B - 2, c, 1); cv.text(lx + 6, B - 18, label, [255, 255, 255], 2); };
+  if (opts.tEntrada) vmark(opts.tEntrada, "ENTRADA", [90, 94, 106]);
+  if (opts.tSalida) vmark(opts.tSalida, opts.salidaLabel || "SALIDA", opts.gano ? tgt : stp);
   // eje de precio
   cv.rect(R, 0, W, H, bg); for (let yy = 0; yy < H; yy++) cv.px(R, yy, axis);
   const last = bars[n - 1][4], lc = last >= bars[n - 1][1] ? up : dn;

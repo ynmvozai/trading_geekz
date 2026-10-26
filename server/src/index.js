@@ -24,6 +24,7 @@ import { startWallets } from "./wallets.js";
 import { sessionTick } from "./sesion.js";
 import { morningTick } from "./buenosdias.js";
 import { reportTick } from "./reportes.js";
+import { weekTick } from "./semana.js";
 import { sesTick } from "./sesionny.js";
 import { startVg } from "./vgquant.js";
 import { startC15 } from "./confirm15.js";
@@ -133,6 +134,7 @@ setInterval(() => {
 setInterval(() => {
   dailyTick();
   sessionTick();
+  try { weekTick(); } catch (e) { log("weekTick", e.message); }   // v4.36: gráficas de la semana, viernes 5:15 PM PR
   try { reportTick(); } catch (e) { log("reportTick", e.message); }   // v4.35: análisis de TITO 9:30, 12:00 y 4:30 PM PR
   morningTick();   // v4.28: buenos días de TITO en #agent, L-V 8:30 AM PR
   expire();

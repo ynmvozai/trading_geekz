@@ -113,6 +113,17 @@ export async function agentFile(png, name, caption) {
   if (!r.ok) throw new Error("HTTP " + r.status + " " + (await r.text().catch(() => "")).slice(0, 120));
   hookStats.sent++;
 }
+// v4.36: imagen en #resultados (webhook o bot).
+export async function resFile(png, name, caption) {
+  const fd = new FormData();
+  fd.append("payload_json", JSON.stringify({ content: caption || "", username: ENV.botName || undefined, allowed_mentions: { parse: [] } }));
+  fd.append("files[0]", new Blob([png], { type: "image/png" }), name || "trade.png");
+  const url = ENV.hooks.resultados ? ENV.hooks.resultados + "?wait=true" : "https://discord.com/api/v10/channels/" + ENV.resultadosChannelId + "/messages";
+  const headers = ENV.hooks.resultados ? {} : { authorization: "Bot " + ENV.botToken };
+  const r = await fetch(url, { method: "POST", headers, body: fd, signal: AbortSignal.timeout(30000) });
+  if (!r.ok) throw new Error("HTTP " + r.status + " " + (await r.text().catch(() => "")).slice(0, 120));
+  hookStats.sent++;
+}
 export const agent = (txt) => (ENV.hooks.agent ? postLong(ENV.hooks.agent, txt).catch(() => {}) : Promise.resolve());
 
 // ---------- Bot por gateway ----------
