@@ -39,7 +39,7 @@ export function healthData() {
     ok: !stale, version: VERSION, horas_encendido: +((now - BOOT) / 3600000).toFixed(2),
     binance: { conectado: bn.connected, bloqueado: bn.blocked, velas_rest: rest.ok == null ? "sin probar" : rest.ok ? "ok" : rest.lastError, region: process.env.RAILWAY_REPLICA_REGION || null, ultimo_error: bn.lastError || null, reconexiones: Math.max(0, bn.connects - 1) },
     mercados, discord_bot: bot.ready ? "conectado" : bot.lastError || "desconectado",
-    alertas_pausadas: A.paused, zonas: Z.list.length, senales_en_seguimiento: openCount(),
+    alertas_pausadas: A.paused, zonas: Z.list.length, senales_en_seguimiento: openCount(), auto_trade: atEstado(),
   };
 }
 
