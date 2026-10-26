@@ -97,6 +97,29 @@ export async function botPostId(channelId, txt, replyTo = null) {
   }
   return first;
 }
+// v4.37: imagen en cualquier canal con el bot (opcional: como respuesta a otro mensaje). Devuelve el id.
+export async function botFile(channelId, png, name, caption, replyTo = null) {
+  if (!ENV.botToken || !channelId) throw new Error("falta DISCORD_BOT_TOKEN o el id del canal");
+  const fd = new FormData(), body = { content: caption || "", allowed_mentions: { parse: [] } };
+  if (replyTo) body.message_reference = { message_id: replyTo, fail_if_not_exists: false };
+  fd.append("payload_json", JSON.stringify(body));
+  fd.append("files[0]", new Blob([png], { type: "image/png" }), name || "grafica.png");
+  const r = await fetch("https://discord.com/api/v10/channels/" + channelId + "/messages", { method: "POST", headers: { authorization: "Bot " + ENV.botToken }, body: fd, signal: AbortSignal.timeout(30000) });
+  if (!r.ok) throw new Error("HTTP " + r.status + " " + (await r.text().catch(() => "")).slice(0, 120));
+  hookStats.sent++; const j = await r.json().catch(() => ({})); return j.id || null;
+}
+// v4.37: busca un canal de texto por nombre en el servidor; si no existe, lo crea (el bot necesita "Gestionar canales").
+export async function ensureChannel(name, topic, nearId) {
+  const H = { "content-type": "application/json", authorization: "Bot " + ENV.botToken }, api = "https://discord.com/api/v10";
+  const r = await fetch(api + "/guilds/" + ENV.guildId + "/channels", { headers: H, signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error("no pude leer los canales (HTTP " + r.status + ")");
+  const all = await r.json(), found = all.find((c) => c.type === 0 && c.name === name);
+  if (found) return found.id;
+  const near = all.find((c) => c.id === nearId);
+  const c = await fetch(api + "/guilds/" + ENV.guildId + "/channels", { method: "POST", headers: H, body: JSON.stringify({ name, type: 0, topic, parent_id: near ? near.parent_id : undefined }), signal: AbortSignal.timeout(15000) });
+  if (!c.ok) throw new Error("no pude crear #" + name + " (HTTP " + c.status + (c.status === 403 ? ": dale al bot el permiso Gestionar canales" : "") + ")");
+  return (await c.json()).id;
+}
 // #indices-zonas: webhook si existe; si no, el bot.
 // v4.16: #resultados: webhook si existe; si no, el bot.
 export const resPost = (txt) => (ENV.hooks.resultados ? postLong(ENV.hooks.resultados, txt) : botPost(ENV.resultadosChannelId, txt));

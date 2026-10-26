@@ -1,5 +1,6 @@
 // /health (para UptimeRobot), /alive (para Railway), /state (para el panel v3.0 de solo lectura) y el texto de "estado".
 import { renderChart } from "./chart.js";
+import { atEstado } from "./autotrade.js";
 import { zonesFor } from "./zonasgraf.js";
 import http from "node:http";
 import fs from "node:fs";
@@ -70,6 +71,7 @@ export function estadoText() {
   L.push((IDX.YM && IDX.NQ ? "✅" : "❌") + " Índices: " + idxLine() + " · #indices-zonas por " + (ENV.hooks.indices ? "webhook" : "bot") + " · TradingView: " + TV.n + " recibidos" + (TV.rejected ? " · " + TV.rejected + " rechazados (última IP " + TV.lastIp + ")" : "") + (TV.err ? " · " + TV.err : ""));
   L.push(sesEstado());
   L.push((Object.keys(B).length ? "✅" : "❌") + " Sesgo (order flow): " + (Object.keys(B).length ? ORDER.map((k) => (NAMES[k] || k) + " " + (B[k] ? B[k].label.toLowerCase() + " " + (B[k].score > 0 ? "+" : "") + B[k].score : "—")).join(" · ") : "calculando…") + " · zonas rotas: " + Object.keys(Z.broken || {}).length);
+  L.push(atEstado());
   L.push(megaEstado());
   L.push(fundEstado());
   L.push(walletEstado());

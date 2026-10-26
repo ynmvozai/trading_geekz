@@ -296,3 +296,7 @@ Revisión de canales (lunes 19 oct): #sesion-ny 126 mensajes en 8 h (54 ballenas
 - v4.33: velas de YM/NQ/DXY desde CNBC ts-api 5D (5 min, agrupadas a 15m/1h/4h); Yahoo de respaldo (no responde desde Railway).
 - v4.34: velas de índices a TITO en hora PR (antes UTC); etiqueta de entrada no pisa el eje; sin velas planas.
 - v4.35: reportes.js — análisis de TITO + gráfica en #agent L-V 9:30, 12:00 y 4:30 PM PR (kv rep930/rep1200/rep1630; apagar con kv reportesOff). Ya no van a #agent el tablero del open ni el aviso pre-cierre. Alerta de zona (entrada) también a #agent con gráfica 15m. Comando "reporte [9|12|4]".
+
+## v4.36–v4.37 (25–26 oct 2026)
+- v4.36: semana.js — gráficas de los trades de la semana en #resultados (comando "trades semana", viernes 5:15 PM PR, GET /semana/<vgSecret>).
+- v4.37: autotrade.js — #auto-trade (lo crea el bot si no existe): prueba en papel con reglas CONGELADAS del backtest del 26 oct (sesgo 4H EMA20/50, FVG 1H, entrada 5 min al romper la vela anterior tras tocar la zona, stop extremo ±0,05 %, riesgo 0,15–1,2 %, meta 1:2, 24 h, solo NY 9:30–16:00 ET, BTC/SOL/oro). Backtest feb–oct NY bruto: +0,22R/+0,19R (train/val) a 1:2; con comisión 0,1 % negativo; maker 0,04 % +0,13/+0,08. Pendiente: Dow/Nasdaq con datos 5 min de Dukascopy.

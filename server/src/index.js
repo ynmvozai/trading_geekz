@@ -25,6 +25,7 @@ import { sessionTick } from "./sesion.js";
 import { morningTick } from "./buenosdias.js";
 import { reportTick } from "./reportes.js";
 import { weekTick } from "./semana.js";
+import { atTick, atStart } from "./autotrade.js";
 import { sesTick } from "./sesionny.js";
 import { startVg } from "./vgquant.js";
 import { startC15 } from "./confirm15.js";
@@ -103,6 +104,9 @@ else if (!kvGet("estudioV413", false)) { kvSet("estudioV413", Date.now()); setTi
 else if (!kvGet("estudioV420", false)) { kvSet("estudioV420", Date.now()); setTimeout(() => runEstudio([7], agent), 90000); }
 
 // ---------- Bot de Discord (#agent) ----------
+// v4.37: #auto-trade (prueba en papel 4H → 1H → 5 min). Crea el canal si no existe y revisa cada vela de 5 min.
+setTimeout(() => atStart(), 8000);
+setInterval(() => { atTick().catch(() => {}); }, 20000);
 botStart(onAgentMessage, { [ENV.diarioChannelId]: (m) => onDiario(m, isAdmin(m), simStats()) });
 startDiario();
 

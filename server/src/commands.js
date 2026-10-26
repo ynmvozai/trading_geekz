@@ -144,6 +144,8 @@ export async function onAgentMessage(msg) {
   }
   const gm = /^(?:gr[aá]fica|grafico|gráfico|chart)\s+(\S+)(?:\s+(5m|15m|1h|4h))?$/.exec(ql);
   if (gm) { try { const g = await renderChart({ mercado: gm[1], tf: gm[2] || "1h" }, { zonas: zonesFor(gm[1]) }); return agentFile(g.png, "grafica.png", g.caption); } catch (e) { return agent("⚠️ No pude dibujar la gráfica: " + e.message); } }
+  // v4.37: estado de #auto-trade
+  if (/^auto-?trade$/.test(ql)) { const { atEstado } = await import("./autotrade.js"); return agent(atEstado()); }
   // v4.36: "trades semana" / "screenshots" → gráficas de las operaciones de la semana en #resultados.
   if (/^(trades( de la)? semana|screenshots?( semana)?|capturas( semana)?)$/.test(ql)) { const { sendWeek } = await import("./semana.js"); agent("📸 Preparando las gráficas de la semana en #resultados…"); const r = await sendWeek(); return agent("✅ Listo: " + r.n + " operaciones de la semana" + (r.sent != null ? " · " + r.sent + " gráficas" : "") + " en #resultados."); }
   // v4.35: "reporte" (o "reporte 12" / "reporte 4:30") manda ya el análisis programado de TITO.
