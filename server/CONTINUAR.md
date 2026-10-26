@@ -300,3 +300,4 @@ Revisión de canales (lunes 19 oct): #sesion-ny 126 mensajes en 8 h (54 ballenas
 ## v4.36–v4.37 (25–26 oct 2026)
 - v4.36: semana.js — gráficas de los trades de la semana en #resultados (comando "trades semana", viernes 5:15 PM PR, GET /semana/<vgSecret>).
 - v4.37: autotrade.js — #auto-trade (lo crea el bot si no existe): prueba en papel con reglas CONGELADAS del backtest del 26 oct (sesgo 4H EMA20/50, FVG 1H, entrada 5 min al romper la vela anterior tras tocar la zona, stop extremo ±0,05 %, riesgo 0,15–1,2 %, meta 1:2, 24 h, solo NY 9:30–16:00 ET, BTC/SOL/oro). Backtest feb–oct NY bruto: +0,22R/+0,19R (train/val) a 1:2; con comisión 0,1 % negativo; maker 0,04 % +0,13/+0,08. Pendiente: Dow/Nasdaq con datos 5 min de Dukascopy.
+- 26 oct: v4.37 no se instalaba por incidentes de builds en Railway; los commits vacíos no disparan build (Railway solo construye si cambia server/).
