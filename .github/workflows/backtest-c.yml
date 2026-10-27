@@ -34,5 +34,5 @@ jobs:
         run: |
           cp -r backtest/resultados /tmp/res && cp backtest/descarga.log /tmp/res/ 2>/dev/null || true
           git config user.name "github-actions" && git config user.email "actions@github.com"
-          git checkout --orphan backtest-c-resultados && git rm -rqf . && cp -r /tmp/res/* .
+          git checkout --orphan backtest-c-resultados && git rm -rqf . && rm -rf backtest .github && cp -r /tmp/res/* .
           git add -A && git commit -qm "resultados estrategia C" && git push -f origin backtest-c-resultados
