@@ -8,7 +8,7 @@ START = dt.date.fromisoformat(sys.argv[1]); END = dt.date.fromisoformat(sys.argv
 OUT = "datos"; os.makedirs(OUT, exist_ok=True)
 UA = {"User-Agent": "Mozilla/5.0"}
 
-def http(url, tries=5):
+def http(url, tries=8):
     for i in range(tries):
         try:
             return urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30).read()
@@ -17,7 +17,7 @@ def http(url, tries=5):
             time.sleep(2 + 3 * i)
         except Exception:
             time.sleep(2 + 3 * i)
-    raise RuntimeError("FALLO " + url)
+    print("FALLO", url, flush=True); return None
 
 def days():
     d = START
@@ -55,17 +55,19 @@ def save(name, rows, div=1.0):
         f.write("t,o,h,l,c\n")
         for t, o, h, l, c in rows:
             f.write(f"{t},{o/div:.6g},{h/div:.6g},{l/div:.6g},{c/div:.6g}\n")
-    print(name, "velas", len(rows), "desde", dt.datetime.utcfromtimestamp(rows[0][0]) if rows else None,
-          "hasta", dt.datetime.utcfromtimestamp(rows[-1][0]) if rows else None, flush=True)
+    print(name, "velas", len(rows), "desde", dt.datetime.fromtimestamp(rows[0][0], dt.timezone.utc) if rows else None,
+          "hasta", dt.datetime.fromtimestamp(rows[-1][0], dt.timezone.utc) if rows else None, flush=True)
 
 t0 = time.time()
 for name, sym in (("BTC", "BTCUSDT"), ("SOL", "SOLUSDT")):
+    if os.path.exists(f"{OUT}/{name}.csv.gz"): print(name, "ya estaba"); continue
     with cf.ThreadPoolExecutor(8) as ex:
         res = list(ex.map(lambda d: binance_day(sym, d), days()))
     save(name, [r for _, rows in res for r in rows])
 for name, (sym, lo, hi) in DUKA.items():
+    if os.path.exists(f"{OUT}/{name}.csv.gz"): print(name, "ya estaba"); continue
     ds = [d for d in days() if d.weekday() != 5]
-    with cf.ThreadPoolExecutor(8) as ex:
+    with cf.ThreadPoolExecutor(3) as ex:
         res = list(ex.map(lambda d: duka_day(sym, d), ds))
     rows = [r for _, rr in res for r in rr]
     med = statistics.median([r[4] for r in rows[:5000]])
