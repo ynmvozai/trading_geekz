@@ -4,7 +4,7 @@ on:
     branches: [backtest-c]
     paths: [backtest/**, .github/workflows/backtest-c.yml]
 permissions:
-  contents: read
+  contents: write
 jobs:
   correr:
     runs-on: ubuntu-latest
@@ -30,7 +30,9 @@ jobs:
         working-directory: backtest
         run: |
           echo '```' >> $GITHUB_STEP_SUMMARY; cat resultados/resumen.json >> $GITHUB_STEP_SUMMARY; echo '```' >> $GITHUB_STEP_SUMMARY
-      - uses: actions/upload-artifact@v4
-        with:
-          name: resultados-c
-          path: backtest/resultados
+      - name: Guardar resultados en la rama backtest-c-resultados
+        run: |
+          cp -r backtest/resultados /tmp/res && cp backtest/descarga.log /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git checkout --orphan backtest-c-resultados && git rm -rqf . && cp -r /tmp/res/* .
+          git add -A && git commit -qm "resultados estrategia C" && git push -f origin backtest-c-resultados
