@@ -1,0 +1,11 @@
+[
+ {"n":1,"sym":"US30","hora_ny":"2026-10-23T11:30","dir":"venta","entrada":52333.5,"stop":52471.2,"meta":52032.1},
+ {"n":2,"sym":"US30","hora_ny":"2026-10-26T11:00","dir":"compra","entrada":52471.2,"stop":52318.6,"meta":52783.8},
+ {"n":3,"sym":"US30","hora_ny":"2026-10-27T09:00","dir":"venta","entrada":52486.1,"stop":52642.4,"meta":52255.4},
+ {"n":4,"sym":"US30","hora_ny":"2026-10-28T09:00","dir":"compra","entrada":52362.9,"stop":52176.9,"meta":52797.9},
+ {"n":5,"sym":"US30","hora_ny":"2026-10-29T13:00","dir":"venta","entrada":52416.7,"stop":52600.1,"meta":52016.0},
+ {"n":6,"sym":"NAS","hora_ny":"2026-10-16T12:30","dir":"venta","entrada":29800.0,"stop":30034.0,"meta":29130.7},
+ {"n":7,"sym":"NAS","hora_ny":"2026-10-23T13:30","dir":"compra","entrada":28987.1,"stop":28789.7,"meta":29543.5},
+ {"n":8,"sym":"NAS","hora_ny":"2026-10-26T12:00","dir":"compra","entrada":29110.0,"stop":28888.4,"meta":29953.3},
+ {"n":9,"sym":"NAS","hora_ny":"2026-10-29T13:45","dir":"venta","entrada":29456.8,"stop":29623.3,"meta":28878.3}
+]
