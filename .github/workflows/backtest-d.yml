@@ -1,0 +1,36 @@
+name: backtest-d
+on:
+  push:
+    branches: [backtest-c]
+    paths: [backtest/d.py, backtest/descargar_d.py, backtest/yasser9.json, .github/workflows/backtest-d.yml]
+permissions:
+  contents: write
+jobs:
+  correr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: backtest/datos_d
+          key: velas-d-1m-vol-2026-02-01-2026-10-29-v1
+      - name: Bajar velas con volumen
+        working-directory: backtest
+        run: |
+          python3 descargar_d.py 2026-02-01 2026-10-29 2>&1 | tee descarga_d.log
+          ls -la datos_d
+      - name: Correr estrategia D
+        working-directory: backtest
+        run: |
+          set -o pipefail
+          mkdir -p resultados_d
+          cp descarga_d.log resultados_d/
+          if [ -f d.py ]; then python3 d.py datos_d resultados_d 2>&1 | tee resultados_d/log.txt; else echo "sin d.py todavía"; fi
+      - name: Guardar resultados en la rama backtest-d-resultados
+        if: hashFiles('backtest/d.py') != ''
+        run: |
+          cp -r backtest/resultados_d /tmp/res
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git checkout --orphan backtest-d-resultados && git rm -rqf . && rm -rf backtest .github && cp -r /tmp/res/* .
+          git add -A && git commit -qm "resultados estrategia D" && git push -f origin backtest-d-resultados
