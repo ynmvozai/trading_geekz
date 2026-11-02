@@ -49,7 +49,7 @@ export function reportTick(t = Date.now()) {
   if (["Sat", "Sun"].includes(p.weekday) || kvGet("reportesOff", false)) return null;
   const mins = p.hour * 60 + p.minute;
   for (const s of SLOTS) {
-    const m0 = s.h * 60 + s.m, key = "rep" + s.k;
+    const m0 = s.h * 60 + s.m, key = "repNY" + s.k;   // v4.38: clave nueva para que hoy salga el de las 10:30 AM PR
     if (mins >= m0 && mins < m0 + 15 && kvGet(key) !== p.date) { kvSet(key, p.date); sendReport({ ...s, titulo: s.titulo + " · " + prLabel(t - (mins - m0) * 60000) }); return s.k; }
   }
   return null;
