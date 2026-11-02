@@ -6,7 +6,7 @@ import { renderChart } from "./chart.js";
 import { zonesFor } from "./zonasgraf.js";
 import { resPost, resFile } from "./discord.js";
 import { sim } from "./alerts.js";
-import { prParts, log, sleep } from "./util.js";
+import { prParts, etParts, log, sleep } from "./util.js";
 
 const NM = { BTC: "BTC", SOL: "SOL", XAU: "Oro", YM: "Dow", NQ: "Nasdaq", ETH: "ETH" };
 const MKT = { YM: "US30", NQ: "NAS100", XAU: "ORO" };
@@ -75,9 +75,9 @@ export async function sendWeek(opts = {}) {
   return { n: L.length, sent };
 }
 
-// Automático: viernes 5:15 PM hora PR, una vez por semana.
+// Automático: viernes 4:15 PM hora de NY (15 min después del cierre), una vez por semana.
 export function weekTick(t = Date.now()) {
-  const p = prParts(t);
-  if (p.weekday !== "Fri" || p.hour !== 17 || p.minute < 15 || p.minute >= 30 || kvGet("weekShots") === p.date || kvGet("weekShotsOff", false)) return false;
+  const p = etParts(t);
+  if (p.weekday !== "Fri" || p.hour !== 16 || p.minute < 15 || p.minute >= 30 || kvGet("weekShots") === p.date || kvGet("weekShotsOff", false)) return false;
   kvSet("weekShots", p.date); sendWeek().catch((e) => log("Semana:", e.message)); return true;
 }

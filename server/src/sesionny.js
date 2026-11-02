@@ -8,7 +8,7 @@ import { Z, prox, zDist, isBroken } from "./zones.js";
 import { IDX, refreshIdx } from "./macro.js";
 import { etParts } from "./sesion.js";
 import { kvGet, kvSet } from "./store.js";
-import { usd, px, prParts, splitLong, log } from "./util.js";
+import { usd, px, prParts, etParts as etP, splitLong, log } from "./util.js";
 import { pf, dot, cerca, lado, ladoMin, flecha, espera, rango, niveles } from "./friendly.js";
 import { sizeLine, nivelesMedidos } from "./risk.js";
 import { agentFile } from "./discord.js";
@@ -48,7 +48,8 @@ export async function sesPost(txt) {
 
 // ---------- Ventana y estado del día ----------
 export function inWindow(t = Date.now()) {
-  const p = prParts(t), m = p.hour * 60 + p.minute;
+  // v4.38: ventana en hora de NUEVA YORK (9:00 AM – 5:30 PM ET); en invierno es 10:00 AM – 6:30 PM PR.
+  const p = etP(t), m = p.hour * 60 + p.minute;
   return !["Sat", "Sun"].includes(p.weekday) && m >= 9 * 60 && m < 17 * 60 + 30;
 }
 export const sesMirror = (txt) => (inWindow() ? sesPost(txt) : Promise.resolve());
@@ -160,11 +161,11 @@ export function sesTick(now = Date.now()) {
   if (!inWindow(now)) return;
   if (now - lastIdx > 3 * 60000) { lastIdx = now; refreshIdx().catch(() => {}); }
   const st = day(), et = etParts(now), em = et.hour * 60 + et.minute;
-  const winStart = (() => { const p = prParts(now); return now - ((p.hour * 60 + p.minute) - 9 * 60) * 60000; })();
+  const winStart = (() => { const p = etP(now); return now - ((p.hour * 60 + p.minute) - 9 * 60) * 60000; })();
   const openT = now - (em - (9 * 60 + 30)) * 60000;
   // Máximos y mínimos de la sesión (desde el open de NY).
   if (em >= 9 * 60 + 30 && em <= 16 * 60) MKTS.forEach((m) => { const p = priceOf(m); if (p == null) return; st.hi[m] = Math.max(st.hi[m] || p, p); st.lo[m] = Math.min(st.lo[m] || p, p); });
-  // Pre-apertura: al abrir la ventana (9:00 AM PR).
+  // Pre-apertura: al abrir la ventana (9:00 AM NY).
   // v4.28 (Yasser: "me gusta el mensaje de las 9:00 AM"): vuelve el tablero de pre-apertura.
   if (!st.posted.pre) { st.posted.pre = 1; save(st); sesPost(boardText(em < 9 * 60 + 30 ? "🗽 Nueva York abre en " + (9 * 60 + 30 - em) + " min" : "🗽 Sesión de Nueva York en curso", now - 2 * 3600000, st)); return; }
   // Open de NY: 9:30 AM ET.
@@ -217,5 +218,5 @@ export function sesTick(now = Date.now()) {
 
 export function sesEstado() {
   const dest = ENV.hooks.sesion ? "webhook" : ENV.botToken && ENV.sesionChannelId ? "bot (canal " + ENV.sesionChannelId + ")" : "sin destino";
-  return (SES.lastErr ? "❌" : "✅") + " #sesion-ny (L-V 9:00 AM–5:30 PM PR): " + dest + " · enviados " + SES.sent + (SES.lastErr ? " · último error: " + SES.lastErr : "") + " · zonas de índices: " + idxZones().length;
+  return (SES.lastErr ? "❌" : "✅") + " #sesion-ny (L-V 9:00 AM–5:30 PM hora de NY): " + dest + " · enviados " + SES.sent + (SES.lastErr ? " · último error: " + SES.lastErr : "") + " · zonas de índices: " + idxZones().length;
 }

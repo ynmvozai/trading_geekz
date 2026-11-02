@@ -138,8 +138,8 @@ setInterval(() => {
 setInterval(() => {
   dailyTick();
   sessionTick();
-  try { weekTick(); } catch (e) { log("weekTick", e.message); }   // v4.36: gráficas de la semana, viernes 5:15 PM PR
-  try { reportTick(); } catch (e) { log("reportTick", e.message); }   // v4.35: análisis de TITO 9:30, 12:00 y 4:30 PM PR
+  try { weekTick(); } catch (e) { log("weekTick", e.message); }   // v4.38: gráficas de la semana, viernes 4:15 PM hora de NY
+  try { reportTick(); } catch (e) { log("reportTick", e.message); }   // v4.38: análisis de TITO 9:30, 12:00 y 4:30 PM hora de NY
   morningTick();   // v4.28: buenos días de TITO en #agent, L-V 8:30 AM PR
   expire();
   const pp = prParts();

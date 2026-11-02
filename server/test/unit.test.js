@@ -354,7 +354,7 @@ test("v4.33 · velas CNBC de 5 min se agrupan en 15m sin perder máximos ni mín
   assert.deepEqual(g[1], [t0 + 900000, 103, 108, 92, 104]);
 });
 
-test("v4.35 · reportes de TITO: 9:30, 12:00 y 4:30 PM PR, una vez por día, nunca en fin de semana", async () => {
+test("v4.35 · reportes de TITO: 9:30, 12:00 y 4:30 PM hora de NY, una vez por día, nunca en fin de semana", async () => {
   const R = await import("../src/reportes.js");
   const { kvSet } = await import("../src/store.js");
   kvSet("reportesOff", true);   // no llama a la IA en la prueba
@@ -364,7 +364,7 @@ test("v4.35 · reportes de TITO: 9:30, 12:00 y 4:30 PM PR, una vez por día, nun
   assert.deepEqual(R.SLOTS.map((s) => s.h + ":" + s.m), ["9:30", "12:0", "16:30"]);
   assert.equal(R.reportTick(at("2026-10-24T13:31:00Z")), null);           // sábado
   assert.equal(R.reportTick(at("2026-10-23T13:20:00Z")), null);           // 9:20 AM PR
-  assert.match(R.repQ(R.SLOTS[2]), /4:30 PM/);
+  assert.match(R.repQ(R.SLOTS[2]), /Cierre de Nueva York/);
 });
 
 test("v4.36 · semana: empieza el lunes 00:00 PR y junta diario + señales medidas", async () => {
@@ -377,4 +377,21 @@ test("v4.36 · semana: empieza el lunes 00:00 PR y junta diario + señales medid
   const L = W.collectWeek(Date.parse("2026-10-19T04:00:00Z"), t0 + 7200000);
   const mine = L.find((x) => x.fuente.startsWith("Tu diario"));
   assert.ok(mine); assert.equal(mine.r, 1.9); assert.equal(mine.tp, 102);
+});
+
+test("v4.38 · horario de invierno: NY abre 10:30 AM PR y los reportes siguen a NY", async () => {
+  const R = await import("../src/reportes.js");
+  const SN = await import("../src/sesionny.js");
+  const { kvSet } = await import("../src/store.js");
+  kvSet("reportesOff", true);
+  assert.equal(R.reportTick(Date.parse("2026-11-02T15:31:00Z")), null);   // apagado en la prueba
+  kvSet("reportesOff", false);
+  assert.equal(R.prLabel(Date.parse("2026-11-02T14:30:00Z")), "10:30 AM PR");
+  assert.equal(R.reportTick(Date.parse("2026-11-02T14:20:00Z")), null);   // 10:20 AM PR = 9:20 AM NY
+  assert.equal(SN.inWindow(Date.parse("2026-11-02T13:30:00Z")), false);  // 9:30 AM PR = 8:30 AM NY (aún no)
+  assert.equal(SN.inWindow(Date.parse("2026-11-02T14:05:00Z")), true);   // 10:05 AM PR = 9:05 AM NY
+  assert.equal(SN.inWindow(Date.parse("2026-11-02T22:20:00Z")), true);   // 6:20 PM PR = 5:20 PM NY
+  const A = await import("../src/autotrade.js");
+  assert.equal(A.inNY(Date.parse("2026-11-02T14:35:00Z")), true);        // 10:35 AM PR = 9:35 AM NY
+  assert.equal(A.inNY(Date.parse("2026-11-02T13:35:00Z")), false);       // 9:35 AM PR = 8:35 AM NY
 });

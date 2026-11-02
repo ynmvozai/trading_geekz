@@ -6,12 +6,12 @@ import { aiAsk } from "./tito.js";
 import { renderChart, extractCharts } from "./chart.js";
 import { zonesFor } from "./zonasgraf.js";
 import { kvGet, kvSet } from "./store.js";
-import { prParts, log } from "./util.js";
+import { prParts, etParts, log } from "./util.js";
 
 export const SLOTS = [
-  { k: "930", h: 9, m: 30, titulo: "🔔 9:30 AM · Abrió Nueva York", foco: "Abrió Nueva York. Di qué hizo el Dow y el Nasdaq en la pre-apertura y la primera vela de 15m, y qué zona de hoy está más cerca." },
-  { k: "1200", h: 12, m: 0, titulo: "🕛 12:00 PM · Mitad de la sesión", foco: "Es mediodía. Resume cómo va la sesión desde las 9:30 (máximo, mínimo, qué zonas tocó o rompió) y si queda algún escenario válido para la tarde." },
-  { k: "1630", h: 16, m: 30, titulo: "🏁 4:30 PM · Cierre de Nueva York", foco: "Ya cerró Nueva York. Resume el día (rango, cierre vs. apertura, qué zonas funcionaron o se rompieron) y deja los niveles a vigilar para mañana." },
+  { k: "930", h: 9, m: 30, titulo: "🔔 Abrió Nueva York", foco: "Abrió Nueva York. Di qué hizo el Dow y el Nasdaq en la pre-apertura y la primera vela de 15m, y qué zona de hoy está más cerca." },
+  { k: "1200", h: 12, m: 0, titulo: "🕛 Mitad de la sesión", foco: "Es mediodía. Resume cómo va la sesión desde la apertura (máximo, mínimo, qué zonas tocó o rompió) y si queda algún escenario válido para la tarde." },
+  { k: "1630", h: 16, m: 30, titulo: "🏁 Cierre de Nueva York", foco: "Ya cerró Nueva York. Resume el día (rango, cierre vs. apertura, qué zonas funcionaron o se rompieron) y deja los niveles a vigilar para mañana." },
 ];
 
 export const repQ = (s) => `${s.titulo}
@@ -41,13 +41,16 @@ export async function sendReport(s) {
 }
 
 // Lunes a viernes, dentro de los 15 min siguientes a cada hora, una vez por día y por hora.
+// v4.38 (Yasser, 2 nov): las horas son de NUEVA YORK (ET), así siguen al mercado cuando cambia el horario.
+// Invierno: 10:30 AM, 1:00 PM y 5:30 PM PR. Verano: 9:30 AM, 12:00 PM y 4:30 PM PR.
+export const prLabel = (t = Date.now()) => { const p = prParts(t), h = p.hour % 12 || 12; return h + ":" + String(p.minute).padStart(2, "0") + (p.hour < 12 ? " AM" : " PM") + " PR"; };
 export function reportTick(t = Date.now()) {
-  const p = prParts(t);
+  const p = etParts(t);
   if (["Sat", "Sun"].includes(p.weekday) || kvGet("reportesOff", false)) return null;
   const mins = p.hour * 60 + p.minute;
   for (const s of SLOTS) {
     const m0 = s.h * 60 + s.m, key = "rep" + s.k;
-    if (mins >= m0 && mins < m0 + 15 && kvGet(key) !== p.date) { kvSet(key, p.date); sendReport(s); return s.k; }
+    if (mins >= m0 && mins < m0 + 15 && kvGet(key) !== p.date) { kvSet(key, p.date); sendReport({ ...s, titulo: s.titulo + " · " + prLabel(t - (mins - m0) * 60000) }); return s.k; }
   }
   return null;
 }
