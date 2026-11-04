@@ -1,5 +1,6 @@
 # Backtest de la estrategia D (reglas en REGLAS_D.md). Sin dependencias.
 # Uso: python3 d.py datos_d/ resultados_d/
+# (corrida: 4 nov 2026)
 import bisect, gzip, json, os, sys, datetime as dt
 from zoneinfo import ZoneInfo
 
