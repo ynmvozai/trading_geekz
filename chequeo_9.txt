@@ -1,0 +1,64 @@
+
+## #1 US30 2026-10-23T11:30 venta · Yasser: entrada 52333.5 stop 52471.2 meta 52032.1
+  Precio Dukascopy a esa hora: 52389.8 (diferencia con tu entrada: +56.3)
+  Zona diaria viva que contiene el precio: ninguna
+  [D (15 min, mismo día)] señales ese día: 0
+  [D 30 min] señales ese día: 0
+
+## #2 US30 2026-10-26T11:00 compra · Yasser: entrada 52471.2 stop 52318.6 meta 52783.8
+  Precio Dukascopy a esa hora: 52468.7 (diferencia con tu entrada: -2.5)
+  Zona diaria viva que contiene el precio: ninguna
+  [D (15 min, mismo día)] señales ese día: 0
+  [D 30 min] señales ese día: 0
+
+## #3 US30 2026-10-27T09:00 venta · Yasser: entrada 52486.1 stop 52642.4 meta 52255.4
+  Precio Dukascopy a esa hora: 52460.5 (diferencia con tu entrada: -25.6)
+  Zona diaria viva que contiene el precio: ninguna
+  [D (15 min, mismo día)] señales ese día: 0
+  [D 30 min] señales ese día: 0
+
+## #4 US30 2026-10-28T09:00 compra · Yasser: entrada 52362.9 stop 52176.9 meta 52797.9
+  Precio Dukascopy a esa hora: 52410.4 (diferencia con tu entrada: +47.5)
+  Zona diaria viva que contiene el precio: mínimo 52049.3–52954.7
+  [D (15 min, mismo día)] señales ese día: 2
+    Wed 28 Oct 04:00 compra entrada 52313.4 stop 52240.9 meta - · zona mínimo 52049.3–52954.7 · descartada: fuera de horario
+    Wed 28 Oct 09:45 compra entrada 52420.2 stop 52256.9 meta 52954.7 · zona mínimo 52049.3–52954.7 · tomada → 3:55 PM +0.70R
+  [D 30 min] señales ese día: 2
+    Wed 28 Oct 04:30 venta entrada 52277.9 stop 52317.9 meta - · zona mínimo 52049.3–52954.7 · descartada: fuera de horario
+    Wed 28 Oct 10:00 compra entrada 52449.1 stop 52256.9 meta 52954.7 · zona mínimo 52049.3–52954.7 · tomada → 3:55 PM +0.44R
+
+## #5 US30 2026-10-29T13:00 venta · Yasser: entrada 52416.7 stop 52600.1 meta 52016.0
+  Precio Dukascopy a esa hora: 52320.6 (diferencia con tu entrada: -96.1)
+  Zona diaria viva que contiene el precio: mínimo 52049.3–52954.7
+  [D (15 min, mismo día)] señales ese día: 4
+    Thu 29 Oct 04:00 venta entrada 52642.5 stop 52755.9 meta - · zona mínimo 52049.3–52954.7 · descartada: fuera de horario
+    Thu 29 Oct 05:15 compra entrada 52796.9 stop 52633.0 meta - · zona mínimo 52049.3–52954.7 · descartada: fuera de horario
+    Thu 29 Oct 09:30 venta entrada 52360.9 stop 52570.9 meta 52049.3 · zona mínimo 52049.3–52954.7 · descartada: meta a menos de 2R
+    Thu 29 Oct 09:45 venta entrada 52258.1 stop 52433.4 meta 52049.3 · zona mínimo 52049.3–52954.7 · descartada: meta a menos de 2R
+  [D 30 min] señales ese día: 2
+    Thu 29 Oct 04:30 compra entrada 52820.5 stop 52643.4 meta - · zona mínimo 52049.3–52954.7 · descartada: fuera de horario
+    Thu 29 Oct 09:30 venta entrada 52360.9 stop 52873.4 meta 52049.3 · zona mínimo 52049.3–52954.7 · descartada: meta a menos de 2R
+
+## #6 NAS 2026-10-16T12:30 venta · Yasser: entrada 29800.0 stop 30034.0 meta 29130.7
+  Precio Dukascopy a esa hora: 29158.9 (diferencia con tu entrada: -641.1)
+  Zona diaria viva que contiene el precio: ninguna
+  [D (15 min, mismo día)] señales ese día: 0
+  [D 30 min] señales ese día: 0
+
+## #7 NAS 2026-10-23T13:30 compra · Yasser: entrada 28987.1 stop 28789.7 meta 29543.5
+  Precio Dukascopy a esa hora: 28994.6 (diferencia con tu entrada: +7.5)
+  Zona diaria viva que contiene el precio: ninguna
+  [D (15 min, mismo día)] señales ese día: 0
+  [D 30 min] señales ese día: 0
+
+## #8 NAS 2026-10-26T12:00 compra · Yasser: entrada 29110.0 stop 28888.4 meta 29953.3
+  Precio Dukascopy a esa hora: 29295.0 (diferencia con tu entrada: +185.0)
+  Zona diaria viva que contiene el precio: ninguna
+  [D (15 min, mismo día)] señales ese día: 0
+  [D 30 min] señales ese día: 0
+
+## #9 NAS 2026-10-29T13:45 venta · Yasser: entrada 29456.8 stop 29623.3 meta 28878.3
+  Precio Dukascopy a esa hora: 29350.3 (diferencia con tu entrada: -106.5)
+  Zona diaria viva que contiene el precio: ninguna
+  [D (15 min, mismo día)] señales ese día: 0
+  [D 30 min] señales ese día: 0
