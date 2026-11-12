@@ -36,6 +36,7 @@ log("Variables:", Object.entries(ENV.hooks).map(([k, v]) => k + "=" + mask(v)).j
 
 openStore();
 loadZones();
+Z.priceOf = (sym) => (M.S[sym] ? M.S[sym].price : null);   // v4.39: precio al marcar cada zona (historial)
 M.loadMarket();
 loadResults();
 initAlerts();

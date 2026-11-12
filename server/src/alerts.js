@@ -9,7 +9,7 @@ import { usd, px, sideEs, prParts } from "./util.js";
 import { recordAlert } from "./results.js";
 import { sesMirror, inWindow } from "./sesionny.js";
 import { pf, dot, cerca, lado, ladoMin, flecha, espera, rango, niveles, empuje, animo } from "./friendly.js";
-import { sizeLine, nivelesMedidos, measuredStop, FEE_RT } from "./risk.js";
+import { sizeLine, nivelesMedidos, measuredStop, FEE_RT, metaCorta } from "./risk.js";
 
 export const A = { paused: false, sent: 0, failed: 0, last: null, lastErr: "" };
 export const hookOf = (sym) => (SYMS[sym].ch === "oro" ? ENV.hooks.oro : ENV.hooks.crypto);
@@ -45,6 +45,7 @@ function onBig(o) {
   // Oro → #oro-índice (siempre), igual que antes.
   const hk = o.sym === "XAU" ? ENV.hooks.oro : null;
   if (!hk) { setAlert(o, "resumen horario"); return; }
+  if (metaCorta(o.sym, z, o.zone >= 0 ? o.price : null)) { setAlert(o, "meta corta"); A.cortas = (A.cortas || 0) + 1; return; }   // v4.39: meta a menos de 1R → no se manda
   const gk = o.sym + "|" + o.side + "|" + zkey(z), g = groups.get(gk), now = Date.now();
   if (g && now - g.t < GROUP_MS) {
     g.n++; g.usd += o.usd; g.price = o.price; setAlert(o, "agrupada");

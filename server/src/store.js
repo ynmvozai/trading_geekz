@@ -22,6 +22,11 @@ export function openStore(file) {
       track INTEGER, status TEXT, tp1_t INTEGER, end_t INTEGER, r REAL);
     CREATE INDEX IF NOT EXISTS alerts_status ON alerts(status);
   `);
+  // v4.39: historial de zonas (cada zona que marca TITO o se carga a mano, y cuándo se rompe) para medir estrategias con las zonas reales.
+  db.exec(`CREATE TABLE IF NOT EXISTS zone_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, t INTEGER, ev TEXT, source TEXT, sym TEXT, name TEXT, grade TEXT, side TEXT,
+      lo REAL, hi REAL, sl REAL, tp1 REAL, tp2 REAL, price REAL);
+    CREATE INDEX IF NOT EXISTS zone_log_t ON zone_log(t);`);
   // v3.1: sentimiento (Fear & Greed) al momento de la alerta
   for (const c of ["fg INTEGER", "fg_read TEXT"]) { try { db.exec("ALTER TABLE alerts ADD COLUMN " + c); } catch {} }
   return db;
@@ -66,4 +71,18 @@ export function alertsSince(since) {
 }
 export function lastAlert() {
   return db.prepare("SELECT * FROM alerts ORDER BY t DESC LIMIT 1").get();
+}
+
+// v4.39 · Historial de zonas. ev: "marcada" | "rota".
+export function zoneLogInsert(z, ev, source, price, t = Date.now()) {
+  try {
+    db.prepare("INSERT INTO zone_log(t,ev,source,sym,name,grade,side,lo,hi,sl,tp1,tp2,price) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)")
+      .run(t, ev, source || "", z.sym, z.name || "", z.grade || "", z.side || "", z.lo, z.hi, z.sl || 0, z.tp1 || 0, z.tp2 || 0, price > 0 ? price : null);
+  } catch {}
+}
+export function zoneLogSince(since = 0) {
+  return db.prepare("SELECT * FROM zone_log WHERE t>=? ORDER BY t").all(since);
+}
+export function zoneLogCount() {
+  try { return db.prepare("SELECT COUNT(*) n FROM zone_log WHERE ev='marcada'").get().n; } catch { return 0; }
 }

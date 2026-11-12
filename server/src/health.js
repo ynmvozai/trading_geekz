@@ -13,7 +13,7 @@ import { onVg, vgSecret } from "./vgquant.js";
 import { A, sim, simStats } from "./alerts.js";
 import { T } from "./tito.js";
 import { openCount } from "./results.js";
-import { alertsSince } from "./store.js";
+import { alertsSince, zoneLogSince, zoneLogCount } from "./store.js";
 import { kvGet } from "./store.js";
 import { px, fullPR, shortPR } from "./util.js";
 import { SENT, sentData } from "./sentiment.js";
@@ -39,7 +39,7 @@ export function healthData() {
     ok: !stale, version: VERSION, horas_encendido: +((now - BOOT) / 3600000).toFixed(2),
     binance: { conectado: bn.connected, bloqueado: bn.blocked, velas_rest: rest.ok == null ? "sin probar" : rest.ok ? "ok" : rest.lastError, region: process.env.RAILWAY_REPLICA_REGION || null, ultimo_error: bn.lastError || null, reconexiones: Math.max(0, bn.connects - 1) },
     mercados, discord_bot: bot.ready ? "conectado" : bot.lastError || "desconectado",
-    alertas_pausadas: A.paused, zonas: Z.list.length, senales_en_seguimiento: openCount(), auto_trade: atEstado(),
+    alertas_pausadas: A.paused, zonas: Z.list.length, zonas_guardadas: zoneLogCount(), senales_en_seguimiento: openCount(), auto_trade: atEstado(),
   };
 }
 
@@ -64,7 +64,7 @@ export function estadoText() {
   L.push(ck(bot.ready) + " Bot de Discord " + h.discord_bot);
   L.push("Canales: #cryptoman " + ck(ENV.hooks.crypto) + " · #oro-índice " + ck(ENV.hooks.oro) + " · #agent " + ck(ENV.hooks.agent) + " · #ai-crypto " + ck(ENV.hooks.aicrypto) + " · #resultados ✅ (" + (ENV.hooks.resultados ? "webhook" : "bot") + ")");
   L.push((A.paused ? "⏸️ Alertas PAUSADAS (escribe **reanudar alertas**)" : "✅ Alertas activas") + " · enviadas " + A.sent + (A.failed ? " · fallidas " + A.failed + " (" + A.lastErr + ")" : "") + " · última: " + (A.last ? A.last.txt + " · " + shortPR(A.last.t) : "ninguna todavía"));
-  L.push("Zonas: " + Z.list.length + " (" + (Z.date || "sin cargar") + ") · señales en seguimiento: " + h.senales_en_seguimiento + " · Ai Crypto: " + simStats());
+  L.push("Zonas: " + Z.list.length + " (" + (Z.date || "sin cargar") + ") · historial: " + h.zonas_guardadas + " guardadas · señales en seguimiento: " + h.senales_en_seguimiento + " · Ai Crypto: " + simStats());
   L.push(ck(ENV.anthropicKey && !T.lastErr) + " Ai (TITO): " + (ENV.anthropicKey ? T.calls + " llamadas · " + Math.round(T.inTok / 1000) + "K tokens entrada · " + Math.round(T.outTok / 1000) + "K salida" + (T.lastErr ? " · último error: " + T.lastErr : "") : "falta ANTHROPIC_API_KEY") + " · mapa diario " + (kvGet("dailyOff", false) ? "apagado" : "7:48 AM") + (kvGet("lastDaily") ? " (último " + kvGet("lastDaily") + ")" : ""));
   L.push((SENT.crypto ? "✅" : "❌") + " Fear & Greed crypto: " + (SENT.crypto ? SENT.crypto.v + "/100 · " + SENT.crypto.label : "sin dato" + (SENT.lastErr.crypto ? " (" + SENT.lastErr.crypto + ")" : "")) + " · acciones (ref. oro): " + (SENT.stocks ? SENT.stocks.v + "/100 · " + SENT.stocks.label : "sin dato" + (SENT.lastErr.stocks ? " (" + SENT.lastErr.stocks + ")" : "")));
   L.push((CAL.t ? "✅" : "❌") + " Calendario USD: " + (CAL.t ? CAL.events.length + " eventos medio/alto" + (CAL.err ? " (" + CAL.err + ")" : "") : "sin dato" + (CAL.err ? " (" + CAL.err + ")" : "")) + " · plan sesión NY " + (kvGet("sessionOff", false) ? "apagado" : "8:15 AM ET L-V") + (kvGet("lastSession") ? " (último " + kvGet("lastSession") + ")" : ""));
@@ -140,6 +140,14 @@ export function startHttp() {
     if (u === "/state") return json(200, stateData());
     // v4.2: señales registradas (solo lectura) para medir y mejorar el % de acierto.
     if (u === "/estudio") return json(200, estudioData());
+    if (u.startsWith("/zonas-historial/")) {   // v4.39: historial de zonas marcadas y rotas (con el secreto de VG QUANT). ?dias=N · ?csv=1
+      if (u.slice(17) !== vgSecret()) return json(404, { error: "no existe" });
+      const qs = new URL(req.url, "http://x").searchParams, rows = zoneLogSince(Date.now() - Math.min(+(qs.get("dias") || 365), 3650) * 86400000);
+      if (!qs.get("csv")) return json(200, rows);
+      const cols = ["t", "ev", "source", "sym", "name", "grade", "side", "lo", "hi", "sl", "tp1", "tp2", "price"];
+      res.writeHead(200, { "content-type": "text/csv; charset=utf-8", "cache-control": "no-store" });
+      return res.end(cols.join(",") + "\n" + rows.map((r) => cols.map((c) => (typeof r[c] === "string" ? '"' + r[c].replace(/"/g, "'") + '"' : r[c] ?? "")).join(",")).join("\n"));
+    }
     if (u === "/senales") { const d = +(new URL(req.url, "http://x").searchParams.get("dias") || 30); return json(200, alertsSince(Date.now() - Math.min(d, 365) * 86400000)); }
     if (u === "/" || u === "/index.html") {
       try { res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }); return res.end(fs.readFileSync(panelFile)); } catch { return json(404, { error: "sin panel" }); }

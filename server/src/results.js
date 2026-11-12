@@ -5,6 +5,7 @@ import { zkey } from "./zones.js";
 import { px, shortPR } from "./util.js";
 import { sentFor, sentRead } from "./sentiment.js";
 import { minStop } from "./bias.js";
+import { metaCorta } from "./risk.js";
 
 const H48 = 48 * 3600000;
 let open = []; // seguimiento en memoria (copia de la base de datos)
@@ -21,6 +22,7 @@ export function recordAlert({ t, sym, kind, z, order_side, entry, prox, usd }) {
   if (open.some((x) => x.zkey === a.zkey)) { a.track = 0; a.status = "repetida"; }      // ya hay una señal abierta en esa zona
   else if (!valid(z.side, entry, z.sl, z.tp1)) { a.track = 0; a.status = "sin niveles"; } // SL/TP no cuadran con el precio
   else if (Math.abs(entry - z.sl) < minStop(sym, entry)) { a.track = 0; a.status = "stop muy cerca"; } // v4.3: menos de medio movimiento normal de 1 hora
+  else if (Math.abs(z.tp1 - entry) < Math.abs(entry - z.sl) || metaCorta(sym, z, entry)) { a.track = 0; a.status = "meta corta"; } // v4.39: meta 1 a menos de 1R del stop
   else { a.track = 1; a.status = "abierta"; }
   a.id = alertInsert(a);
   if (a.track) open.push({ ...a, tp1_t: null });

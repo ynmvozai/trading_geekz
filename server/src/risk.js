@@ -71,3 +71,16 @@ export function sizeLine(sym, z, f, entry = null) {
   return "💵 Con " + money(s.risk) + " de riesgo (" + where + "): " + s.qty.toFixed(u.d) + " " + u.u + " · " + money(s.notional) + " · " + s.lev.toFixed(1) + "x · comisión ~" + money(s.fee) + " → si toca el stop pierdes ~" + money(s.loss) +
     (rr != null ? "\n-# R:R a la meta 1 (con comisión): " + rr.toFixed(2) + (rr < 1 ? " · la meta queda corta para este stop" : "") : "");
 }
+
+// v4.39 (Yasser, 26 oct): no se manda ni se cuenta una señal cuya meta 1 queda a menos de 1R del stop.
+// Stop = el medido (cripto y oro) o, si no hay medición, el de la zona. Entrada = precio dado o el borde cercano.
+// Devuelve true solo si hay meta y stop válidos y la ganancia hasta la meta es menor que la distancia al stop.
+export function metaCorta(sym, z, entry = null) {
+  if (!z || !(z.tp1 > 0)) return false;
+  const sl = measuredStop(sym, z.side, z.lo, z.hi) ?? (z.sl > 0 ? z.sl : null);
+  if (sl == null) return false;
+  const e = entry > 0 ? entry : z.side === "sell" ? Math.min(z.lo, z.hi) : Math.max(z.lo, z.hi);
+  const dist = z.side === "sell" ? sl - e : e - sl, gain = z.side === "sell" ? e - z.tp1 : z.tp1 - e;
+  if (!(dist > 0)) return false;
+  return gain < dist;
+}

@@ -301,3 +301,19 @@ Revisión de canales (lunes 19 oct): #sesion-ny 126 mensajes en 8 h (54 ballenas
 - v4.36: semana.js — gráficas de los trades de la semana en #resultados (comando "trades semana", viernes 5:15 PM PR, GET /semana/<vgSecret>).
 - v4.37: autotrade.js — #auto-trade (lo crea el bot si no existe): prueba en papel con reglas CONGELADAS del backtest del 26 oct (sesgo 4H EMA20/50, FVG 1H, entrada 5 min al romper la vela anterior tras tocar la zona, stop extremo ±0,05 %, riesgo 0,15–1,2 %, meta 1:2, 24 h, solo NY 9:30–16:00 ET, BTC/SOL/oro). Backtest feb–oct NY bruto: +0,22R/+0,19R (train/val) a 1:2; con comisión 0,1 % negativo; maker 0,04 % +0,13/+0,08. Pendiente: Dow/Nasdaq con datos 5 min de Dukascopy.
 - 26 oct: v4.37 no se instalaba por incidentes de builds en Railway; los commits vacíos no disparan build (Railway solo construye si cambia server/).
+
+## v4.38 (2 nov 2026)
+- Horarios atados a Nueva York (horario de invierno): NY abre 10:30 AM PR; reportes de TITO, ventana de #sesion-ny y gráficas del viernes siguen a NY.
+
+## v4.39 · Historial de zonas y filtro de meta corta (12 nov 2026)
+- **Historial de zonas** (`zone_log` en SQLite): cada zona que se marca (TITO "Ai", "cargadas a mano", "índices") se guarda con hora, niveles y precio de ese momento; cada zona rota también (`ev = "rota"`). No manda nada a Discord.
+  Sirve para medir estrategias con las zonas REALES del agente (antes los backtests usaban un sustituto). Lectura: `GET /zonas-historial/<vgSecret>` (JSON; `?csv=1`, `?dias=N`). `/health` → `zonas_guardadas`; `estado` → "historial: N guardadas".
+- **Meta a menos de 1R** (pendiente de Yasser del 26 oct): `metaCorta()` en risk.js (stop medido en cripto/oro, stop de la zona en índices). Si la meta 1 queda a menos de 1R del stop:
+  no sale el aviso de "entró a zona" en #sesion-ny ni su copia a #agent, no sale la ballena de oro con niveles en #oro-índice, y `recordAlert` la guarda como "meta corta" sin seguirla.
+- Pruebas: `test/v439.test.js`. `test/e2e.mjs` da los mismos ❌ que antes de este cambio (está desactualizado respecto a v4.22+ y no tiene red).
+
+## Backtests de entradas (rama `backtest-c`, no toca `main`)
+- Reglas congeladas y código en `backtest/` (REGLAS_C/D/E.md, c.py, d.py, e.py); corren en GitHub Actions; resultados en ramas `backtest-c-resultados`, `backtest-d-resultados`, `backtest-e-resultados`.
+- C (26 oct; neutralización 5m + retroceso 1m; BTC/SOL/oro/Dow/Nasdaq): no pasa. D (29 oct; zona diaria OB/máx/mín + vela de mayor volumen 15m; Dow/Nasdaq): no pasa (33 trades; −0,58R / +0,01R).
+- E (12 nov; zona = vela diaria anterior; E-1 tres toques + BOS, E-2 ruptura con FVG u OB 3×): ver `backtest-e-resultados`.
+- #auto-trade en papel al 12 nov: 3 de 11 ganadas, R promedio −0,48 con comisión (−0,18 bruto); faltan 39 para juzgar.

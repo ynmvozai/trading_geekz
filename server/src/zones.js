@@ -1,9 +1,9 @@
 // Zonas: guardadas en la base de datos, proximidad, cerca/en zona, aplicar zonas de TITO.
 import { SYMS, NEAR, WATCH, NAMES, ORDER } from "./config.js";
-import { kvGet, kvSet } from "./store.js";
+import { kvGet, kvSet, zoneLogInsert } from "./store.js";
 import { px, usd, shortPR } from "./util.js";
 
-export const Z = { list: [], date: null, state: [], broken: {} }; // state[i] = {inside, buy, sell, since}
+export const Z = { list: [], date: null, state: [], broken: {}, priceOf: null }; // state[i] = {inside, buy, sell, since} · priceOf(sym): lo pone index.js
 
 export function loadZones() {
   Z.list = kvGet("zones", []) || [];
@@ -20,6 +20,8 @@ export function setZones(list, source) {
   Object.keys(Z.broken).forEach((k) => { if (!keys.has(k)) delete Z.broken[k]; }); kvSet("zbroken", Z.broken);
   kvSet("zones", Z.list);
   kvSet("zdate", Z.date);
+  // v4.39: cada zona marcada queda en el historial con el precio de ese momento (no cuando solo se borra una).
+  if (source !== "zona borrada") { const t = Date.now(); list.forEach((z) => zoneLogInsert(z, "marcada", source || "", Z.priceOf ? Z.priceOf(z.sym) : null, t)); }
 }
 
 export const zkey = (z) => z.sym + "|" + z.lo + "|" + z.hi;
@@ -39,6 +41,7 @@ export function checkBroken(sym, p, t = Date.now()) {
     map = Z.broken;
     if (map[zkey(z)]) continue;
     map[zkey(z)] = t; out.push({ z, stop: s });
+    zoneLogInsert(z, "rota", "", p, t);   // v4.39
   }
   if (out.length) {
     kvSet("zbroken", map);

@@ -7,10 +7,10 @@ import { S, feed } from "./market.js";
 import { Z, prox, zDist, isBroken } from "./zones.js";
 import { IDX, refreshIdx } from "./macro.js";
 import { etParts } from "./sesion.js";
-import { kvGet, kvSet } from "./store.js";
+import { kvGet, kvSet, zoneLogInsert } from "./store.js";
 import { usd, px, prParts, etParts as etP, splitLong, log } from "./util.js";
 import { pf, dot, cerca, lado, ladoMin, flecha, espera, rango, niveles } from "./friendly.js";
-import { sizeLine, nivelesMedidos } from "./risk.js";
+import { sizeLine, nivelesMedidos, metaCorta } from "./risk.js";
 import { agentFile } from "./discord.js";
 import { renderChart } from "./chart.js";
 import { zonesFor } from "./zonasgraf.js";
@@ -91,7 +91,7 @@ export function setIdxZones(arr) {
     let lo = +z.lo, hi = +z.hi; if (lo > hi) [lo, hi] = [hi, lo];
     return { sym: String(z.sym).toUpperCase(), name: String(z.name || "Zona").slice(0, 40), grade: String(z.grade || "").slice(0, 4), side: z.side === "buy" ? "buy" : "sell", lo, hi, sl: +z.sl || 0, tp1: +z.tp1 || 0, tp2: +z.tp2 || 0, nota: String(z.nota || "").slice(0, 200) };
   }).filter((z) => z.lo > 0 && z.hi > 0);
-  if (list.length) kvSet("idxZones", { date: prParts().date, list });
+  if (list.length) { kvSet("idxZones", { date: prParts().date, list }); const t = Date.now(); list.forEach((z) => zoneLogInsert(z, "marcada", "índices", priceOf(z.sym), t)); }   // v4.39: historial
   return list.length;
 }
 export function zonesOf(m) { return IDXK[m] ? idxZones().filter((z) => z.sym === m) : Z.list.filter((z) => z.sym === m && !isBroken(z)); }
@@ -197,6 +197,7 @@ export function sesTick(now = Date.now()) {
       // v4.27 (Yasser, menos ruido): solo cuando el precio ENTRA a la zona, una vez por zona por día (sin avisos de "cerca").
       if (lvl === 2 && prev < 2 && !st.done[k]) {
         st.done[k] = 1; st.t[k] = now;
+        if (metaCorta(m, z, p)) { SES.cortas = (SES.cortas || 0) + 1; st.lvl[k] = lvl; return; }   // v4.39: meta a menos de 1R del stop → no se manda
         const tk = MNAME[m] + " " + ladoMin(z.side);
         if (lvl === 2 && !st.touched.includes(tk)) st.touched.push(tk);
         const f = (x) => pfm(x, m), n = (!IDXK[m] && nivelesMedidos(m, z, f)) || niveles(z, f), L = [];   // v4.21: stop medido en cripto y oro
