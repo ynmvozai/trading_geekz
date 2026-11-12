@@ -1,0 +1,34 @@
+name: backtest-e
+on:
+  push:
+    branches: [backtest-c]
+    paths: [backtest/e.py, .github/workflows/backtest-e.yml]
+permissions:
+  contents: write
+jobs:
+  correr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: backtest/datos_d
+          key: velas-d-1m-vol-2026-02-01-2026-10-29-v1
+      - name: Velas con volumen (usa las guardadas; si faltan, las baja)
+        working-directory: backtest
+        run: |
+          python3 descargar_d.py 2026-02-01 2026-10-29 2>&1 | tee descarga_e.log
+          ls -la datos_d
+      - name: Correr estrategia E
+        working-directory: backtest
+        run: |
+          set -o pipefail
+          mkdir -p resultados_e && cp descarga_e.log resultados_e/
+          python3 e.py datos_d resultados_e 2>&1 | tee resultados_e/log.txt
+      - name: Guardar resultados en la rama backtest-e-resultados
+        run: |
+          cp -r backtest/resultados_e /tmp/res
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git checkout --orphan backtest-e-resultados && git rm -rqf . && rm -rf backtest .github && cp -r /tmp/res/* .
+          git add -A && git commit -qm "resultados estrategia E" && git push -f origin backtest-e-resultados
