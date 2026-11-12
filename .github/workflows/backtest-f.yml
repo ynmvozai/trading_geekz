@@ -32,5 +32,7 @@ jobs:
           mkdir -p backtest/resultados_f && cp backtest/descarga_f.log backtest/resultados_f/ 2>/dev/null || true
           cp -r backtest/resultados_f /tmp/res
           git config user.name "github-actions" && git config user.email "actions@github.com"
+          mv backtest/datos_f /tmp/datos_f_keep
           git checkout --orphan backtest-f-resultados && git rm -rqf . && rm -rf backtest .github && cp -r /tmp/res/* .
           git add -A && git commit -qm "resultados estrategia F" && git push -f origin backtest-f-resultados
+          mkdir -p backtest && mv /tmp/datos_f_keep backtest/datos_f
