@@ -1,0 +1,89 @@
+US30 velas 1m 246194 días con zona 193
+NAS velas 1m 248442 días con zona 192
+E 15 min {"E-1 TODOS parte 1": {"n": 0}, "E-1 TODOS parte 2": {"n": 1, "aciertos_pct": 0.0, "R_bruto": -1.0, "R_neto": -1.012, "R_total_neto": -1.01, "stop_pts_mediana": 80.4}, "E-2 TODOS parte 1": {"n": 64, "aciertos_pct": 48.4, "R_bruto": -0.025, "R_neto": -0.034, "R_total_neto": -2.16, "stop_pts_mediana": 241.6}, "E-2 TODOS parte 2": {"n": 63, "aciertos_pct": 46.0, "R_bruto": -0.057, "R_neto": -0.068, "R_total_neto": -4.31, "stop_pts_mediana": 187.8}}
+E 5 min {"E-1 TODOS parte 1": {"n": 2, "aciertos_pct": 0.0, "R_bruto": -0.607, "R_neto": -0.616, "R_total_neto": -1.23, "stop_pts_mediana": 271.9}, "E-1 TODOS parte 2": {"n": 1, "aciertos_pct": 0.0, "R_bruto": -1.0, "R_neto": -1.048, "R_total_neto": -1.05, "stop_pts_mediana": 20.8}, "E-2 TODOS parte 1": {"n": 81, "aciertos_pct": 43.2, "R_bruto": 0.032, "R_neto": 0.018, "R_total_neto": 1.47, "stop_pts_mediana": 153.6}, "E-2 TODOS parte 2": {"n": 96, "aciertos_pct": 41.7, "R_bruto": 0.047, "R_neto": 0.028, "R_total_neto": 2.74, "stop_pts_mediana": 128.0}}
+E 30 min {"E-1 TODOS parte 1": {"n": 1, "aciertos_pct": 0.0, "R_bruto": -1.0, "R_neto": -1.009, "R_total_neto": -1.01, "stop_pts_mediana": 109.1}, "E-1 TODOS parte 2": {"n": 0}, "E-2 TODOS parte 1": {"n": 60, "aciertos_pct": 46.7, "R_bruto": -0.049, "R_neto": -0.056, "R_total_neto": -3.36, "stop_pts_mediana": 280.9}, "E-2 TODOS parte 2": {"n": 60, "aciertos_pct": 40.0, "R_bruto": -0.107, "R_neto": -0.115, "R_total_neto": -6.87, "stop_pts_mediana": 292.0}}
+E 15 min · ruptura a 3R {"E-1 TODOS parte 1": {"n": 0}, "E-1 TODOS parte 2": {"n": 1, "aciertos_pct": 0.0, "R_bruto": -1.0, "R_neto": -1.012, "R_total_neto": -1.01, "stop_pts_mediana": 80.4}, "E-2 TODOS parte 1": {"n": 64, "aciertos_pct": 48.4, "R_bruto": 0.011, "R_neto": 0.003, "R_total_neto": 0.18, "stop_pts_mediana": 241.6}, "E-2 TODOS parte 2": {"n": 63, "aciertos_pct": 46.0, "R_bruto": -0.089, "R_neto": -0.1, "R_total_neto": -6.31, "stop_pts_mediana": 187.8}}
+VEREDICTO {'E-1': False, 'E-2': False}
+
+## #1 US30 2026-10-23T11:30 venta · Yasser: entrada 52333.5 stop 52471.2 meta 52032.1
+  Vela diaria anterior: piso 52439.1 · techo 52928.9
+  [E 15 min] señales ese día: 1
+    Fri 23 Oct 08:45 E-2 venta entrada 52398.6 stop 52570.2 meta - · descartada: fuera de horario
+  [E 5 min] señales ese día: 1
+    Fri 23 Oct 08:35 E-2 venta entrada 52422.1 stop 52488.7 meta - · descartada: fuera de horario
+  [E 30 min] señales ese día: 1
+    Fri 23 Oct 09:00 E-2 venta entrada 52398.7 stop 52618.7 meta - · descartada: fuera de horario
+
+## #2 US30 2026-10-26T11:00 compra · Yasser: entrada 52471.2 stop 52318.6 meta 52783.8
+  Vela diaria anterior: piso 52049.3 · techo 52954.7
+  [E 15 min] señales ese día: 0
+  [E 5 min] señales ese día: 0
+  [E 30 min] señales ese día: 0
+
+## #3 US30 2026-10-27T09:00 venta · Yasser: entrada 52486.1 stop 52642.4 meta 52255.4
+  Vela diaria anterior: piso 52188.4 · techo 52630.7
+  [E 15 min] señales ese día: 0
+  [E 5 min] señales ese día: 0
+  [E 30 min] señales ese día: 0
+
+## #4 US30 2026-10-28T09:00 compra · Yasser: entrada 52362.9 stop 52176.9 meta 52797.9
+  Vela diaria anterior: piso 52235.1 · techo 52597.0
+  [E 15 min] señales ese día: 1
+    Wed 28 Oct 09:45 E-1 compra entrada 52420.2 stop 52256.9 meta 52597.0 · descartada: meta a menos de 2R
+  [E 5 min] señales ese día: 4
+    Wed 28 Oct 02:25 E-2 venta entrada 52234.5 stop 52267.9 meta - · descartada: fuera de horario
+    Wed 28 Oct 02:40 E-2 venta entrada 52224.9 stop 52248.0 meta - · descartada: fuera de horario
+    Wed 28 Oct 12:55 E-2 compra entrada 52645.2 stop 52505.1 meta 52925.4 · tomada → stop -1.00R
+    Wed 28 Oct 16:10 E-2 compra entrada 52623.2 stop 52434.2 meta - · descartada: fuera de horario
+  [E 30 min] señales ese día: 0
+
+## #5 US30 2026-10-29T13:00 venta · Yasser: entrada 52416.7 stop 52600.1 meta 52016.0
+  Vela diaria anterior: piso 52214.9 · techo 52774.1
+  [E 15 min] señales ese día: 3
+    Thu 29 Oct 01:15 E-2 compra entrada 52827.9 stop 52664.9 meta - · descartada: fuera de horario
+    Thu 29 Oct 04:30 E-2 compra entrada 52820.5 stop 52633.0 meta - · descartada: fuera de horario
+    Thu 29 Oct 14:00 E-2 venta entrada 52177.6 stop 52278.2 meta 51976.5 · tomada → stop -1.00R
+  [E 5 min] señales ese día: 5
+    Thu 29 Oct 01:10 E-2 compra entrada 52801.5 stop 52697.9 meta - · descartada: fuera de horario
+    Thu 29 Oct 02:10 E-2 compra entrada 52794.0 stop 52752.0 meta - · descartada: fuera de horario
+    Thu 29 Oct 03:10 E-2 compra entrada 52784.5 stop 52712.4 meta - · descartada: fuera de horario
+    Thu 29 Oct 04:25 E-2 compra entrada 52794.5 stop 52633.0 meta - · descartada: fuera de horario
+    Thu 29 Oct 05:05 E-2 compra entrada 52814.5 stop 52698.4 meta - · descartada: fuera de horario
+  [E 30 min] señales ese día: 2
+    Thu 29 Oct 01:30 E-2 compra entrada 52797.4 stop 52643.4 meta - · descartada: fuera de horario
+    Thu 29 Oct 14:30 E-2 venta entrada 52200.1 stop 52316.1 meta - · descartada: fuera de horario
+
+## #6 NAS 2026-10-16T12:30 venta · Yasser: entrada 29800.0 stop 30034.0 meta 29130.7
+  Vela diaria anterior: piso 29663.7 · techo 29942.2
+  [E 15 min] señales ese día: 2
+    Fri 16 Oct 00:15 E-2 compra entrada 29960.2 stop 29894.0 meta - · descartada: fuera de horario
+    Fri 16 Oct 10:00 E-2 venta entrada 29635.5 stop 29884.2 meta 29137.9 · tomada → meta +2.00R
+  [E 5 min] señales ese día: 2
+    Fri 16 Oct 04:05 E-2 compra entrada 29994.3 stop 29934.4 meta - · descartada: fuera de horario
+    Fri 16 Oct 11:00 E-2 venta entrada 29663.6 stop 29745.3 meta 29500.2 · tomada → meta +2.00R
+  [E 30 min] señales ese día: 2
+    Fri 16 Oct 00:30 E-2 compra entrada 29979.4 stop 29893.2 meta - · descartada: fuera de horario
+    Fri 16 Oct 10:00 E-2 venta entrada 29635.5 stop 29927.5 meta 29051.4 · tomada → 3:55 PM +1.59R
+
+## #7 NAS 2026-10-23T13:30 compra · Yasser: entrada 28987.1 stop 28789.7 meta 29543.5
+  Vela diaria anterior: piso 28858.7 · techo 29808.2
+  [E 15 min] señales ese día: 0
+  [E 5 min] señales ese día: 0
+  [E 30 min] señales ese día: 0
+
+## #8 NAS 2026-10-26T12:00 compra · Yasser: entrada 29110.0 stop 28888.4 meta 29953.3
+  Vela diaria anterior: piso 28823.5 · techo 29161.6
+  [E 15 min] señales ese día: 1
+    Mon 26 Oct 08:30 E-2 compra entrada 29167.9 stop 28918.3 meta - · descartada: fuera de horario
+  [E 5 min] señales ese día: 2
+    Mon 26 Oct 10:20 E-2 compra entrada 29212.0 stop 29018.8 meta 29598.5 · tomada → 3:55 PM +0.35R
+    Mon 26 Oct 10:45 E-2 compra entrada 29248.6 stop 29133.8 meta 29478.2 · descartada: ya había un trade abierto
+  [E 30 min] señales ese día: 1
+    Mon 26 Oct 08:30 E-2 compra entrada 29167.9 stop 28918.3 meta - · descartada: fuera de horario
+
+## #9 NAS 2026-10-29T13:45 venta · Yasser: entrada 29456.8 stop 29623.3 meta 28878.3
+  Vela diaria anterior: piso 29612.9 · techo 30020.8
+  [E 15 min] señales ese día: 0
+  [E 5 min] señales ese día: 0
+  [E 30 min] señales ese día: 0

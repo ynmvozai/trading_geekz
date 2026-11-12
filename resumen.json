@@ -1,0 +1,333 @@
+{
+ "E 15 min": {
+  "E-1 US30 parte 1": {
+   "n": 0
+  },
+  "E-1 US30 parte 2": {
+   "n": 0
+  },
+  "E-1 NAS parte 1": {
+   "n": 0
+  },
+  "E-1 NAS parte 2": {
+   "n": 1,
+   "aciertos_pct": 0.0,
+   "R_bruto": -1.0,
+   "R_neto": -1.012,
+   "R_total_neto": -1.01,
+   "stop_pts_mediana": 80.4
+  },
+  "E-1 TODOS parte 1": {
+   "n": 0
+  },
+  "E-1 TODOS parte 2": {
+   "n": 1,
+   "aciertos_pct": 0.0,
+   "R_bruto": -1.0,
+   "R_neto": -1.012,
+   "R_total_neto": -1.01,
+   "stop_pts_mediana": 80.4
+  },
+  "E-2 US30 parte 1": {
+   "n": 30,
+   "aciertos_pct": 46.7,
+   "R_bruto": -0.086,
+   "R_neto": -0.096,
+   "R_total_neto": -2.89,
+   "stop_pts_mediana": 303.2
+  },
+  "E-2 US30 parte 2": {
+   "n": 33,
+   "aciertos_pct": 36.4,
+   "R_bruto": -0.253,
+   "R_neto": -0.269,
+   "R_total_neto": -8.87,
+   "stop_pts_mediana": 195.5
+  },
+  "E-2 NAS parte 1": {
+   "n": 34,
+   "aciertos_pct": 50.0,
+   "R_bruto": 0.028,
+   "R_neto": 0.022,
+   "R_total_neto": 0.73,
+   "stop_pts_mediana": 194.2
+  },
+  "E-2 NAS parte 2": {
+   "n": 30,
+   "aciertos_pct": 56.7,
+   "R_bruto": 0.159,
+   "R_neto": 0.152,
+   "R_total_neto": 4.57,
+   "stop_pts_mediana": 187.8
+  },
+  "E-2 TODOS parte 1": {
+   "n": 64,
+   "aciertos_pct": 48.4,
+   "R_bruto": -0.025,
+   "R_neto": -0.034,
+   "R_total_neto": -2.16,
+   "stop_pts_mediana": 241.6
+  },
+  "E-2 TODOS parte 2": {
+   "n": 63,
+   "aciertos_pct": 46.0,
+   "R_bruto": -0.057,
+   "R_neto": -0.068,
+   "R_total_neto": -4.31,
+   "stop_pts_mediana": 187.8
+  }
+ },
+ "E 5 min": {
+  "E-1 US30 parte 1": {
+   "n": 1,
+   "aciertos_pct": 0.0,
+   "R_bruto": -0.214,
+   "R_neto": -0.225,
+   "R_total_neto": -0.23,
+   "stop_pts_mediana": 271.9
+  },
+  "E-1 US30 parte 2": {
+   "n": 0
+  },
+  "E-1 NAS parte 1": {
+   "n": 1,
+   "aciertos_pct": 0.0,
+   "R_bruto": -1.0,
+   "R_neto": -1.007,
+   "R_total_neto": -1.01,
+   "stop_pts_mediana": 136.9
+  },
+  "E-1 NAS parte 2": {
+   "n": 1,
+   "aciertos_pct": 0.0,
+   "R_bruto": -1.0,
+   "R_neto": -1.048,
+   "R_total_neto": -1.05,
+   "stop_pts_mediana": 20.8
+  },
+  "E-1 TODOS parte 1": {
+   "n": 2,
+   "aciertos_pct": 0.0,
+   "R_bruto": -0.607,
+   "R_neto": -0.616,
+   "R_total_neto": -1.23,
+   "stop_pts_mediana": 271.9
+  },
+  "E-1 TODOS parte 2": {
+   "n": 1,
+   "aciertos_pct": 0.0,
+   "R_bruto": -1.0,
+   "R_neto": -1.048,
+   "R_total_neto": -1.05,
+   "stop_pts_mediana": 20.8
+  },
+  "E-2 US30 parte 1": {
+   "n": 37,
+   "aciertos_pct": 40.5,
+   "R_bruto": 0.064,
+   "R_neto": 0.048,
+   "R_total_neto": 1.76,
+   "stop_pts_mediana": 194.3
+  },
+  "E-2 US30 parte 2": {
+   "n": 48,
+   "aciertos_pct": 37.5,
+   "R_bruto": -0.018,
+   "R_neto": -0.043,
+   "R_total_neto": -2.07,
+   "stop_pts_mediana": 143.0
+  },
+  "E-2 NAS parte 1": {
+   "n": 44,
+   "aciertos_pct": 45.5,
+   "R_bruto": 0.005,
+   "R_neto": -0.007,
+   "R_total_neto": -0.3,
+   "stop_pts_mediana": 130.9
+  },
+  "E-2 NAS parte 2": {
+   "n": 48,
+   "aciertos_pct": 45.8,
+   "R_bruto": 0.112,
+   "R_neto": 0.1,
+   "R_total_neto": 4.8,
+   "stop_pts_mediana": 111.9
+  },
+  "E-2 TODOS parte 1": {
+   "n": 81,
+   "aciertos_pct": 43.2,
+   "R_bruto": 0.032,
+   "R_neto": 0.018,
+   "R_total_neto": 1.47,
+   "stop_pts_mediana": 153.6
+  },
+  "E-2 TODOS parte 2": {
+   "n": 96,
+   "aciertos_pct": 41.7,
+   "R_bruto": 0.047,
+   "R_neto": 0.028,
+   "R_total_neto": 2.74,
+   "stop_pts_mediana": 128.0
+  }
+ },
+ "E 30 min": {
+  "E-1 US30 parte 1": {
+   "n": 0
+  },
+  "E-1 US30 parte 2": {
+   "n": 0
+  },
+  "E-1 NAS parte 1": {
+   "n": 1,
+   "aciertos_pct": 0.0,
+   "R_bruto": -1.0,
+   "R_neto": -1.009,
+   "R_total_neto": -1.01,
+   "stop_pts_mediana": 109.1
+  },
+  "E-1 NAS parte 2": {
+   "n": 0
+  },
+  "E-1 TODOS parte 1": {
+   "n": 1,
+   "aciertos_pct": 0.0,
+   "R_bruto": -1.0,
+   "R_neto": -1.009,
+   "R_total_neto": -1.01,
+   "stop_pts_mediana": 109.1
+  },
+  "E-1 TODOS parte 2": {
+   "n": 0
+  },
+  "E-2 US30 parte 1": {
+   "n": 27,
+   "aciertos_pct": 44.4,
+   "R_bruto": -0.141,
+   "R_neto": -0.15,
+   "R_total_neto": -4.06,
+   "stop_pts_mediana": 352.6
+  },
+  "E-2 US30 parte 2": {
+   "n": 30,
+   "aciertos_pct": 36.7,
+   "R_bruto": -0.161,
+   "R_neto": -0.172,
+   "R_total_neto": -5.15,
+   "stop_pts_mediana": 332.1
+  },
+  "E-2 NAS parte 1": {
+   "n": 33,
+   "aciertos_pct": 48.5,
+   "R_bruto": 0.027,
+   "R_neto": 0.021,
+   "R_total_neto": 0.7,
+   "stop_pts_mediana": 226.5
+  },
+  "E-2 NAS parte 2": {
+   "n": 30,
+   "aciertos_pct": 43.3,
+   "R_bruto": -0.053,
+   "R_neto": -0.057,
+   "R_total_neto": -1.72,
+   "stop_pts_mediana": 245.4
+  },
+  "E-2 TODOS parte 1": {
+   "n": 60,
+   "aciertos_pct": 46.7,
+   "R_bruto": -0.049,
+   "R_neto": -0.056,
+   "R_total_neto": -3.36,
+   "stop_pts_mediana": 280.9
+  },
+  "E-2 TODOS parte 2": {
+   "n": 60,
+   "aciertos_pct": 40.0,
+   "R_bruto": -0.107,
+   "R_neto": -0.115,
+   "R_total_neto": -6.87,
+   "stop_pts_mediana": 292.0
+  }
+ },
+ "E 15 min · ruptura a 3R": {
+  "E-1 US30 parte 1": {
+   "n": 0
+  },
+  "E-1 US30 parte 2": {
+   "n": 0
+  },
+  "E-1 NAS parte 1": {
+   "n": 0
+  },
+  "E-1 NAS parte 2": {
+   "n": 1,
+   "aciertos_pct": 0.0,
+   "R_bruto": -1.0,
+   "R_neto": -1.012,
+   "R_total_neto": -1.01,
+   "stop_pts_mediana": 80.4
+  },
+  "E-1 TODOS parte 1": {
+   "n": 0
+  },
+  "E-1 TODOS parte 2": {
+   "n": 1,
+   "aciertos_pct": 0.0,
+   "R_bruto": -1.0,
+   "R_neto": -1.012,
+   "R_total_neto": -1.01,
+   "stop_pts_mediana": 80.4
+  },
+  "E-2 US30 parte 1": {
+   "n": 30,
+   "aciertos_pct": 46.7,
+   "R_bruto": -0.052,
+   "R_neto": -0.063,
+   "R_total_neto": -1.89,
+   "stop_pts_mediana": 303.2
+  },
+  "E-2 US30 parte 2": {
+   "n": 33,
+   "aciertos_pct": 36.4,
+   "R_bruto": -0.27,
+   "R_neto": -0.287,
+   "R_total_neto": -9.46,
+   "stop_pts_mediana": 195.5
+  },
+  "E-2 NAS parte 1": {
+   "n": 34,
+   "aciertos_pct": 50.0,
+   "R_bruto": 0.067,
+   "R_neto": 0.061,
+   "R_total_neto": 2.07,
+   "stop_pts_mediana": 194.2
+  },
+  "E-2 NAS parte 2": {
+   "n": 30,
+   "aciertos_pct": 56.7,
+   "R_bruto": 0.111,
+   "R_neto": 0.105,
+   "R_total_neto": 3.14,
+   "stop_pts_mediana": 187.8
+  },
+  "E-2 TODOS parte 1": {
+   "n": 64,
+   "aciertos_pct": 48.4,
+   "R_bruto": 0.011,
+   "R_neto": 0.003,
+   "R_total_neto": 0.18,
+   "stop_pts_mediana": 241.6
+  },
+  "E-2 TODOS parte 2": {
+   "n": 63,
+   "aciertos_pct": 46.0,
+   "R_bruto": -0.089,
+   "R_neto": -0.1,
+   "R_total_neto": -6.31,
+   "stop_pts_mediana": 187.8
+  }
+ },
+ "veredicto": {
+  "E-1": false,
+  "E-2": false
+ }
+}
