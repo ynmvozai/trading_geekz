@@ -122,7 +122,7 @@ export async function atTick(now = Date.now()) {
       const o = outcome(tr, K); if (!o) continue;
       Object.assign(tr, o); tr.rn = netR(tr, tr.rb);
       d.open.splice(i, 1); d.closed.unshift(tr); save(d);
-      await postClose(tr.sym, tr, d);
+      await postClose(tr.sym, tr, d).then(() => { AT.postErr = ""; }).catch((e) => { AT.postErr = e.message; });   // v4.40: si Discord falla, la medición sigue
     }
     if (!inNY(barClose)) { AT.err = ""; return; }
     for (const sym of AT_SYMS) {
@@ -134,13 +134,14 @@ export async function atTick(now = Date.now()) {
       const id = sym + "|" + tr.zt + "|" + tr.side;
       if (d.seen.includes(id)) continue;
       d.seen.push(id); Object.assign(tr, { id, sym }); d.open.push(tr); save(d);
-      await postEntry(sym, tr); save(d);
+      await postEntry(sym, tr).then(() => { AT.postErr = ""; }).catch((e) => { AT.postErr = e.message; log("Auto-Trade aviso:", e.message); }); save(d);   // v4.40: un aviso fallido ya no corta la búsqueda en los otros mercados
     }
     AT.err = "";
   } catch (e) { AT.err = e.message; log("Auto-Trade:", e.message); }
 }
 export function atEstado() {
   const d = st();
-  return (AT.err ? "⚠️" : "✅") + " Auto-Trade (4H→1H→5m, NY, 1:2): " + d.open.length + " abiertas · " + atRecord(d) + (AT.err ? " · error: " + AT.err : "");
+  const e = AT.err || AT.postErr || "";
+  return (e ? "⚠️" : "✅") + " Auto-Trade (4H→1H→5m, NY, 1:2): " + d.open.length + " abiertas · " + atRecord(d) + (e ? " · error: " + e : "") + (AT.postErr ? " · los trades se siguen midiendo, pero no salen en Discord" : "");
 }
-export async function atStart() { try { await chan(); } catch (e) { AT.err = e.message; log("Auto-Trade canal:", e.message); } }
+export async function atStart() { try { await chan(); } catch (e) { AT.postErr = e.message; log("Auto-Trade canal:", e.message); } }

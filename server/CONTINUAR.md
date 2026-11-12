@@ -317,3 +317,9 @@ Revisión de canales (lunes 19 oct): #sesion-ny 126 mensajes en 8 h (54 ballenas
 - C (26 oct; neutralización 5m + retroceso 1m; BTC/SOL/oro/Dow/Nasdaq): no pasa. D (29 oct; zona diaria OB/máx/mín + vela de mayor volumen 15m; Dow/Nasdaq): no pasa (33 trades; −0,58R / +0,01R).
 - E (12 nov; zona = vela diaria anterior; E-1 tres toques + BOS, E-2 ruptura con FVG u OB 3×): ver `backtest-e-resultados`.
 - #auto-trade en papel al 12 nov: 3 de 11 ganadas, R promedio −0,48 con comisión (−0,18 bruto); faltan 39 para juzgar.
+
+## v4.40 · #auto-trade: la medición ya no depende del canal (12 nov 2026)
+- Hallazgo: el canal #auto-trade NUNCA se creó (el bot no tiene "Gestionar canales": HTTP 403). Los trades en papel sí se guardaron (kv), pero ningún aviso salió en Discord,
+  y cuando un aviso fallaba se cortaba la búsqueda de entradas en los otros mercados de esa vela. `/health` decía ✅ porque el error se borraba fuera de sesión.
+- Arreglo: los avisos fallidos ya no cortan nada (`AT.postErr`), y `/health` y `estado` muestran el error de forma permanente hasta que un aviso salga bien.
+- Para verlo en Discord: Yasser crea un canal de texto llamado exactamente `auto-trade` (el bot lo encuentra por nombre) o le da al bot el permiso "Gestionar canales".
