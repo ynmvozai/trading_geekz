@@ -1,0 +1,46 @@
+name: datos-15m
+on:
+  push:
+    branches: [backtest-c]
+    paths: [.github/workflows/datos-15m.yml]
+permissions:
+  contents: write
+jobs:
+  bajar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        sym: [US30, NAS, XAU, BTC]
+        year: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bajar ${{ matrix.sym }} ${{ matrix.year }}
+        working-directory: backtest
+        run: |
+          if [ "${{ matrix.year }}" = "2026" ]; then python3 descargar_15m.py ${{ matrix.sym }} 2026 10; else python3 descargar_15m.py ${{ matrix.sym }} ${{ matrix.year }}; fi 2>&1 | tee log_tmp.txt; mkdir -p salida; mv log_tmp.txt salida/log_${{ matrix.sym }}_${{ matrix.year }}.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v15-${{ matrix.sym }}-${{ matrix.year }}
+          path: backtest/salida
+          retention-days: 14
+  juntar:
+    needs: bajar
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/art
+          pattern: v15-*
+          merge-multiple: true
+      - name: Guardar en la rama datos-15m
+        run: |
+          ls -la /tmp/art | head -60
+          cat /tmp/art/log_*.txt > /tmp/art/descarga.log || true
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git checkout --orphan datos-15m-tmp && git rm -rqf . && rm -rf backtest .github && cp /tmp/art/*.csv.gz /tmp/art/descarga.log .
+          git add -A && git commit -qm "velas de 15 min (Dukascopy 1 min agregadas), 2017–oct 2026" && git push -f origin HEAD:datos-15m
