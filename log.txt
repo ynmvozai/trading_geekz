@@ -1,0 +1,12 @@
+US30 velas 1h 28494
+NAS velas 1h 27551
+XAU velas 1h 26638
+BTC velas 1h 42206
+G-1 {"TODOS parte 1": {"n": 180, "aciertos_pct": 26.7, "R_bruto": 0.256, "R_neto": 0.209, "R_total_neto": 37.67, "stop_pct_mediana": 0.72}, "TODOS parte 2": {"n": 177, "aciertos_pct": 24.9, "R_bruto": 0.269, "R_neto": 0.236, "R_total_neto": 41.79, "stop_pct_mediana": 0.71}}
+G-2 {"TODOS parte 1": {"n": 212, "aciertos_pct": 29.2, "R_bruto": -0.164, "R_neto": -0.224, "R_total_neto": -47.47, "stop_pct_mediana": 0.77}, "TODOS parte 2": {"n": 178, "aciertos_pct": 35.4, "R_bruto": 0.049, "R_neto": 0.006, "R_total_neto": 1.09, "stop_pct_mediana": 0.8}}
+G-1 meta 2R fija {"TODOS parte 1": {"n": 227, "aciertos_pct": 37.9, "R_bruto": 0.084, "R_neto": 0.044, "R_total_neto": 10.04, "stop_pct_mediana": 0.84}, "TODOS parte 2": {"n": 226, "aciertos_pct": 40.3, "R_bruto": 0.186, "R_neto": 0.158, "R_total_neto": 35.7, "stop_pct_mediana": 0.86}}
+G-1 señal en diario {"TODOS parte 1": {"n": 32, "aciertos_pct": 21.9, "R_bruto": -0.341, "R_neto": -0.363, "R_total_neto": -11.61, "stop_pct_mediana": 1.83}, "TODOS parte 2": {"n": 38, "aciertos_pct": 26.3, "R_bruto": -0.191, "R_neto": -0.205, "R_total_neto": -7.81, "stop_pct_mediana": 1.52}}
+G-1 entrada al 50 % {"TODOS parte 1": {"n": 140, "aciertos_pct": 14.3, "R_bruto": 0.077, "R_neto": 0.002, "R_total_neto": 0.25, "stop_pct_mediana": 0.44}, "TODOS parte 2": {"n": 140, "aciertos_pct": 13.6, "R_bruto": 0.114, "R_neto": 0.063, "R_total_neto": 8.77, "stop_pct_mediana": 0.41}}
+G-2 entrada al 50 % {"TODOS parte 1": {"n": 193, "aciertos_pct": 31.1, "R_bruto": -0.07, "R_neto": -0.167, "R_total_neto": -32.26, "stop_pct_mediana": 0.46}, "TODOS parte 2": {"n": 149, "aciertos_pct": 34.9, "R_bruto": 0.041, "R_neto": -0.039, "R_total_neto": -5.76, "stop_pct_mediana": 0.45}}
+G-2 meta 3R {"TODOS parte 1": {"n": 202, "aciertos_pct": 24.8, "R_bruto": -0.134, "R_neto": -0.194, "R_total_neto": -39.27, "stop_pct_mediana": 0.79}, "TODOS parte 2": {"n": 168, "aciertos_pct": 30.4, "R_bruto": 0.168, "R_neto": 0.126, "R_total_neto": 21.13, "stop_pct_mediana": 0.82}}
+VEREDICTO {'G-1': True, 'G-2': False}
