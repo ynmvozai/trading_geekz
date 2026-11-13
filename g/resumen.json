@@ -1,0 +1,1028 @@
+{
+ "G-1": {
+  "TODOS parte 1": {
+   "n": 189,
+   "aciertos_pct": 15.3,
+   "R_bruto": -0.279,
+   "R_neto": -0.37,
+   "R_total_neto": -69.86,
+   "stop_pct_mediana": 0.43
+  },
+  "TODOS parte 2": {
+   "n": 184,
+   "aciertos_pct": 26.1,
+   "R_bruto": 0.336,
+   "R_neto": 0.291,
+   "R_total_neto": 53.49,
+   "stop_pct_mediana": 0.67
+  },
+  "US30 parte 1": {
+   "n": 52,
+   "aciertos_pct": 13.5,
+   "R_bruto": -0.425,
+   "R_neto": -0.469,
+   "R_total_neto": -24.39,
+   "stop_pct_mediana": 0.4
+  },
+  "US30 parte 2": {
+   "n": 49,
+   "aciertos_pct": 26.5,
+   "R_bruto": 0.465,
+   "R_neto": 0.44,
+   "R_total_neto": 21.56,
+   "stop_pct_mediana": 0.53
+  },
+  "NAS parte 1": {
+   "n": 43,
+   "aciertos_pct": 16.3,
+   "R_bruto": -0.181,
+   "R_neto": -0.216,
+   "R_total_neto": -9.3,
+   "stop_pct_mediana": 0.59
+  },
+  "NAS parte 2": {
+   "n": 45,
+   "aciertos_pct": 22.2,
+   "R_bruto": 0.49,
+   "R_neto": 0.472,
+   "R_total_neto": 21.23,
+   "stop_pct_mediana": 0.66
+  },
+  "XAU parte 1": {
+   "n": 76,
+   "aciertos_pct": 17.1,
+   "R_bruto": -0.033,
+   "R_neto": -0.19,
+   "R_total_neto": -14.42,
+   "stop_pct_mediana": 0.32
+  },
+  "XAU parte 2": {
+   "n": 58,
+   "aciertos_pct": 27.6,
+   "R_bruto": 0.186,
+   "R_neto": 0.111,
+   "R_total_neto": 6.42,
+   "stop_pct_mediana": 0.57
+  },
+  "BTC parte 1": {
+   "n": 18,
+   "aciertos_pct": 11.1,
+   "R_bruto": -1.124,
+   "R_neto": -1.209,
+   "R_total_neto": -21.75,
+   "stop_pct_mediana": 1.52
+  },
+  "BTC parte 2": {
+   "n": 32,
+   "aciertos_pct": 28.1,
+   "R_bruto": 0.196,
+   "R_neto": 0.134,
+   "R_total_neto": 4.29,
+   "stop_pct_mediana": 2.15
+  },
+  "compras parte 1": {
+   "n": 71,
+   "aciertos_pct": 16.9,
+   "R_bruto": -0.265,
+   "R_neto": -0.362,
+   "R_total_neto": -25.69,
+   "stop_pct_mediana": 0.42
+  },
+  "compras parte 2": {
+   "n": 55,
+   "aciertos_pct": 38.2,
+   "R_bruto": 0.69,
+   "R_neto": 0.654,
+   "R_total_neto": 35.98,
+   "stop_pct_mediana": 0.9
+  },
+  "ventas parte 1": {
+   "n": 118,
+   "aciertos_pct": 14.4,
+   "R_bruto": -0.287,
+   "R_neto": -0.374,
+   "R_total_neto": -44.17,
+   "stop_pct_mediana": 0.43
+  },
+  "ventas parte 2": {
+   "n": 129,
+   "aciertos_pct": 20.9,
+   "R_bruto": 0.185,
+   "R_neto": 0.136,
+   "R_total_neto": 17.51,
+   "stop_pct_mediana": 0.59
+  },
+  "pin parte 1": {
+   "n": 70,
+   "aciertos_pct": 11.4,
+   "R_bruto": -0.489,
+   "R_neto": -0.597,
+   "R_total_neto": -41.79,
+   "stop_pct_mediana": 0.37
+  },
+  "pin parte 2": {
+   "n": 69,
+   "aciertos_pct": 24.6,
+   "R_bruto": 0.309,
+   "R_neto": 0.253,
+   "R_total_neto": 17.49,
+   "stop_pct_mediana": 0.58
+  },
+  "envolvente parte 1": {
+   "n": 119,
+   "aciertos_pct": 17.6,
+   "R_bruto": -0.155,
+   "R_neto": -0.236,
+   "R_total_neto": -28.07,
+   "stop_pct_mediana": 0.5
+  },
+  "envolvente parte 2": {
+   "n": 115,
+   "aciertos_pct": 27.0,
+   "R_bruto": 0.352,
+   "R_neto": 0.313,
+   "R_total_neto": 36.01,
+   "stop_pct_mediana": 0.7
+  }
+ },
+ "G-2": {
+  "TODOS parte 1": {
+   "n": 165,
+   "aciertos_pct": 48.5,
+   "R_bruto": 0.441,
+   "R_neto": 0.359,
+   "R_total_neto": 59.18,
+   "stop_pct_mediana": 0.51
+  },
+  "TODOS parte 2": {
+   "n": 230,
+   "aciertos_pct": 33.5,
+   "R_bruto": -0.014,
+   "R_neto": -0.06,
+   "R_total_neto": -13.71,
+   "stop_pct_mediana": 0.77
+  },
+  "US30 parte 1": {
+   "n": 27,
+   "aciertos_pct": 44.4,
+   "R_bruto": 0.351,
+   "R_neto": 0.321,
+   "R_total_neto": 8.67,
+   "stop_pct_mediana": 0.47
+  },
+  "US30 parte 2": {
+   "n": 46,
+   "aciertos_pct": 39.1,
+   "R_bruto": 0.179,
+   "R_neto": 0.154,
+   "R_total_neto": 7.1,
+   "stop_pct_mediana": 0.51
+  },
+  "NAS parte 1": {
+   "n": 42,
+   "aciertos_pct": 54.8,
+   "R_bruto": 0.594,
+   "R_neto": 0.563,
+   "R_total_neto": 23.64,
+   "stop_pct_mediana": 0.56
+  },
+  "NAS parte 2": {
+   "n": 59,
+   "aciertos_pct": 27.1,
+   "R_bruto": -0.222,
+   "R_neto": -0.238,
+   "R_total_neto": -14.03,
+   "stop_pct_mediana": 0.82
+  },
+  "XAU parte 1": {
+   "n": 61,
+   "aciertos_pct": 45.9,
+   "R_bruto": 0.388,
+   "R_neto": 0.242,
+   "R_total_neto": 14.78,
+   "stop_pct_mediana": 0.35
+  },
+  "XAU parte 2": {
+   "n": 62,
+   "aciertos_pct": 30.6,
+   "R_bruto": -0.116,
+   "R_neto": -0.193,
+   "R_total_neto": -11.96,
+   "stop_pct_mediana": 0.52
+  },
+  "BTC parte 1": {
+   "n": 35,
+   "aciertos_pct": 48.6,
+   "R_bruto": 0.42,
+   "R_neto": 0.345,
+   "R_total_neto": 12.09,
+   "stop_pct_mediana": 2.46
+  },
+  "BTC parte 2": {
+   "n": 63,
+   "aciertos_pct": 38.1,
+   "R_bruto": 0.141,
+   "R_neto": 0.082,
+   "R_total_neto": 5.18,
+   "stop_pct_mediana": 2.38
+  },
+  "compras parte 1": {
+   "n": 105,
+   "aciertos_pct": 49.5,
+   "R_bruto": 0.456,
+   "R_neto": 0.384,
+   "R_total_neto": 40.3,
+   "stop_pct_mediana": 0.52
+  },
+  "compras parte 2": {
+   "n": 161,
+   "aciertos_pct": 33.5,
+   "R_bruto": -0.016,
+   "R_neto": -0.062,
+   "R_total_neto": -9.95,
+   "stop_pct_mediana": 0.66
+  },
+  "ventas parte 1": {
+   "n": 60,
+   "aciertos_pct": 46.7,
+   "R_bruto": 0.415,
+   "R_neto": 0.315,
+   "R_total_neto": 18.87,
+   "stop_pct_mediana": 0.51
+  },
+  "ventas parte 2": {
+   "n": 69,
+   "aciertos_pct": 33.3,
+   "R_bruto": -0.01,
+   "R_neto": -0.055,
+   "R_total_neto": -3.76,
+   "stop_pct_mediana": 1.4
+  },
+  "pin parte 1": {
+   "n": 66,
+   "aciertos_pct": 40.9,
+   "R_bruto": 0.207,
+   "R_neto": 0.113,
+   "R_total_neto": 7.43,
+   "stop_pct_mediana": 0.47
+  },
+  "pin parte 2": {
+   "n": 94,
+   "aciertos_pct": 31.9,
+   "R_bruto": -0.084,
+   "R_neto": -0.144,
+   "R_total_neto": -13.54,
+   "stop_pct_mediana": 0.52
+  },
+  "envolvente parte 1": {
+   "n": 99,
+   "aciertos_pct": 53.5,
+   "R_bruto": 0.597,
+   "R_neto": 0.523,
+   "R_total_neto": 51.75,
+   "stop_pct_mediana": 0.56
+  },
+  "envolvente parte 2": {
+   "n": 136,
+   "aciertos_pct": 34.6,
+   "R_bruto": 0.034,
+   "R_neto": -0.001,
+   "R_total_neto": -0.17,
+   "stop_pct_mediana": 1.06
+  }
+ },
+ "G-1 meta 2R fija": {
+  "TODOS parte 1": {
+   "n": 234,
+   "aciertos_pct": 29.1,
+   "R_bruto": -0.185,
+   "R_neto": -0.265,
+   "R_total_neto": -62.06,
+   "stop_pct_mediana": 0.49
+  },
+  "TODOS parte 2": {
+   "n": 228,
+   "aciertos_pct": 39.5,
+   "R_bruto": 0.141,
+   "R_neto": 0.1,
+   "R_total_neto": 22.8,
+   "stop_pct_mediana": 0.79
+  },
+  "US30 parte 1": {
+   "n": 67,
+   "aciertos_pct": 29.9,
+   "R_bruto": -0.205,
+   "R_neto": -0.244,
+   "R_total_neto": -16.33,
+   "stop_pct_mediana": 0.43
+  },
+  "US30 parte 2": {
+   "n": 58,
+   "aciertos_pct": 48.3,
+   "R_bruto": 0.431,
+   "R_neto": 0.409,
+   "R_total_neto": 23.74,
+   "stop_pct_mediana": 0.65
+  },
+  "NAS parte 1": {
+   "n": 56,
+   "aciertos_pct": 21.4,
+   "R_bruto": -0.373,
+   "R_neto": -0.405,
+   "R_total_neto": -22.7,
+   "stop_pct_mediana": 0.65
+  },
+  "NAS parte 2": {
+   "n": 55,
+   "aciertos_pct": 29.1,
+   "R_bruto": -0.133,
+   "R_neto": -0.149,
+   "R_total_neto": -8.19,
+   "stop_pct_mediana": 0.79
+  },
+  "XAU parte 1": {
+   "n": 89,
+   "aciertos_pct": 32.6,
+   "R_bruto": -0.019,
+   "R_neto": -0.161,
+   "R_total_neto": -14.37,
+   "stop_pct_mediana": 0.38
+  },
+  "XAU parte 2": {
+   "n": 76,
+   "aciertos_pct": 39.5,
+   "R_bruto": 0.124,
+   "R_neto": 0.056,
+   "R_total_neto": 4.27,
+   "stop_pct_mediana": 0.7
+  },
+  "BTC parte 1": {
+   "n": 22,
+   "aciertos_pct": 31.8,
+   "R_bruto": -0.32,
+   "R_neto": -0.393,
+   "R_total_neto": -8.66,
+   "stop_pct_mediana": 1.72
+  },
+  "BTC parte 2": {
+   "n": 39,
+   "aciertos_pct": 41.0,
+   "R_bruto": 0.131,
+   "R_neto": 0.076,
+   "R_total_neto": 2.98,
+   "stop_pct_mediana": 2.43
+  },
+  "compras parte 1": {
+   "n": 93,
+   "aciertos_pct": 26.9,
+   "R_bruto": -0.265,
+   "R_neto": -0.345,
+   "R_total_neto": -32.07,
+   "stop_pct_mediana": 0.5
+  },
+  "compras parte 2": {
+   "n": 81,
+   "aciertos_pct": 49.4,
+   "R_bruto": 0.431,
+   "R_neto": 0.398,
+   "R_total_neto": 32.23,
+   "stop_pct_mediana": 1.02
+  },
+  "ventas parte 1": {
+   "n": 141,
+   "aciertos_pct": 30.5,
+   "R_bruto": -0.133,
+   "R_neto": -0.213,
+   "R_total_neto": -29.99,
+   "stop_pct_mediana": 0.46
+  },
+  "ventas parte 2": {
+   "n": 147,
+   "aciertos_pct": 34.0,
+   "R_bruto": -0.018,
+   "R_neto": -0.064,
+   "R_total_neto": -9.43,
+   "stop_pct_mediana": 0.67
+  },
+  "pin parte 1": {
+   "n": 80,
+   "aciertos_pct": 31.2,
+   "R_bruto": -0.086,
+   "R_neto": -0.19,
+   "R_total_neto": -15.17,
+   "stop_pct_mediana": 0.39
+  },
+  "pin parte 2": {
+   "n": 74,
+   "aciertos_pct": 36.5,
+   "R_bruto": 0.068,
+   "R_neto": 0.011,
+   "R_total_neto": 0.82,
+   "stop_pct_mediana": 0.62
+  },
+  "envolvente parte 1": {
+   "n": 154,
+   "aciertos_pct": 27.9,
+   "R_bruto": -0.237,
+   "R_neto": -0.304,
+   "R_total_neto": -46.89,
+   "stop_pct_mediana": 0.56
+  },
+  "envolvente parte 2": {
+   "n": 154,
+   "aciertos_pct": 40.9,
+   "R_bruto": 0.177,
+   "R_neto": 0.143,
+   "R_total_neto": 21.98,
+   "stop_pct_mediana": 0.85
+  }
+ },
+ "G-1 señal en diario": {
+  "TODOS parte 1": {
+   "n": 35,
+   "aciertos_pct": 42.9,
+   "R_bruto": 0.29,
+   "R_neto": 0.254,
+   "R_total_neto": 8.9,
+   "stop_pct_mediana": 0.83
+  },
+  "TODOS parte 2": {
+   "n": 34,
+   "aciertos_pct": 41.2,
+   "R_bruto": 0.22,
+   "R_neto": 0.199,
+   "R_total_neto": 6.77,
+   "stop_pct_mediana": 1.49
+  },
+  "US30 parte 1": {
+   "n": 2,
+   "aciertos_pct": 50.0,
+   "R_bruto": 0.891,
+   "R_neto": 0.881,
+   "R_total_neto": 1.76,
+   "stop_pct_mediana": 2.42
+  },
+  "US30 parte 2": {
+   "n": 8,
+   "aciertos_pct": 25.0,
+   "R_bruto": -0.037,
+   "R_neto": -0.052,
+   "R_total_neto": -0.41,
+   "stop_pct_mediana": 1.13
+  },
+  "NAS parte 1": {
+   "n": 17,
+   "aciertos_pct": 35.3,
+   "R_bruto": 0.111,
+   "R_neto": 0.091,
+   "R_total_neto": 1.54,
+   "stop_pct_mediana": 0.75
+  },
+  "NAS parte 2": {
+   "n": 8,
+   "aciertos_pct": 25.0,
+   "R_bruto": -0.179,
+   "R_neto": -0.186,
+   "R_total_neto": -1.49,
+   "stop_pct_mediana": 1.41
+  },
+  "XAU parte 1": {
+   "n": 13,
+   "aciertos_pct": 46.2,
+   "R_bruto": 0.155,
+   "R_neto": 0.095,
+   "R_total_neto": 1.24,
+   "stop_pct_mediana": 0.81
+  },
+  "XAU parte 2": {
+   "n": 8,
+   "aciertos_pct": 62.5,
+   "R_bruto": 0.505,
+   "R_neto": 0.471,
+   "R_total_neto": 3.76,
+   "stop_pct_mediana": 1.53
+  },
+  "BTC parte 1": {
+   "n": 3,
+   "aciertos_pct": 66.7,
+   "R_bruto": 1.487,
+   "R_neto": 1.452,
+   "R_total_neto": 4.36,
+   "stop_pct_mediana": 2.44
+  },
+  "BTC parte 2": {
+   "n": 10,
+   "aciertos_pct": 50.0,
+   "R_bruto": 0.516,
+   "R_neto": 0.491,
+   "R_total_neto": 4.91,
+   "stop_pct_mediana": 5.18
+  },
+  "compras parte 1": {
+   "n": 15,
+   "aciertos_pct": 53.3,
+   "R_bruto": 0.579,
+   "R_neto": 0.546,
+   "R_total_neto": 8.19,
+   "stop_pct_mediana": 0.91
+  },
+  "compras parte 2": {
+   "n": 9,
+   "aciertos_pct": 66.7,
+   "R_bruto": 0.534,
+   "R_neto": 0.513,
+   "R_total_neto": 4.61,
+   "stop_pct_mediana": 1.74
+  },
+  "ventas parte 1": {
+   "n": 20,
+   "aciertos_pct": 35.0,
+   "R_bruto": 0.073,
+   "R_neto": 0.035,
+   "R_total_neto": 0.71,
+   "stop_pct_mediana": 0.75
+  },
+  "ventas parte 2": {
+   "n": 25,
+   "aciertos_pct": 32.0,
+   "R_bruto": 0.107,
+   "R_neto": 0.086,
+   "R_total_neto": 2.16,
+   "stop_pct_mediana": 1.41
+  },
+  "pin parte 1": {
+   "n": 21,
+   "aciertos_pct": 42.9,
+   "R_bruto": 0.575,
+   "R_neto": 0.541,
+   "R_total_neto": 11.37,
+   "stop_pct_mediana": 0.79
+  },
+  "pin parte 2": {
+   "n": 15,
+   "aciertos_pct": 46.7,
+   "R_bruto": 0.582,
+   "R_neto": 0.56,
+   "R_total_neto": 8.41,
+   "stop_pct_mediana": 1.43
+  },
+  "envolvente parte 1": {
+   "n": 14,
+   "aciertos_pct": 42.9,
+   "R_bruto": -0.139,
+   "R_neto": -0.177,
+   "R_total_neto": -2.47,
+   "stop_pct_mediana": 0.92
+  },
+  "envolvente parte 2": {
+   "n": 19,
+   "aciertos_pct": 36.8,
+   "R_bruto": -0.066,
+   "R_neto": -0.086,
+   "R_total_neto": -1.63,
+   "stop_pct_mediana": 1.49
+  }
+ },
+ "G-1 entrada al 50 %": {
+  "TODOS parte 1": {
+   "n": 164,
+   "aciertos_pct": 7.9,
+   "R_bruto": -0.314,
+   "R_neto": -0.457,
+   "R_total_neto": -74.94,
+   "stop_pct_mediana": 0.26
+  },
+  "TODOS parte 2": {
+   "n": 140,
+   "aciertos_pct": 14.3,
+   "R_bruto": 0.054,
+   "R_neto": -0.027,
+   "R_total_neto": -3.74,
+   "stop_pct_mediana": 0.38
+  },
+  "US30 parte 1": {
+   "n": 47,
+   "aciertos_pct": 6.4,
+   "R_bruto": -0.027,
+   "R_neto": -0.101,
+   "R_total_neto": -4.74,
+   "stop_pct_mediana": 0.19
+  },
+  "US30 parte 2": {
+   "n": 33,
+   "aciertos_pct": 9.1,
+   "R_bruto": -0.466,
+   "R_neto": -0.508,
+   "R_total_neto": -16.76,
+   "stop_pct_mediana": 0.3
+  },
+  "NAS parte 1": {
+   "n": 40,
+   "aciertos_pct": 7.5,
+   "R_bruto": -0.504,
+   "R_neto": -0.559,
+   "R_total_neto": -22.34,
+   "stop_pct_mediana": 0.37
+  },
+  "NAS parte 2": {
+   "n": 36,
+   "aciertos_pct": 13.9,
+   "R_bruto": 0.586,
+   "R_neto": 0.554,
+   "R_total_neto": 19.96,
+   "stop_pct_mediana": 0.43
+  },
+  "XAU parte 1": {
+   "n": 63,
+   "aciertos_pct": 9.5,
+   "R_bruto": -0.495,
+   "R_neto": -0.742,
+   "R_total_neto": -46.77,
+   "stop_pct_mediana": 0.2
+  },
+  "XAU parte 2": {
+   "n": 49,
+   "aciertos_pct": 18.4,
+   "R_bruto": 0.3,
+   "R_neto": 0.17,
+   "R_total_neto": 8.34,
+   "stop_pct_mediana": 0.31
+  },
+  "BTC parte 1": {
+   "n": 14,
+   "aciertos_pct": 7.1,
+   "R_bruto": 0.074,
+   "R_neto": -0.077,
+   "R_total_neto": -1.08,
+   "stop_pct_mediana": 0.89
+  },
+  "BTC parte 2": {
+   "n": 22,
+   "aciertos_pct": 13.6,
+   "R_bruto": -0.583,
+   "R_neto": -0.694,
+   "R_total_neto": -15.27,
+   "stop_pct_mediana": 1.25
+  },
+  "compras parte 1": {
+   "n": 61,
+   "aciertos_pct": 11.5,
+   "R_bruto": -0.152,
+   "R_neto": -0.314,
+   "R_total_neto": -19.14,
+   "stop_pct_mediana": 0.26
+  },
+  "compras parte 2": {
+   "n": 40,
+   "aciertos_pct": 20.0,
+   "R_bruto": 0.011,
+   "R_neto": -0.051,
+   "R_total_neto": -2.05,
+   "stop_pct_mediana": 0.51
+  },
+  "ventas parte 1": {
+   "n": 103,
+   "aciertos_pct": 5.8,
+   "R_bruto": -0.411,
+   "R_neto": -0.542,
+   "R_total_neto": -55.8,
+   "stop_pct_mediana": 0.24
+  },
+  "ventas parte 2": {
+   "n": 100,
+   "aciertos_pct": 12.0,
+   "R_bruto": 0.072,
+   "R_neto": -0.017,
+   "R_total_neto": -1.69,
+   "stop_pct_mediana": 0.32
+  },
+  "pin parte 1": {
+   "n": 66,
+   "aciertos_pct": 6.1,
+   "R_bruto": -0.648,
+   "R_neto": -0.82,
+   "R_total_neto": -54.09,
+   "stop_pct_mediana": 0.2
+  },
+  "pin parte 2": {
+   "n": 60,
+   "aciertos_pct": 15.0,
+   "R_bruto": 0.192,
+   "R_neto": 0.089,
+   "R_total_neto": 5.36,
+   "stop_pct_mediana": 0.33
+  },
+  "envolvente parte 1": {
+   "n": 98,
+   "aciertos_pct": 9.2,
+   "R_bruto": -0.09,
+   "R_neto": -0.213,
+   "R_total_neto": -20.84,
+   "stop_pct_mediana": 0.3
+  },
+  "envolvente parte 2": {
+   "n": 80,
+   "aciertos_pct": 13.8,
+   "R_bruto": -0.049,
+   "R_neto": -0.114,
+   "R_total_neto": -9.1,
+   "stop_pct_mediana": 0.42
+  }
+ },
+ "G-2 entrada al 50 %": {
+  "TODOS parte 1": {
+   "n": 119,
+   "aciertos_pct": 40.3,
+   "R_bruto": 0.225,
+   "R_neto": 0.088,
+   "R_total_neto": 10.45,
+   "stop_pct_mediana": 0.29
+  },
+  "TODOS parte 2": {
+   "n": 188,
+   "aciertos_pct": 33.0,
+   "R_bruto": -0.011,
+   "R_neto": -0.092,
+   "R_total_neto": -17.34,
+   "stop_pct_mediana": 0.38
+  },
+  "US30 parte 1": {
+   "n": 23,
+   "aciertos_pct": 39.1,
+   "R_bruto": 0.195,
+   "R_neto": 0.14,
+   "R_total_neto": 3.23,
+   "stop_pct_mediana": 0.23
+  },
+  "US30 parte 2": {
+   "n": 43,
+   "aciertos_pct": 39.5,
+   "R_bruto": 0.195,
+   "R_neto": 0.149,
+   "R_total_neto": 6.4,
+   "stop_pct_mediana": 0.24
+  },
+  "NAS parte 1": {
+   "n": 29,
+   "aciertos_pct": 34.5,
+   "R_bruto": 0.046,
+   "R_neto": -0.003,
+   "R_total_neto": -0.1,
+   "stop_pct_mediana": 0.38
+  },
+  "NAS parte 2": {
+   "n": 44,
+   "aciertos_pct": 20.5,
+   "R_bruto": -0.385,
+   "R_neto": -0.412,
+   "R_total_neto": -18.14,
+   "stop_pct_mediana": 0.46
+  },
+  "XAU parte 1": {
+   "n": 42,
+   "aciertos_pct": 38.1,
+   "R_bruto": 0.143,
+   "R_neto": -0.108,
+   "R_total_neto": -4.54,
+   "stop_pct_mediana": 0.21
+  },
+  "XAU parte 2": {
+   "n": 52,
+   "aciertos_pct": 25.0,
+   "R_bruto": -0.255,
+   "R_neto": -0.391,
+   "R_total_neto": -20.32,
+   "stop_pct_mediana": 0.31
+  },
+  "BTC parte 1": {
+   "n": 25,
+   "aciertos_pct": 52.0,
+   "R_bruto": 0.6,
+   "R_neto": 0.475,
+   "R_total_neto": 11.86,
+   "stop_pct_mediana": 1.39
+  },
+  "BTC parte 2": {
+   "n": 49,
+   "aciertos_pct": 46.9,
+   "R_bruto": 0.404,
+   "R_neto": 0.3,
+   "R_total_neto": 14.72,
+   "stop_pct_mediana": 1.27
+  },
+  "compras parte 1": {
+   "n": 76,
+   "aciertos_pct": 40.8,
+   "R_bruto": 0.248,
+   "R_neto": 0.127,
+   "R_total_neto": 9.63,
+   "stop_pct_mediana": 0.3
+  },
+  "compras parte 2": {
+   "n": 131,
+   "aciertos_pct": 32.1,
+   "R_bruto": -0.039,
+   "R_neto": -0.119,
+   "R_total_neto": -15.63,
+   "stop_pct_mediana": 0.34
+  },
+  "ventas parte 1": {
+   "n": 43,
+   "aciertos_pct": 39.5,
+   "R_bruto": 0.186,
+   "R_neto": 0.019,
+   "R_total_neto": 0.82,
+   "stop_pct_mediana": 0.27
+  },
+  "ventas parte 2": {
+   "n": 57,
+   "aciertos_pct": 35.1,
+   "R_bruto": 0.054,
+   "R_neto": -0.03,
+   "R_total_neto": -1.7,
+   "stop_pct_mediana": 0.71
+  },
+  "pin parte 1": {
+   "n": 50,
+   "aciertos_pct": 34.0,
+   "R_bruto": 0.056,
+   "R_neto": -0.109,
+   "R_total_neto": -5.43,
+   "stop_pct_mediana": 0.25
+  },
+  "pin parte 2": {
+   "n": 82,
+   "aciertos_pct": 34.1,
+   "R_bruto": 0.026,
+   "R_neto": -0.078,
+   "R_total_neto": -6.37,
+   "stop_pct_mediana": 0.3
+  },
+  "envolvente parte 1": {
+   "n": 69,
+   "aciertos_pct": 44.9,
+   "R_bruto": 0.348,
+   "R_neto": 0.23,
+   "R_total_neto": 15.88,
+   "stop_pct_mediana": 0.33
+  },
+  "envolvente parte 2": {
+   "n": 106,
+   "aciertos_pct": 32.1,
+   "R_bruto": -0.039,
+   "R_neto": -0.103,
+   "R_total_neto": -10.97,
+   "stop_pct_mediana": 0.48
+  }
+ },
+ "G-2 meta 3R": {
+  "TODOS parte 1": {
+   "n": 160,
+   "aciertos_pct": 41.9,
+   "R_bruto": 0.513,
+   "R_neto": 0.432,
+   "R_total_neto": 69.09,
+   "stop_pct_mediana": 0.52
+  },
+  "TODOS parte 2": {
+   "n": 222,
+   "aciertos_pct": 27.0,
+   "R_bruto": -0.031,
+   "R_neto": -0.077,
+   "R_total_neto": -16.99,
+   "stop_pct_mediana": 0.77
+  },
+  "US30 parte 1": {
+   "n": 27,
+   "aciertos_pct": 37.0,
+   "R_bruto": 0.109,
+   "R_neto": 0.08,
+   "R_total_neto": 2.15,
+   "stop_pct_mediana": 0.47
+  },
+  "US30 parte 2": {
+   "n": 43,
+   "aciertos_pct": 30.2,
+   "R_bruto": 0.054,
+   "R_neto": 0.029,
+   "R_total_neto": 1.26,
+   "stop_pct_mediana": 0.44
+  },
+  "NAS parte 1": {
+   "n": 41,
+   "aciertos_pct": 48.8,
+   "R_bruto": 0.681,
+   "R_neto": 0.65,
+   "R_total_neto": 26.66,
+   "stop_pct_mediana": 0.55
+  },
+  "NAS parte 2": {
+   "n": 58,
+   "aciertos_pct": 19.0,
+   "R_bruto": -0.358,
+   "R_neto": -0.373,
+   "R_total_neto": -21.66,
+   "stop_pct_mediana": 0.9
+  },
+  "XAU parte 1": {
+   "n": 58,
+   "aciertos_pct": 39.7,
+   "R_bruto": 0.512,
+   "R_neto": 0.369,
+   "R_total_neto": 21.42,
+   "stop_pct_mediana": 0.37
+  },
+  "XAU parte 2": {
+   "n": 59,
+   "aciertos_pct": 22.0,
+   "R_bruto": -0.237,
+   "R_neto": -0.313,
+   "R_total_neto": -18.45,
+   "stop_pct_mediana": 0.52
+  },
+  "BTC parte 1": {
+   "n": 34,
+   "aciertos_pct": 41.2,
+   "R_bruto": 0.631,
+   "R_neto": 0.555,
+   "R_total_neto": 18.87,
+   "stop_pct_mediana": 2.46
+  },
+  "BTC parte 2": {
+   "n": 62,
+   "aciertos_pct": 37.1,
+   "R_bruto": 0.412,
+   "R_neto": 0.353,
+   "R_total_neto": 21.87,
+   "stop_pct_mediana": 2.38
+  },
+  "compras parte 1": {
+   "n": 103,
+   "aciertos_pct": 42.7,
+   "R_bruto": 0.541,
+   "R_neto": 0.468,
+   "R_total_neto": 48.16,
+   "stop_pct_mediana": 0.51
+  },
+  "compras parte 2": {
+   "n": 156,
+   "aciertos_pct": 28.2,
+   "R_bruto": 0.032,
+   "R_neto": -0.014,
+   "R_total_neto": -2.18,
+   "stop_pct_mediana": 0.66
+  },
+  "ventas parte 1": {
+   "n": 57,
+   "aciertos_pct": 40.4,
+   "R_bruto": 0.461,
+   "R_neto": 0.367,
+   "R_total_neto": 20.94,
+   "stop_pct_mediana": 0.57
+  },
+  "ventas parte 2": {
+   "n": 66,
+   "aciertos_pct": 24.2,
+   "R_bruto": -0.181,
+   "R_neto": -0.224,
+   "R_total_neto": -14.81,
+   "stop_pct_mediana": 1.48
+  },
+  "pin parte 1": {
+   "n": 61,
+   "aciertos_pct": 32.8,
+   "R_bruto": 0.174,
+   "R_neto": 0.083,
+   "R_total_neto": 5.06,
+   "stop_pct_mediana": 0.49
+  },
+  "pin parte 2": {
+   "n": 91,
+   "aciertos_pct": 26.4,
+   "R_bruto": -0.039,
+   "R_neto": -0.099,
+   "R_total_neto": -9.01,
+   "stop_pct_mediana": 0.51
+  },
+  "envolvente parte 1": {
+   "n": 99,
+   "aciertos_pct": 47.5,
+   "R_bruto": 0.721,
+   "R_neto": 0.647,
+   "R_total_neto": 64.04,
+   "stop_pct_mediana": 0.53
+  },
+  "envolvente parte 2": {
+   "n": 131,
+   "aciertos_pct": 27.5,
+   "R_bruto": -0.026,
+   "R_neto": -0.061,
+   "R_total_neto": -7.97,
+   "stop_pct_mediana": 1.05
+  }
+ },
+ "veredicto": {
+  "G-1": false,
+  "G-2": false
+ }
+}

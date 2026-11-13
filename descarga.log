@@ -1,0 +1,19 @@
+FALLO USA30IDXUSD (2020, 11)
+reintento USA30IDXUSD (2020, 11) OK
+US30 velas 1h 26711 meses con datos 60 de 60 divisor 1000 desfases 0 desde 2017-01-03 07:00:00+00:00 hasta 2021-12-31 21:00:00+00:00 primer cierre 19890.97 último cierre 36389.7
+FALLO USATECHIDXUSD (2018, 12)
+FALLO USATECHIDXUSD (2019, 5)
+reintento USATECHIDXUSD (2018, 12) OK
+reintento USATECHIDXUSD (2019, 5) OK
+NAS velas 1h 26708 meses con datos 60 de 60 divisor 1000 desfases 0 desde 2017-01-03 07:00:00+00:00 hasta 2021-12-31 21:00:00+00:00 primer cierre 4896.97 último cierre 16343.06
+FALLO XAUUSD (2017, 2)
+reintento XAUUSD (2017, 2) OK
+XAU velas 1h 29562 meses con datos 60 de 60 divisor 1000 desfases 0 desde 2017-01-02 23:00:00+00:00 hasta 2021-12-31 21:00:00+00:00 primer cierre 1150.36 último cierre 1829.06
+404 BTCUSD (2017, 3)
+404 BTCUSD (2017, 1)
+404 BTCUSD (2017, 2)
+404 BTCUSD (2017, 4)
+FALLO BTCUSD (2021, 11)
+reintento BTCUSD (2021, 11) OK
+BTC velas 1h 32000 meses con datos 56 de 60 divisor 10 desfases 0 desde 2017-05-07 23:00:00+00:00 hasta 2021-12-31 16:00:00+00:00 primer cierre 1589.9 último cierre 47429.4
+listo en 4461 s
