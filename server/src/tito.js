@@ -1,6 +1,7 @@
 // TITO: agente con Claude (Anthropic Messages API). Prompt copiado sin cambios del panel v2.4.
 import { ENV, ORDER } from "./config.js";
 import { AI_PROMPT, INDEX_MAP } from "./prompts.js";
+import { GUIA_LIBROS } from "./guia.js";
 import { S, flow, feed, zoneCap } from "./market.js";
 import { Z, zoneStatus, isBroken } from "./zones.js";
 import { B } from "./bias.js";
@@ -72,7 +73,7 @@ export async function aiAsk(question, extra = "", label = "") {
 
 async function call(msgs, attempt, plain) {
   T.calls++;
-  const body = { model: ENV.aiModel, max_tokens: 16000, system: AI_PROMPT + SENT_NOTE, messages: msgs };
+  const body = { model: ENV.aiModel, max_tokens: 16000, system: AI_PROMPT + SENT_NOTE + GUIA_LIBROS, messages: msgs };
   if (!plain) { body.thinking = { type: "between_tools" }; body.output_config = { effort: attempt >= 2 ? "low" : "medium" }; }
   let r, j;
   try {

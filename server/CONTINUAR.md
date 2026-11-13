@@ -323,3 +323,18 @@ Revisión de canales (lunes 19 oct): #sesion-ny 126 mensajes en 8 h (54 ballenas
   y cuando un aviso fallaba se cortaba la búsqueda de entradas en los otros mercados de esa vela. `/health` decía ✅ porque el error se borraba fuera de sesión.
 - Arreglo: los avisos fallidos ya no cortan nada (`AT.postErr`), y `/health` y `estado` muestran el error de forma permanente hasta que un aviso salga bien.
 - Para verlo en Discord: Yasser crea un canal de texto llamado exactamente `auto-trade` (el bot lo encuentra por nombre) o le da al bot el permiso "Gestionar canales".
+
+## v4.41 · Guía de los libros para TITO (13 nov 2026)
+- `src/guia.js` → `GUIA_LIBROS`: bloque que se añade DESPUÉS de `AI_PROMPT + SENT_NOTE` en `tito.js`. **`AI_PROMPT` no se tocó** (`test/guia.test.js` fija su hash).
+  Para quitarla: dejar `GUIA_LIBROS = ""`. Yasser lo aprobó ("Hacemos tus recomendaciones", 13 nov).
+- Contenido: lectura de arriba hacia abajo (tendencia, impulso/retroceso, vela dominante, soporte/resistencia, extremos de la semana anterior),
+  invalidación por temporalidad, velas de rechazo como confluencia (no gatillo), camino a la meta, no promediar en contra, rachas y sobreoperar, desapego del resultado.
+- Fuentes: "Estrategias para no perder", "La disciplina del inversor" (Douglas), "101 preguntas", "Candlestick Trading Bible".
+
+## Backtests F, G y H (12–13 nov 2026; rama `backtest-c`)
+- Datos: velas de 1 hora de Dukascopy, Dow/Nasdaq/oro/BTC, 2017–2021 y 2022–oct 2026 (caché de Actions `velas-1h-*-v2`; con caché cada corrida tarda ~30 s).
+- F (extremo semanal + BOS/FVG 4H dentro de la vela diaria de mayor volumen de la semana): no pasa.
+- G-2 (libro de velas: tendencia + retroceso a la media de 21): no pasa.
+- G-1 (extremo semanal + pin/envolvente 4H, meta el otro extremo, ≥2R): pasó 2022–2026 (+0,27R / +0,17R, 364 trades) pero NO se confirmó en 2017–2021 (−0,37R / +0,29R). No aprobada.
+- H (dirección de G-1 + entradas por sesión NY/Noche con ruptura de estructura 1H, stop en el extremo de la estructura, reentrar solo a favor): no pasa (2017–2021 −0,09R, 261 trades; 2022–2026 +0,05R, 364 trades; mitades −0,42 / +0,14 / −0,10 / +0,21). NY mejor que Noche.
+- Ruido de referencia: sobre paseos aleatorios, con ~2.350 trades el R bruto sale entre −0,03 y +0,07 por pura suerte; con 300 trades el margen es de ±0,15R o más.
