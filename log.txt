@@ -1,0 +1,37 @@
+US30 velas 1h 26711 señales de dirección: compra 64 venta 93 trades 69
+NAS velas 1h 26708 señales de dirección: compra 40 venta 80 trades 50
+XAU velas 1h 29562 señales de dirección: compra 87 venta 128 trades 80
+BTC velas 1h 32000 señales de dirección: compra 30 venta 41 trades 62
+TODOS periodo completo         {"n": 261, "aciertos_pct": 30.3, "R_bruto": -0.034, "R_neto": -0.092, "R_total_neto": -24.05, "stop_pct_mediana": 0.64}
+TODOS mitad 1                  {"n": 107, "aciertos_pct": 23.4, "R_bruto": -0.343, "R_neto": -0.422, "R_total_neto": -45.2, "stop_pct_mediana": 0.49}
+TODOS mitad 2                  {"n": 154, "aciertos_pct": 35.1, "R_bruto": 0.18, "R_neto": 0.137, "R_total_neto": 21.15, "stop_pct_mediana": 0.79}
+US30 periodo completo          {"n": 69, "aciertos_pct": 27.5, "R_bruto": -0.063, "R_neto": -0.09, "R_total_neto": -6.18, "stop_pct_mediana": 0.48}
+US30 mitad 1                   {"n": 30, "aciertos_pct": 16.7, "R_bruto": -0.673, "R_neto": -0.706, "R_total_neto": -21.18, "stop_pct_mediana": 0.47}
+US30 mitad 2                   {"n": 39, "aciertos_pct": 35.9, "R_bruto": 0.406, "R_neto": 0.385, "R_total_neto": 15.0, "stop_pct_mediana": 0.53}
+NAS periodo completo           {"n": 50, "aciertos_pct": 46.0, "R_bruto": 0.666, "R_neto": 0.647, "R_total_neto": 32.36, "stop_pct_mediana": 0.71}
+NAS mitad 1                    {"n": 21, "aciertos_pct": 42.9, "R_bruto": 0.419, "R_neto": 0.39, "R_total_neto": 8.19, "stop_pct_mediana": 0.57}
+NAS mitad 2                    {"n": 29, "aciertos_pct": 48.3, "R_bruto": 0.846, "R_neto": 0.833, "R_total_neto": 24.17, "stop_pct_mediana": 0.85}
+XAU periodo completo           {"n": 80, "aciertos_pct": 30.0, "R_bruto": -0.136, "R_neto": -0.233, "R_total_neto": -18.62, "stop_pct_mediana": 0.52}
+XAU mitad 1                    {"n": 40, "aciertos_pct": 25.0, "R_bruto": -0.262, "R_neto": -0.386, "R_total_neto": -15.44, "stop_pct_mediana": 0.39}
+XAU mitad 2                    {"n": 40, "aciertos_pct": 35.0, "R_bruto": -0.01, "R_neto": -0.08, "R_total_neto": -3.18, "stop_pct_mediana": 0.6}
+BTC periodo completo           {"n": 62, "aciertos_pct": 21.0, "R_bruto": -0.436, "R_neto": -0.51, "R_total_neto": -31.61, "stop_pct_mediana": 1.96}
+BTC mitad 1                    {"n": 16, "aciertos_pct": 6.2, "R_bruto": -0.925, "R_neto": -1.048, "R_total_neto": -16.77, "stop_pct_mediana": 1.52}
+BTC mitad 2                    {"n": 46, "aciertos_pct": 26.1, "R_bruto": -0.266, "R_neto": -0.323, "R_total_neto": -14.84, "stop_pct_mediana": 2.14}
+NY periodo completo            {"n": 197, "aciertos_pct": 34.5, "R_bruto": 0.081, "R_neto": 0.032, "R_total_neto": 6.29, "stop_pct_mediana": 0.66}
+NY mitad 1                     {"n": 78, "aciertos_pct": 29.5, "R_bruto": -0.192, "R_neto": -0.255, "R_total_neto": -19.85, "stop_pct_mediana": 0.54}
+NY mitad 2                     {"n": 119, "aciertos_pct": 37.8, "R_bruto": 0.26, "R_neto": 0.22, "R_total_neto": 26.14, "stop_pct_mediana": 0.81}
+Noche periodo completo         {"n": 64, "aciertos_pct": 17.2, "R_bruto": -0.388, "R_neto": -0.474, "R_total_neto": -30.34, "stop_pct_mediana": 0.51}
+Noche mitad 1                  {"n": 29, "aciertos_pct": 6.9, "R_bruto": -0.748, "R_neto": -0.874, "R_total_neto": -25.35, "stop_pct_mediana": 0.32}
+Noche mitad 2                  {"n": 35, "aciertos_pct": 25.7, "R_bruto": -0.091, "R_neto": -0.143, "R_total_neto": -4.99, "stop_pct_mediana": 0.67}
+compras periodo completo       {"n": 119, "aciertos_pct": 37.8, "R_bruto": 0.08, "R_neto": 0.026, "R_total_neto": 3.04, "stop_pct_mediana": 0.71}
+compras mitad 1                {"n": 52, "aciertos_pct": 30.8, "R_bruto": -0.257, "R_neto": -0.327, "R_total_neto": -17.0, "stop_pct_mediana": 0.53}
+compras mitad 2                {"n": 67, "aciertos_pct": 43.3, "R_bruto": 0.342, "R_neto": 0.299, "R_total_neto": 20.04, "stop_pct_mediana": 0.85}
+ventas periodo completo        {"n": 142, "aciertos_pct": 23.9, "R_bruto": -0.13, "R_neto": -0.191, "R_total_neto": -27.1, "stop_pct_mediana": 0.63}
+ventas mitad 1                 {"n": 55, "aciertos_pct": 16.4, "R_bruto": -0.424, "R_neto": -0.513, "R_total_neto": -28.2, "stop_pct_mediana": 0.48}
+ventas mitad 2                 {"n": 87, "aciertos_pct": 28.7, "R_bruto": 0.056, "R_neto": 0.013, "R_total_neto": 1.11, "stop_pct_mediana": 0.69}
+primera entrada periodo completo {"n": 207, "aciertos_pct": 28.5, "R_bruto": -0.087, "R_neto": -0.143, "R_total_neto": -29.64, "stop_pct_mediana": 0.66}
+primera entrada mitad 1        {"n": 90, "aciertos_pct": 20.0, "R_bruto": -0.422, "R_neto": -0.495, "R_total_neto": -44.59, "stop_pct_mediana": 0.53}
+primera entrada mitad 2        {"n": 117, "aciertos_pct": 35.0, "R_bruto": 0.17, "R_neto": 0.128, "R_total_neto": 14.95, "stop_pct_mediana": 0.79}
+reentradas periodo completo    {"n": 54, "aciertos_pct": 37.0, "R_bruto": 0.169, "R_neto": 0.103, "R_total_neto": 5.59, "stop_pct_mediana": 0.61}
+reentradas mitad 1             {"n": 17, "aciertos_pct": 41.2, "R_bruto": 0.078, "R_neto": -0.036, "R_total_neto": -0.62, "stop_pct_mediana": 0.36}
+reentradas mitad 2             {"n": 37, "aciertos_pct": 35.1, "R_bruto": 0.211, "R_neto": 0.168, "R_total_neto": 6.2, "stop_pct_mediana": 0.81}
