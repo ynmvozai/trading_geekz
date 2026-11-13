@@ -1,0 +1,266 @@
+{
+ "TODOS periodo completo": {
+  "n": 364,
+  "aciertos_pct": 30.8,
+  "R_bruto": 0.098,
+  "R_neto": 0.049,
+  "R_total_neto": 17.74,
+  "stop_pct_mediana": 0.76
+ },
+ "TODOS mitad 1": {
+  "n": 185,
+  "aciertos_pct": 26.5,
+  "R_bruto": -0.046,
+  "R_neto": -0.103,
+  "R_total_neto": -19.13,
+  "stop_pct_mediana": 0.76
+ },
+ "TODOS mitad 2": {
+  "n": 179,
+  "aciertos_pct": 35.2,
+  "R_bruto": 0.247,
+  "R_neto": 0.206,
+  "R_total_neto": 36.86,
+  "stop_pct_mediana": 0.75
+ },
+ "US30 periodo completo": {
+  "n": 84,
+  "aciertos_pct": 29.8,
+  "R_bruto": -0.088,
+  "R_neto": -0.107,
+  "R_total_neto": -8.99,
+  "stop_pct_mediana": 0.51
+ },
+ "US30 mitad 1": {
+  "n": 44,
+  "aciertos_pct": 25.0,
+  "R_bruto": -0.233,
+  "R_neto": -0.256,
+  "R_total_neto": -11.25,
+  "stop_pct_mediana": 0.5
+ },
+ "US30 mitad 2": {
+  "n": 40,
+  "aciertos_pct": 35.0,
+  "R_bruto": 0.072,
+  "R_neto": 0.057,
+  "R_total_neto": 2.26,
+  "stop_pct_mediana": 0.54
+ },
+ "NAS periodo completo": {
+  "n": 75,
+  "aciertos_pct": 30.7,
+  "R_bruto": -0.042,
+  "R_neto": -0.052,
+  "R_total_neto": -3.86,
+  "stop_pct_mediana": 0.7
+ },
+ "NAS mitad 1": {
+  "n": 35,
+  "aciertos_pct": 31.4,
+  "R_bruto": 0.0,
+  "R_neto": -0.011,
+  "R_total_neto": -0.38,
+  "stop_pct_mediana": 0.99
+ },
+ "NAS mitad 2": {
+  "n": 40,
+  "aciertos_pct": 30.0,
+  "R_bruto": -0.08,
+  "R_neto": -0.087,
+  "R_total_neto": -3.48,
+  "stop_pct_mediana": 0.63
+ },
+ "XAU periodo completo": {
+  "n": 79,
+  "aciertos_pct": 32.9,
+  "R_bruto": 0.19,
+  "R_neto": 0.142,
+  "R_total_neto": 11.2,
+  "stop_pct_mediana": 0.63
+ },
+ "XAU mitad 1": {
+  "n": 40,
+  "aciertos_pct": 22.5,
+  "R_bruto": -0.154,
+  "R_neto": -0.223,
+  "R_total_neto": -8.9,
+  "stop_pct_mediana": 0.54
+ },
+ "XAU mitad 2": {
+  "n": 39,
+  "aciertos_pct": 43.6,
+  "R_bruto": 0.542,
+  "R_neto": 0.516,
+  "R_total_neto": 20.11,
+  "stop_pct_mediana": 0.69
+ },
+ "BTC periodo completo": {
+  "n": 126,
+  "aciertos_pct": 30.2,
+  "R_bruto": 0.248,
+  "R_neto": 0.154,
+  "R_total_neto": 19.39,
+  "stop_pct_mediana": 1.38
+ },
+ "BTC mitad 1": {
+  "n": 66,
+  "aciertos_pct": 27.3,
+  "R_bruto": 0.118,
+  "R_neto": 0.021,
+  "R_total_neto": 1.41,
+  "stop_pct_mediana": 1.55
+ },
+ "BTC mitad 2": {
+  "n": 60,
+  "aciertos_pct": 33.3,
+  "R_bruto": 0.39,
+  "R_neto": 0.3,
+  "R_total_neto": 17.97,
+  "stop_pct_mediana": 1.22
+ },
+ "NY periodo completo": {
+  "n": 268,
+  "aciertos_pct": 33.2,
+  "R_bruto": 0.125,
+  "R_neto": 0.082,
+  "R_total_neto": 21.86,
+  "stop_pct_mediana": 0.81
+ },
+ "NY mitad 1": {
+  "n": 136,
+  "aciertos_pct": 30.9,
+  "R_bruto": 0.033,
+  "R_neto": -0.015,
+  "R_total_neto": -1.99,
+  "stop_pct_mediana": 0.88
+ },
+ "NY mitad 2": {
+  "n": 132,
+  "aciertos_pct": 35.6,
+  "R_bruto": 0.22,
+  "R_neto": 0.181,
+  "R_total_neto": 23.84,
+  "stop_pct_mediana": 0.78
+ },
+ "Noche periodo completo": {
+  "n": 96,
+  "aciertos_pct": 24.0,
+  "R_bruto": 0.022,
+  "R_neto": -0.043,
+  "R_total_neto": -4.12,
+  "stop_pct_mediana": 0.57
+ },
+ "Noche mitad 1": {
+  "n": 49,
+  "aciertos_pct": 14.3,
+  "R_bruto": -0.266,
+  "R_neto": -0.35,
+  "R_total_neto": -17.14,
+  "stop_pct_mediana": 0.43
+ },
+ "Noche mitad 2": {
+  "n": 47,
+  "aciertos_pct": 34.0,
+  "R_bruto": 0.322,
+  "R_neto": 0.277,
+  "R_total_neto": 13.02,
+  "stop_pct_mediana": 0.69
+ },
+ "compras periodo completo": {
+  "n": 169,
+  "aciertos_pct": 32.0,
+  "R_bruto": 0.101,
+  "R_neto": 0.05,
+  "R_total_neto": 8.52,
+  "stop_pct_mediana": 0.82
+ },
+ "compras mitad 1": {
+  "n": 98,
+  "aciertos_pct": 25.5,
+  "R_bruto": -0.08,
+  "R_neto": -0.14,
+  "R_total_neto": -13.68,
+  "stop_pct_mediana": 0.76
+ },
+ "compras mitad 2": {
+  "n": 71,
+  "aciertos_pct": 40.8,
+  "R_bruto": 0.35,
+  "R_neto": 0.313,
+  "R_total_neto": 22.21,
+  "stop_pct_mediana": 0.94
+ },
+ "ventas periodo completo": {
+  "n": 195,
+  "aciertos_pct": 29.7,
+  "R_bruto": 0.096,
+  "R_neto": 0.047,
+  "R_total_neto": 9.21,
+  "stop_pct_mediana": 0.7
+ },
+ "ventas mitad 1": {
+  "n": 87,
+  "aciertos_pct": 27.6,
+  "R_bruto": -0.008,
+  "R_neto": -0.063,
+  "R_total_neto": -5.44,
+  "stop_pct_mediana": 0.77
+ },
+ "ventas mitad 2": {
+  "n": 108,
+  "aciertos_pct": 31.5,
+  "R_bruto": 0.18,
+  "R_neto": 0.136,
+  "R_total_neto": 14.66,
+  "stop_pct_mediana": 0.7
+ },
+ "primera entrada periodo completo": {
+  "n": 262,
+  "aciertos_pct": 31.3,
+  "R_bruto": 0.184,
+  "R_neto": 0.139,
+  "R_total_neto": 36.47,
+  "stop_pct_mediana": 0.76
+ },
+ "primera entrada mitad 1": {
+  "n": 131,
+  "aciertos_pct": 28.2,
+  "R_bruto": 0.139,
+  "R_neto": 0.084,
+  "R_total_neto": 11.06,
+  "stop_pct_mediana": 0.75
+ },
+ "primera entrada mitad 2": {
+  "n": 131,
+  "aciertos_pct": 34.4,
+  "R_bruto": 0.229,
+  "R_neto": 0.194,
+  "R_total_neto": 25.41,
+  "stop_pct_mediana": 0.76
+ },
+ "reentradas periodo completo": {
+  "n": 102,
+  "aciertos_pct": 29.4,
+  "R_bruto": -0.124,
+  "R_neto": -0.184,
+  "R_total_neto": -18.73,
+  "stop_pct_mediana": 0.76
+ },
+ "reentradas mitad 1": {
+  "n": 54,
+  "aciertos_pct": 22.2,
+  "R_bruto": -0.497,
+  "R_neto": -0.559,
+  "R_total_neto": -30.18,
+  "stop_pct_mediana": 0.78
+ },
+ "reentradas mitad 2": {
+  "n": 48,
+  "aciertos_pct": 37.5,
+  "R_bruto": 0.296,
+  "R_neto": 0.239,
+  "R_total_neto": 11.45,
+  "stop_pct_mediana": 0.74
+ }
+}
