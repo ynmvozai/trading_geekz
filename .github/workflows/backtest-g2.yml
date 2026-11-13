@@ -1,0 +1,54 @@
+name: backtest-g2
+on:
+  push:
+    branches: [backtest-c]
+    paths: [.github/workflows/backtest-g2.yml]
+permissions:
+  contents: write
+jobs:
+  correr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nombre: confirmacion-2017-2021
+            desde: "2017-01"
+            hasta: "2021-12"
+            split: "1561939200"   # 1 jul 2019
+          - nombre: completo-2022-2026
+            desde: "2022-01"
+            hasta: "2026-10"
+            split: "1717200000"   # 1 jun 2024
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: backtest/datos_${{ matrix.nombre }}
+          key: velas-1h-${{ matrix.nombre }}-v2
+      - name: Bajar velas de 1 hora
+        working-directory: backtest
+        env:
+          OUT_DIR: datos_${{ matrix.nombre }}
+        run: |
+          python3 descargar_f.py ${{ matrix.desde }} ${{ matrix.hasta }} 2>&1 | tee descarga.log
+          ls -la $OUT_DIR
+      - name: Correr G y F
+        working-directory: backtest
+        env:
+          SPLIT_TS: ${{ matrix.split }}
+        run: |
+          set -o pipefail
+          mkdir -p res/g res/f && cp descarga.log res/
+          python3 g.py datos_${{ matrix.nombre }} res/g 2>&1 | tee res/g/log.txt
+          python3 f.py datos_${{ matrix.nombre }} res/f 2>&1 | tee res/f/log.txt
+      - name: Guardar resultados
+        if: always()
+        run: |
+          cp -r backtest/res /tmp/res || mkdir -p /tmp/res; cp backtest/descarga.log /tmp/res/ 2>/dev/null || true
+          mv backtest/datos_${{ matrix.nombre }} /tmp/keep
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git checkout --orphan res-${{ matrix.nombre }} && git rm -rqf . && rm -rf backtest .github && cp -r /tmp/res/* .
+          git add -A && git commit -qm "resultados ${{ matrix.nombre }}" && git push -f origin HEAD:backtest-g-${{ matrix.nombre }}
+          mkdir -p backtest && mv /tmp/keep backtest/datos_${{ matrix.nombre }}
