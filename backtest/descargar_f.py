@@ -4,7 +4,8 @@ import gzip, lzma, os, struct, sys, time, statistics
 import concurrent.futures as cf, datetime as dt, urllib.request, urllib.error
 
 y0, m0 = map(int, sys.argv[1].split("-")); y1, m1 = map(int, sys.argv[2].split("-"))
-OUT = "datos_f"; os.makedirs(OUT, exist_ok=True)
+OUT = os.environ.get("OUT_DIR", "datos_f"); os.makedirs(OUT, exist_ok=True)
+FIX_DIV = {"US30": 1000, "NAS": 1000, "XAU": 1000, "BTC": 10}   # divisores vistos en la descarga de 2022–2026 (12 nov 2026)
 # nombre: (símbolo Dukascopy, precio mínimo y máximo razonables para adivinar el divisor)
 SYMS = {"US30": ("USA30IDXUSD", 15000, 100000), "NAS": ("USATECHIDXUSD", 5000, 45000), "XAU": ("XAUUSD", 1000, 8000), "BTC": ("BTCUSD", 10000, 99000)}
 
@@ -15,11 +16,11 @@ def months():
         m += 1
         if m > 12: y, m = y + 1, 1
 
-def get(sym, ym):
+def get(sym, ym, tries=8, quiet=False):
     y, m = ym
     url = f"https://datafeed.dukascopy.com/datafeed/{sym}/{y}/{m-1:02d}/BID_candles_hour_1.bi5"
     raw = None
-    for i in range(8):
+    for i in range(tries):
         try:
             raw = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=40).read(); break
         except urllib.error.HTTPError as e:
@@ -27,7 +28,9 @@ def get(sym, ym):
             time.sleep(2 + 3 * i)
         except Exception:
             time.sleep(2 + 3 * i)
-    if raw is None: print("FALLO", sym, ym, flush=True); return []
+    if raw is None:
+        if not quiet: print("FALLO", sym, ym, flush=True)
+        return None
     if not raw: return []
     raw = lzma.decompress(raw); base = int(dt.datetime(y, m, 1, tzinfo=dt.timezone.utc).timestamp())
     out = []
@@ -44,10 +47,15 @@ for name, (sym, lo, hi) in SYMS.items():
     ms = list(months())
     with cf.ThreadPoolExecutor(3) as ex:
         res = list(ex.map(lambda ym: get(sym, ym), ms))
+    for n, ym in enumerate(ms):            # segunda pasada, una por una y con más paciencia, para los meses que fallaron
+        if res[n] is None:
+            time.sleep(20); res[n] = get(sym, ym, tries=14, quiet=True)
+            print("reintento", sym, ym, "OK" if res[n] is not None else "FALLO DEFINITIVO", flush=True)
+    res = [rr or [] for rr in res]
     rows = sorted(r for rr in res for r in rr)
     if not rows: print(name, "SIN DATOS"); continue
     med = statistics.median([r[4] for r in rows[:3000]])
-    div = next((x for x in (1, 10, 100, 1000, 10000, 100000) if lo <= med / x <= hi), None)
+    div = FIX_DIV.get(name) or next((x for x in (1, 10, 100, 1000, 10000, 100000) if lo <= med / x <= hi), None)
     if div is None: print(name, "no pude adivinar el divisor; mediana cruda", med); continue
     gaps = sum(1 for a, b in zip(rows, rows[1:]) if (b[0] - a[0]) % 3600)
     with gzip.open(p, "wt") as f:

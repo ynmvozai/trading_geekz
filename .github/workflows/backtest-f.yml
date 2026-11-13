@@ -2,7 +2,7 @@ name: backtest-f
 on:
   push:
     branches: [backtest-c]
-    paths: [backtest/f.py, backtest/descargar_f.py, .github/workflows/backtest-f.yml]
+    paths: [backtest/f.py, .github/workflows/backtest-f.yml]
 permissions:
   contents: write
 jobs:
