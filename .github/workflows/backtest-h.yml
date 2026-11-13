@@ -1,0 +1,51 @@
+name: backtest-h
+on:
+  push:
+    branches: [backtest-c]
+    paths: [backtest/h.py, .github/workflows/backtest-h.yml]
+permissions:
+  contents: write
+jobs:
+  correr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nombre: confirmacion-2017-2021
+            desde: "2017-01"
+            hasta: "2021-12"
+            split: "1561939200"
+          - nombre: completo-2022-2026
+            desde: "2022-01"
+            hasta: "2026-10"
+            split: "1717200000"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: backtest/datos_${{ matrix.nombre }}
+          key: velas-1h-${{ matrix.nombre }}-v2
+      - name: Velas de 1 hora (usa las guardadas; si faltan, las baja)
+        working-directory: backtest
+        env:
+          OUT_DIR: datos_${{ matrix.nombre }}
+        run: python3 descargar_f.py ${{ matrix.desde }} ${{ matrix.hasta }} 2>&1 | tee descarga.log
+      - name: Correr H
+        working-directory: backtest
+        env:
+          SPLIT_TS: ${{ matrix.split }}
+        run: |
+          set -o pipefail
+          mkdir -p res && cp descarga.log res/
+          python3 h.py datos_${{ matrix.nombre }} res 2>&1 | tee res/log.txt
+      - name: Guardar resultados
+        if: always()
+        run: |
+          cp -r backtest/res /tmp/res || mkdir -p /tmp/res
+          mv backtest/datos_${{ matrix.nombre }} /tmp/keep
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git checkout --orphan res-${{ matrix.nombre }} && git rm -rqf . && rm -rf backtest .github && cp -r /tmp/res/* .
+          git add -A && git commit -qm "resultados H ${{ matrix.nombre }}" && git push -f origin HEAD:backtest-h-${{ matrix.nombre }}
+          mkdir -p backtest && mv /tmp/keep backtest/datos_${{ matrix.nombre }}
