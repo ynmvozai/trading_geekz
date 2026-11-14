@@ -37,16 +37,17 @@ def session_of(t_close):
     if mp <= 60: return ((p.date() - dt.timedelta(days=1)).isoformat(), "Noche")
     return None
 
-def engine(A, events, cancel_times):
+def engine(A, events, cancel_times, bar=3600, ses_fn=None):
     """Opera COMPRAS con la dirección activa. cancel_times: horas de señales contrarias (apagan la dirección)."""
+    ses_fn = ses_fn or session_of
     t, o, h, l, c = (A[k] for k in "tohlc")
     piv = F.pivot_highs(h); p = 0; lastH = None          # [nivel, roto, idx]
     e = 0; x = 0; bias = None; used = set(); open_tr = []; done = []
     def close_all(i, why):
-        for tr in open_tr: done.append(dict(tr, exit=c[i], t_exit=t[i] + 3600, salida=why))
+        for tr in open_tr: done.append(dict(tr, exit=c[i], t_exit=t[i] + bar, salida=why))
         open_tr.clear()
     for i in range(len(t)):
-        tc = t[i] + 3600
+        tc = t[i] + bar
         while p < len(piv) and piv[p][0] <= i - 1:
             lastH = [piv[p][1], False, piv[p][0] - 2]; p += 1
         while e < len(events) and events[e]["T"] <= t[i]:      # una señal vale desde la vela siguiente a su cierre
@@ -68,7 +69,7 @@ def engine(A, events, cancel_times):
         if c[i] < bias["inval"]: close_all(i, "invalidada"); bias = None; continue
         if tc >= bias["expire"]: close_all(i, "fin de la semana siguiente"); bias = None; continue
         if not bos: continue
-        ses = session_of(tc)
+        ses = ses_fn(tc)
         if ses is None or ses in used: continue
         entry = c[i]; stop = min(l[lastH[2]:i + 1])
         if not (stop < entry): continue
