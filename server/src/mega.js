@@ -8,7 +8,38 @@ import { usd, splitLong, log } from "./util.js";
 import { pf, ladoMin, lado, empuje } from "./friendly.js";
 
 export const MEGA_SYMS = ["BTC", "SOL"];
-export const MG = { sent: 0, failed: 0, lastErr: "", last: null, liqSent: 0 };
+export const MG = { sent: 0, failed: 0, lastErr: "", last: null, liqSent: 0, queued: 0, digests: 0 };
+// v4.42 (auditoría 14 nov): menos ruido. Al momento y con mención solo lo excepcional (nivel 3 o liquidaciones masivas);
+// lo demás se junta en un resumen cada 15 min, sin mención.
+export const DIGEST_MS = 15 * 60000;
+const queue = [];
+export function megaQueue(ev) { queue.push(ev); MG.queued++; }
+export function digestText(items, mins = 15) {
+  if (!items.length) return null;
+  const L = ["🐳 **Resumen de ballenas · últimos " + mins + " min**"];
+  for (const sym of MEGA_SYMS) {
+    const mine = items.filter((x) => x.sym === sym); if (!mine.length) continue;
+    const parts = [];
+    for (const [side, tag] of [["buy", "🟢 compras"], ["sell", "🔴 ventas"]]) {
+      const o = mine.filter((x) => x.kind === "order" && x.side === side); if (!o.length) continue;
+      parts.push(tag + ": " + o.length + (o.length === 1 ? " aviso" : " avisos") + ", la mayor " + usd(Math.max(...o.map((x) => x.usd))));
+    }
+    for (const [side, tag] of [["long", "💥 liquidaron largos"], ["short", "💥 liquidaron cortos"]]) {
+      const q = mine.filter((x) => x.kind === "liq" && x.side === side); if (!q.length) continue;
+      parts.push(tag + " " + usd(Math.max(...q.map((x) => x.usd))));
+    }
+    const last = mine[mine.length - 1];
+    L.push("**" + (NAMES[sym] || sym) + "** · " + parts.join(" · ") + " · último precio " + pf(last.price, sym));
+  }
+  L.push("-# Las órdenes históricas (nivel 3) y las liquidaciones masivas siguen llegando al momento con mención.");
+  return L.join("\n");
+}
+export async function flushDigest() {
+  if (!queue.length) return null;
+  const txt = digestText(queue.splice(0));
+  if (txt) { await send(txt, false); MG.digests++; }
+  return txt;
+}
 const LEVELS = ["", "🐳 MEGA BALLENA", "🐳🐳 BALLENA GIGANTE", "🚨 ORDEN HISTÓRICA"];
 
 // Nivel 0-3 según el rango del mercado.
@@ -68,7 +99,7 @@ export function onBurst(b, price, now = Date.now()) {
   const amount = single >= acc ? b.usd : sum;
   const how = single >= acc ? "en una sola orden" : "en " + arr.length + " órdenes en " + Math.max(1, Math.round((T - arr[0].t) / 1000)) + " segundos";
   const txt = [LEVELS[lvl] + " · " + name, verbo + usd(amount) + " " + how + " · " + pf(price, sym), rangoTxt(sym, lvl), zonaTxt(sym, price, b.side), "-# Tamaño, no dirección: en el estudio de 12 meses las órdenes gigantes acertaron la dirección ~50 %. Úsala para saber dónde hay dinero grande."].join("\n");
-  send(txt, true);
+  if (lvl >= 3) send(txt, true); else megaQueue({ sym, kind: "order", side: b.side, usd: amount, price });   // v4.42
   return txt;
 }
 
@@ -90,13 +121,13 @@ export function onLiq(sym, kind, amount, price, T = Date.now(), now = Date.now()
     kind === "long" ? "El precio cayó y sacó a los que compraban. Puede seguir bajando o rebotar fuerte." : "El precio subió y sacó a los que vendían. Puede seguir subiendo o girar fuerte.",
     zonaTxt(sym, price, kind === "long" ? "sell" : "buy")].join("\n");
   MG.liqSent++;
-  send(txt, big);
+  if (big) send(txt, true); else megaQueue({ sym, kind: "liq", side: kind, usd: sum, price });   // v4.42
   return txt;
 }
 
-export function startMega() { on("burst", (b, price) => onBurst(b, price)); }
+export function startMega() { on("burst", (b, price) => onBurst(b, price)); setInterval(() => flushDigest().catch(() => {}), DIGEST_MS); }
 export function megaEstado() {
   const dest = ENV.hooks.mega ? "webhook" : ENV.botToken ? "bot" : "sin destino";
   return (MG.lastErr ? "❌" : "✅") + " #mega-ballenas: " + dest + " · rangos BTC " + MEGA.BTC.map((v) => usd(v)).join("/") + " · SOL " + MEGA.SOL.map((v) => usd(v)).join("/") + " · Oro " + MEGA.XAU.map((v) => usd(v)).join("/") +
-    " · enviados " + MG.sent + " (liquidaciones " + MG.liqSent + ")" + (MG.lastErr ? " · último error: " + MG.lastErr : "");
+    " · enviados " + MG.sent + " (liquidaciones " + MG.liqSent + ") · en resumen de 15 min " + MG.queued + " (" + MG.digests + " resúmenes)" + (MG.lastErr ? " · último error: " + MG.lastErr : "");
 }

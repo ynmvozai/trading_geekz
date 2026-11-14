@@ -5,7 +5,7 @@ import { zkey } from "./zones.js";
 import { px, shortPR } from "./util.js";
 import { sentFor, sentRead } from "./sentiment.js";
 import { minStop } from "./bias.js";
-import { metaCorta } from "./risk.js";
+import { metaCorta, FEE_RT } from "./risk.js";
 
 const H48 = 48 * 3600000;
 let open = []; // seguimiento en memoria (copia de la base de datos)
@@ -30,6 +30,7 @@ export function recordAlert({ t, sym, kind, z, order_side, entry, prox, usd }) {
 }
 
 const rOf = (a, lvl) => Math.abs(lvl - a.entry) / Math.abs(a.entry - a.sl);
+export const netR = (a) => (a.r || 0) - (FEE_RT * Math.abs(a.entry)) / Math.abs(a.entry - a.sl);   // v4.42
 
 // hi/lo: rango de precio observado (una operación: hi = lo = precio). Si en un mismo rango
 // se tocan SL y TP, se cuenta SL (criterio conservador).
@@ -96,6 +97,9 @@ export function weeklyText(days = 7) {
   L.push("✅ " + w + (w === 1 ? " ganada" : " ganadas") + " · ❌ " + l + (l === 1 ? " perdida" : " perdidas") + " → " + Math.round((w / done.length) * 100) + "% de acierto");
   // v4.27: R promedio por señal (antes salía la suma y parecía "por señal").
   L.push("💰 R promedio por señal: " + (r / done.length >= 0 ? "+" : "") + (r / done.length).toFixed(2) + "R · total " + (r >= 0 ? "+" : "") + r.toFixed(1) + "R en " + done.length + " (sin comisión, stop de la zona)");
+  // v4.42 (auditoría 14 nov): también con comisión (0,1 % ida y vuelta), que es lo que se lleva la cuenta.
+  const rn = done.reduce((s, a) => s + netR(a), 0);
+  L.push("🧾 Con comisión: " + (rn / done.length >= 0 ? "+" : "") + (rn / done.length).toFixed(2) + "R por señal · total " + (rn >= 0 ? "+" : "") + rn.toFixed(1) + "R");
   const by = ORDER.map((k) => { const d = done.filter((a) => a.sym === k); return { k, n: d.length, w: d.filter((a) => a.status !== "SL").length }; }).filter((x) => x.n >= 2);
   if (by.length >= 2) {
     by.sort((a, b) => b.w / b.n - a.w / a.n);

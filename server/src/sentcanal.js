@@ -45,7 +45,7 @@ const fund = (x) => (x == null ? "—" : (x >= 0 ? "+" : "") + x.toFixed(4) + "%
 // Texto del mensaje (puro, probado). data: { BTC:{...}, SOL:{...}, XAU:{...} }, sent: { crypto, stocks }.
 export function listText(data, sent, now = Date.now()) {
   const p = prParts(now), hh = String(p.hour).padStart(2, "0") + ":" + String(p.minute).padStart(2, "0");
-  const L = ["🧭 **Sentimiento por par** · " + p.date + " · actualizado " + hh + " (hora PR)", ""];
+  const L = ["🧭 **Sentimiento por par** · " + p.date + " · datos de las " + hh + " (hora PR)", "-# Este mensaje se edita solo cada 15 min; la hora de arriba es la del último dato, no la de publicación.", ""];   // v4.42
   for (const k of PAIRS) {
     const d = data[k] || {}, c = crowdRead(d);
     L.push("**" + NAMES[k] + "** · " + c.txt);

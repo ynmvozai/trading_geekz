@@ -2,6 +2,14 @@
 
 _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nueva de Claude Code.
 
+
+## v4.42 (14 nov 2026) · mejoras de la auditoría de Discord
+- #mega-ballenas: al momento y con mención solo nivel 3 (orden histórica) y liquidaciones masivas; lo demás va a un resumen cada 15 min sin mención (`digestText`, `flushDigest` en `src/mega.js`).
+- #sentimiento: el encabezado dice "datos de las HH:MM (hora PR)" y aclara que el mensaje se edita cada 15 min.
+- #resultados: el resumen semanal añade el R con comisión (0,1 %) junto al R sin comisión (`netR` en `src/results.js`).
+- Discord (a mano): #auto-trade creado; #general, #crypto y #wallet-tracking movidos a la categoría ARCHIVO (no se borran); mensajes fijados en #cryptoman y #diario-de-trades.
+- Backtest H-15 (15 min, solo NY): no pasa (2017–21 −0,04R en 404; 2022–26 +0,05R en 517). Código en `backtest/h15.py` (rama backtest-c).
+
 ## Contexto rápido
 - Dueño: Yasser Nieves (Visionary_GeeKz). Habla español, no es programador, maneja todo desde el iPhone.
 - Reglas: data real siempre, nunca operar dinero, secretos solo en variables de entorno, "Ai" (nunca AI/IA), "Visionary_GeeKz".
