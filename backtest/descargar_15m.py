@@ -7,6 +7,7 @@ NAME, YEAR = sys.argv[1], int(sys.argv[2]); LAST_M = int(sys.argv[3]) if len(sys
 SYM = {"US30": "USA30IDXUSD", "NAS": "USATECHIDXUSD", "XAU": "XAUUSD", "BTC": "BTCUSD"}[NAME]
 DIV = {"US30": 1000, "NAS": 1000, "XAU": 1000, "BTC": 10}[NAME]
 OUT = "salida"; os.makedirs(OUT, exist_ok=True)
+BAR = int(os.environ.get("BAR_S", "900"))   # segundos por vela (900 = 15 min, 300 = 5 min)
 AGENT = {"User-Agent": "Mozilla/5.0"}
 
 def get(d, tries=8):
@@ -44,7 +45,7 @@ for n, d in enumerate(days):
 bars = {}
 for rr in res:
     for t, o, h, l, c, v in rr:
-        b = t // 900 * 900; x = bars.get(b)
+        b = t // BAR * BAR; x = bars.get(b)
         if x is None: bars[b] = [o, h, l, c, v]
         else:
             if h > x[1]: x[1] = h
@@ -55,6 +56,6 @@ with gzip.open(f"{OUT}/{NAME}_{YEAR}.csv.gz", "wt") as f:
     for b in sorted(bars):
         o, h, l, c, v = bars[b]; f.write(f"{b},{o/DIV:.2f},{h/DIV:.2f},{l/DIV:.2f},{c/DIV:.2f},{v:.3f}\n")
 ks = sorted(bars)
-print(NAME, YEAR, "días con datos", sum(1 for rr in res if rr), "de", len(days), "fallidos", bad, "velas 15m", len(ks),
+print(NAME, YEAR, "días con datos", sum(1 for rr in res if rr), "de", len(days), "fallidos", bad, "velas", len(ks),
       "primer cierre", round(bars[ks[0]][3] / DIV, 2) if ks else None, "último cierre", round(bars[ks[-1]][3] / DIV, 2) if ks else None,
       "en", round(time.time() - t0), "s", flush=True)
