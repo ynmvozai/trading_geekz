@@ -77,7 +77,7 @@ def engine(A, events, cancel_times, bar=3600, ses_fn=None):
         if bias["tp"] - entry < MIN_RR * risk: continue
         if any(tr["entry"] >= entry for tr in open_tr): continue          # reentrar solo si lo abierto va a favor
         used.add(ses)
-        open_tr.append({"t_sig": tc, "entry": entry, "stop": stop, "tp": bias["tp"], "sesion": ses[1], "n_abiertas": len(open_tr)})
+        open_tr.append({"t_sig": tc, "entry": entry, "stop": stop, "tp": bias["tp"], "sesion": ses[1], "n_abiertas": len(open_tr), "tipo": bias.get("tipo", "")})
     if open_tr: close_all(len(t) - 1, "fin de datos")
     return done
 
