@@ -3,6 +3,11 @@
 _Última actualización: 10 oct 2026._ Lee esto primero si eres una sesión nueva de Claude Code.
 
 
+
+## v4.43 (15 nov 2026) · Ai Crypto con la propuesta pendiente
+- Yasser (15 nov): "Arregla lo que puedas con tus recomendaciones". Ai Crypto abre en zonas grado A o A++ (antes solo A++), máximo 1 entrada por zona por día (hora PR), stop mínimo como antes y meta a 1R o más. Sigue siendo práctica, sin ejecutar. `simGradeOk`, `simZoneUsedToday` en `src/alerts.js`.
+- El récord anterior (1 de 7) era con la regla vieja; el de la regla nueva empieza hoy.
+
 ## v4.42 (14 nov 2026) · mejoras de la auditoría de Discord
 - #mega-ballenas: al momento y con mención solo nivel 3 (orden histórica) y liquidaciones masivas; lo demás va a un resumen cada 15 min sin mención (`digestText`, `flushDigest` en `src/mega.js`).
 - #sentimiento: el encabezado dice "datos de las HH:MM (hora PR)" y aclara que el mensaje se edita cada 15 min.

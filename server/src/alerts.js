@@ -156,15 +156,23 @@ export function watchTick() {
 export const sim = { open: [], closed: [] };
 function storeSim() { if (sim.closed.length > 500) sim.closed.length = 500; kvSet("sim", sim); }
 function simPost(txt) { if (ENV.hooks.aicrypto && !A.paused) post(ENV.hooks.aicrypto, txt).catch(() => {}); }
+export const simGradeOk = (g) => g === "A++" || g === "A";
+export function simZoneUsedToday(sm, sym, z, now) {
+  const day = prParts(now).date, same = (t) => t.sym === sym && t.zname === z.name && t.lo === z.lo;
+  return sm.open.some(same) || sm.closed.some((t) => same(t) && prParts(t.t).date === day);
+}
 function simOpen(o, zi) {
   const z = Z.list[zi];
-  if (!z || z.grade !== "A++" || o.side !== z.side || isBroken(z) || againstBias(o.sym, z.side)) return;
-  if (sim.open.some((t) => t.sym === o.sym && t.zname === z.name && t.lo === z.lo)) return;
+  // v4.43 (Yasser, 15 nov: "arregla lo que puedas con tus recomendaciones"): grado A o A++ (antes solo A++, casi nunca disparaba),
+  // máximo 1 entrada por zona por día (hora PR) y la meta a 1R o más del stop medido.
+  if (!z || !simGradeOk(z.grade) || o.side !== z.side || isBroken(z) || againstBias(o.sym, z.side)) return;
+  if (simZoneUsedToday(sim, o.sym, z, o.t)) return;
   // v4.27: stop medido (Fase 7: borde lejano + margen) en lugar del stop de la zona, y comisión 0,1 % en el resultado.
   const e = o.price, sl = measuredStop(o.sym, z.side, z.lo, z.hi) ?? z.sl, R = Math.abs(e - sl);
   if (!(R > 0) || R < minStop(o.sym, e)) return;      // stop demasiado pegado: el ruido normal lo toca
   if (z.side === "sell" && !(sl > e && z.tp1 < e)) return;
   if (z.side === "buy" && !(sl < e && z.tp1 > e)) return;
+  if (Math.abs(z.tp1 - e) < R) return;                // v4.43: meta a menos de 1R → no vale la pena
   const t = { id: o.t + o.sym, sym: o.sym, side: z.side, zname: z.name, lo: z.lo, entry: e, sl, tp: z.tp1, t: o.t, usd: o.usd, R, fee: (FEE_RT * e) / R };
   sim.open.push(t); storeSim();
   const f = (v) => pf(v, t.sym), k = Math.abs(t.tp - e) / R;
